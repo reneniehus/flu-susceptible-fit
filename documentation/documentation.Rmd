@@ -1,0 +1,323 @@
+---
+title: "Flu model documentation"
+output: html_document
+date: "2024-06-10"
+author: "Fanny Bergström"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(readxl)
+library(tidyverse)
+library(fst)
+```
+
+## Introduction
+
+This document describes an age and vaccination dissaggregated SIR model for influenza. We are fitting the model to weekly ILI incidence multiplied by flu-positivity in that same week.
+
+## SIR
+
+We consider a population consisting of $N$ individuals. The population is divided into three compartments: the susceptible, infectious and removed compartments. Their sizes, at any time $t$ for an age class $j$, are denoted by $S^{(j)}(t)$, $I^{(j)}(t)$ and $R^{(j)}(t)$ respectively. Subscript $u$ and $v$ are used to distinguish between the unvaccinated and vaccinated groups, respectively. We let $vax(t)$ be the fraction of new people being vaccinated on day $t$. We further let $ve_{inf}$, $ve_{susc}$ and $ve_{severe}$ be the vaccine efficacy in terms of infectiousness, susceptibility and severe disease.
+
+We also use a community contact rate $\beta$. We let the rate of recovery be denoted $\gamma$. We use a contact matrix $C$, with elements $C_{i,j}$ being the average number of contacts an individual in age group $i$ has with individuals in age group $j$ within 24h.
+
+The SIR model is specified as follows
+
+```{=tex}
+\begin{aligned}
+S_u^{(j)}(t) & = S_u^{(j)}(t-1) - vax^{(j)}(t-1) \frac{S_u^{(j)}(t-1) }{S_u^{(j)}(t-1) +R_u^{(j)}(t-1) }\\
+   & -\beta\sum_{i} C_{i,j}  \big(I_u^{(i)}(t-1)+ (1-ve_{inf}) (I_{v}^{(i)}(t-1)\big) S_u^{(j)}(t-1) \\
+   \\
+ S_{v}^{(j)}(t) & = S_{v}^{(j)}(t-1) + vax^{(j)}(t-1) \frac{S_u^{(j)}(t-1) }{S_u^{(j)}(t-1)  +R_u^{(j)}(t-1) }\\
+  &-\beta\sum_{i} C_{i,j}  \big(I_u^{(i)}(t-1)+ (1-ve_{inf}) (I_{v}^{(i)}(t-1)\big)     S_{v}^{(j)(t-1)}(1-ve_{susc}) \\
+\\
+I_u^{(j)}(t) & = I_u^{(j)}(t-1)+ \beta\sum_{i} C_{i,j}  \big(I_u^{(i)}(t-1)+ (1-ve_{inf}) (I_{v}^{(i)}(t-1)\big) S_u^{(j)}(t-1) - \gamma I_u^{(j)}(t - 1)  \\
+                \\
+I_{v}^{(j)}(t) & = I_{v}^{(j)}(t-1) + \beta\sum_{i} C_{i,j}  \big(I_u^{(i)}(t-1)+ (1-ve_{inf}) (I_{v}^{(i)}(t-1)\big) S_{v}^{(j)}(t-1) - \gamma I_{v}^{(j)}(t - 1)  \\
+                \\                
+R_u^{(j)}(t) & = R_u^{(j)}(t-1) + \gamma I_u^{(j)}(t - 1) - vax^{(j)}(t-1) \frac{R_u^{(j)}(t-1) }{S_u^{(j)}(t-1) + R_u^{(j)}(t-1) } \\ 
+
+R_{v}^{(j)}(t) & = R_{v}^{(j)}(t-1) + \gamma I_{v}^{(j)}(t - 1) + vax^{(j)}(t-1) \frac{R_u^{(j)}(t-1) }{S_u^{(j)}(t-1) + R_u^{(j)}(t-1) }.
+
+\end{aligned}
+```
+Interpretation of the first equation: Let's multiply both sides with the population size of the focus age group ($N^{(j)}$) to allow interpretation of this equation in terms of how the **absolute** number of susceptible, unvaccinated individuals of age group $j$ changes. The new number of susceptible, unvaccinated individuals of age group $j$ ($N^{(j)}S_u^{(j)}(t)$) is given through the number of such individuals in the previous time-step ($N_{j}S_u^{(j)}(t-1)$), minus those that were vaccinated and those that were infected.
+
+In particular, the number of newly vaccinated susceptible, unvaccinated individuals in $j$ is given by the total number of vaccinated individuals in $j$ in the last time-step ( $N^{(j)}vax^{(j)}(t-1)$ ) multiplied by the chance of a vaccination occurring in the susceptible as opposed to the recovered group of $j$ ( $\frac{S_u^{(j)}(t-1) }{S_u^{(j)}(t-1)+R_u^{(j)}(t-1)}$ ). Let's take a number example: There are 10 new individuals being vaccinated in the group 'young', and this group contains 40 susceptible, unvaccinated individuals as well as 100 recovered, unvaccinated individuals. Thus, 10 x 20/100=2 individuals of the group 'young' that are susceptible and unvaccinated are being vaccinated and therefore removed from this group.
+
+The number of newly infected susceptible, unvaccinated individuals in $j$ due encounters with individuals of age group $i$ to is given through the number of "potentially infecting encounters" for an average individual ( $\beta$ ) with any other, multiplied by a modifying factor of that encounter number based on the age-group's encounter-willingness ( $\gamma_{j}$ ), multiplied by the chance of such an encounter of group $i$ happening with someone from group $i$ ( $\frac{ \alpha_{i,j}*N^{(i)} }{ \sum_{k} \alpha_{i,k} N^{(k)} }$ , where $\alpha_{i,j}$ determines preferential meeting/attachment of group $i$ with someone from group $j$ ), multiplied by the chance of any encounter being with an actually infectious individual ( $\big( I_u^{(i)}(t-1)+ (1-ve_{inf}) (I_{v}^{(i)}(t-1)\big)$ ). Let's take a number example for this too: assume again a focus set of 40 susceptible, unvaccinated individuals of the group 'young' in the previous time-step. In this simple example, 'young' individuals interact with other individuals in the 'young' group, as well as with individuals of a second, 'old', group. An average individual has the country's typical number of 0.2 ( $\beta$ ) potentially infecting encounters. Given age-specific encounter-willingness, any 'young' individual has 120% of the country's typical number of contacts, while 'old' individuals have 20% ( 80%x1.2 + 20%x0.2 = 1 ). Thus 40 x 0.2 x 1.2 = 9.6 encounters happen to our focus set of individuals. Each 'young' individual would meet 80% ( $N^{(j)}/N$ ) other young individuals and 20% old individuals if mixing at random purely due to the age pyramid, but there is preferential mixing: the meeting preference is such that the odds of young-meeting-young is 2-times that of young-meeting-old ( $\frac{\alpha_{young,young}} {\alpha_{young,old}}=2$ ). Thus the 9.6 encounters are split into 8.5 encounters with 'young', and 1.1 encounters with 'old'. Assuming that there are no infectious individuals in the 'old' group, these 1.1 encountes leads to 0 infections. But there are 20% infectious unvaccinated and 10% infected vaccinated individuals ( $ve_{inf}=0.5$ ) of the 'young' group, then each encounter leads to 1 x (0.20 + 0.05)=0.25 infections, so that the 40 susceptible, unvaccinated individuals will experience 8.5 x 0.25=2.1 infections. Thus the new number of susceptible, unvaccinated individuals in the group 'young' is 40 - 2 - 2.1 = 35.9.
+
+``` tex
+\begin{aligned}
+S_u^{(j)}(t) & = S_u^{(j)}(t-1) - vax^{(j)}(t-1) \frac{S_u^{(j)}(t-1) }{S_u^{(j)}(t-1) +R_u^{(j)}(t-1) }\\
+& -\beta\sum_{i} C_{i,j}  \big(I_u^{(i)}(t-1)+ (1-ve_{inf}) (I_{v}^{(i)}(t-1)\big) S_u^{(j)}(t-1) \\
+S_u^{(j)}(t) & = S_u^{(j)}(t-1) - vax^{(j)}(t-1) \frac{S_u^{(j)}(t-1) }{S_u^{(j)}(t-1) +R_u^{(j)}(t-1) }\\
+& -\beta\gamma_{j}\sum_{i} C_{i,j}  \big(I_u^{(i)}(t-1)+ (1-ve_{inf}) (I_{v}^{(i)}(t-1)\big) S_u^{(j)}(t-1).
+
+
+\end{aligned}
+```
+
+Here $\gamma_{j}$ is the age groups $j$ modifier of the country's typical number of potentially infecting contacts.
+
+We let both susceptible and recovered be vaccinated proportional to their size at time $t$, assuming that you will not get vaccinated during the time of being infectious.
+
+## Statistical inference
+
+We assume an Negative Binomial distribution for the weekly ILI incidence multiplied by the flu positivity for that week.
+
+The SIR model is fitted on a daily scale and then
+
+$$
+\text{weekly ILI for age group } i \text{ at time } t\sim \text{NegBin}( \mu(t)^i, \phi ),
+$$ where $\mu(t)^i$ is the mean of the severe outcomes for age group $i$ for week $t$ and $\phi$ is the overdispersion parameter.
+
+## Contact matrix
+
+For the contact matrix $C$, we use country specific estimates from the study ["Projecting social contact matrices in 152 countries using contact surveys and demographic data" (Prem et al, 2017)](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697). This study provides model based estimates of the expected number of contacts of an individual in age-group $i$ with individuals from age-group $j$ within 24h.
+
+The contact frequencies are provided in sixteen 5-year age-groups from age 0-4 until age 75-79.
+
+Below is the contact matrix for Albania.
+
+```{r}
+# Using Albania as an example
+dat <- read_excel(here::here("./data/MUestimates_all_locations_1.xlsx"))
+
+dat_long = dat %>% 
+  mutate(age_group=factor(paste0(5*0:15, "-", 5*1:16-1),
+                          levels = paste0(5*0:15, "-", 5*1:16-1))) %>%
+  pivot_longer(cols=starts_with("X"), 
+               names_to = "contact_age",
+               values_to = "number_contacts") %>%
+  mutate(contact_age=factor(contact_age, levels = paste0("X", 1:16),
+                            labels = paste0(5*0:15, "-", 5*1:16-1)))
+dat_long %>% ggplot() +
+  geom_tile(aes(x=age_group, y=contact_age, fill = number_contacts)) +
+  scale_fill_gradient2(low = "white", mid="orange", high="darkred", 
+                        midpoint = 7, limits = c(0,15.1)) +
+  xlab("Age group") +
+  ylab("Contact age")
+```
+
+To specify new age groups we need to make some specific assumptions:
+
+-   The contact behavior within each 5-year age group is the same for all ages. Every member of an age-group $i$, e.g. 15-19 year old, has the same expected number of contacts with other age-groups.
+
+-   The contacts of an individual with age-group $i$ to individual with age (in years) $k$ from age-group $j$ occur with a expected frequency corresponding to the share of individuals with age $k$ years in age-group $j$.
+
+Based on these assumptions and in combination with the age distribution of each country, we can derive a contact matrix with 1-year resolution in the age-range 0-79 years.
+
+After obtaining this fine-grained contact matrix we can derive contact frequencies for arbitrary age-groups. For an individual of age $k$ years we can sum over all the expected contacts in each of the new age-groups $j$. To derive the expected number of contacts in a new age group $i$ with the age-group $j$ we calculate the weighted average of expected contacts for all individuals with age $k$ years in age-group $i$ where the weights correspond to the population share of individuals of age $k$ years within age-group $i$.
+
+Polymod only contains only information on contact frequencies for age-groups up to group 75-79. To obtain contact frequencies also for older individuals, we assume that individuals older than 79 show the same contact behavior to younger individuals than 79 year old. To derive expected number of contacts of young individuals with old individuals we assume that the share of individuals with age $k>79$ that one individual with age $l\leq79$ meets is the same as the share of individuals with age $k=79$. E.g., we assume that the expected number of contacts for an individual with age $l$ to an individual with age $k$ is $c_{l,k}=\frac{c_{l, 79}}{n_{79}} \times n_{k},\; k>79$, where $n_i$ is the number of individuals of age $i$ years.
+
+```{r}
+# code for demography
+obtain_demography = function( country, ten_year_brackets = FALSE ){
+  path_core_functions <- "./"
+  if ( ten_year_brackets ){
+    if ( country == "Australia" ){
+      #Source:  
+      #https://www.abs.gov.au/statistics/people/population/regional-population-age-and-sex/2021#data-download
+      #For 5 year age brackets, 0-4yr, 5-9yr, ..., 80-84yr, 85+yr
+      agegroup_sizes <- c(1509959, 
+                          1616774,
+                          1623892,
+                          1479632,	
+                          1623384,	
+                          1822031,	
+                          1899620,	
+                          1867387,	
+                          1654500,	
+                          1650035,	
+                          1611554,	
+                          1550507,	
+                          1465025,	
+                          1280143,
+                          1146773,	
+                          807195,	
+                          545408,	
+                          534260 )
+      agegroup_sizes <- c( "0-09yr"= sum( agegroup_sizes[ 1:2 ] ),
+                           "10-19yr"= sum( agegroup_sizes[ 3:4 ] ),
+                           "20-29yr"= sum( agegroup_sizes[ 5:6 ] ),
+                           "30-39yr"= sum( agegroup_sizes[ 7:8 ] ),
+                           "40-49yr"= sum( agegroup_sizes[ 9:10 ] ),
+                           "50-59yr"= sum( agegroup_sizes[ 11:12 ] ),
+                           "60-69yr"= sum( agegroup_sizes[ 13:14 ] ),
+                           "70-79yr"= sum( agegroup_sizes[ 15:16 ] ),
+                           "80+yr"= sum( agegroup_sizes[ 17:18 ] ) )
+    } else {
+      
+      suppressMessages(
+        df_demography <- read_excel( paste0( path_core_functions, "data/eurostat_demography_data_5year_brackets.xlsx" ), sheet=3 )
+      )
+      colnames( df_demography )[1] <- "A"
+      df_demography %<>% filter( grepl( "Prop", A ) | grepl( "GEO", A ) )
+      df_demography <- df_demography[ , which( !is.na( df_demography[1,] ) ) ]
+      colnames( df_demography )[1] <- "agegroup"
+      colnames( df_demography )[2:ncol(df_demography)] <- df_demography[1,2:ncol(df_demography)]
+      df_demography <- df_demography[2:nrow(df_demography),]
+      colnames( df_demography )[grepl( "Kosovo", colnames( df_demography ) )] <- "Kosovo"
+      colnames( df_demography )[grepl( "Germany", colnames( df_demography ) )] <- "Germany"
+      colnames( df_demography )[grepl( "European Union", colnames( df_demography ) )] <- "EU"
+      #5-9 years row is in the wrong place, reorder rows:
+      df_demography <- bind_rows( df_demography[1,], df_demography[12,], df_demography[2:11,], df_demography[13:17,] )
+      df_demography$agegroup <- str_remove(df_demography$agegroup, "Proportion of population aged ")
+      df_demography$agegroup <- str_replace(df_demography$agegroup, " years", "yr")
+      df_demography$agegroup[ df_demography$agegroup=="80yr and more"] <- "80+yr"
+      agegroup_distribution <- as.numeric( df_demography[[country]] )
+      agegroup_distribution <- c( "0-09yr"=sum( agegroup_distribution[ 1:2 ] ),
+                                  "10-19yr"=sum( agegroup_distribution[ 3:4 ] ),
+                                  "20-29yr"=sum( agegroup_distribution[ 5:6 ] ),
+                                  "30-39yr"=sum( agegroup_distribution[ 7:8 ] ),
+                                  "40-49yr"=sum( agegroup_distribution[ 9:10 ] ),
+                                  "50-59yr"=sum( agegroup_distribution[ 11:12 ] ),
+                                  "60-69yr"=sum( agegroup_distribution[ 13:14 ] ),
+                                  "70-79yr"=sum( agegroup_distribution[ 15:16 ] ),
+                                  "80+yr"= agegroup_distribution[ 17 ] )
+      agegroup_distribution <- agegroup_distribution/sum(agegroup_distribution)
+    }
+  }else{
+    #df_demography <- read_excel( paste0( path_core_functions, "data/eurostat_demography_data.xlsx" ), sheet=3 )
+    df_demography <- read_fst( paste0( path_core_functions, "data/eurostat_demography_data.fst" ) )
+    colnames( df_demography )[1] <- "A"
+    df_demography %<>% filter( grepl( "Prop", A ) | grepl( "GEO", A ) )
+    df_demography <- df_demography[ , which( !is.na( df_demography[1,] ) ) ]
+    colnames( df_demography )[1] <- "agegroup"
+    colnames( df_demography )[2:ncol(df_demography)] <- df_demography[1,2:ncol(df_demography)]
+    df_demography <- df_demography[2:nrow(df_demography),]
+    colnames( df_demography )[grepl( "Kosovo", colnames( df_demography ) )] <- "Kosovo"
+    colnames( df_demography )[grepl( "Germany", colnames( df_demography ) )] <- "Germany"
+    colnames( df_demography )[grepl( "European Union", colnames( df_demography ) )] <- "EU"
+    #5-9 years row is in the wrong place, reorder rows:
+    df_demography <- bind_rows( df_demography[1,], df_demography[8,], df_demography[2:7,], df_demography[9:13,] )
+    
+    df_demography$agegroup <- str_remove(df_demography$agegroup, "Proportion of population aged ")
+    df_demography$agegroup <- str_replace(df_demography$agegroup, " years", "yr")
+    df_demography$agegroup[ df_demography$agegroup=="80yr and more"] <- "80+yr"
+    agegroup_distribution <- as.numeric( df_demography[[country]] )
+    agegroup_distribution <- c( "0-04yr"=agegroup_distribution[ 1 ],
+                                "05-09yr"=agegroup_distribution[ 2 ],
+                                "10-14yr"=agegroup_distribution[ 3 ],
+                                "15-17yr"=agegroup_distribution[ 4 ]*3/5, #"15-17yr" is approximately 3/5*"15-19yr"
+                                "18-24yr"=agegroup_distribution[ 4 ]*2/5 + agegroup_distribution[ 5 ], #"19-24yr" is approximately 2/5*"15-19yr"+"20-24yr" 
+                                "25-49yr"=agegroup_distribution[ 6 ],
+                                "50-59yr"=agegroup_distribution[ 7 ] + agegroup_distribution[ 8 ],
+                                "60-69yr"=agegroup_distribution[ 9 ] + agegroup_distribution[ 10 ],
+                                "70-79yr"=agegroup_distribution[ 11 ] + agegroup_distribution[ 12 ],
+                                "80+yr"=agegroup_distribution[ 13 ] )/100
+  }
+  if ( country != "Australia" ){
+    #df_population <- read_excel(  paste0( path_core_functions, "data/eurostat_population.xlsx" ), sheet=3 )
+    df_population <- read_fst( paste0( path_core_functions, "data/eurostat_population.fst" ) )
+    df_population[ 18, 1 ] <- "Germany" 
+    country_row <- which( country == df_population[ ,1 ] )
+    country_population <- as.numeric( df_population[ country_row,24 ] )
+    agegroup_sizes <- country_population*agegroup_distribution
+  }
+  return( agegroup_sizes )
+}
+```
+
+```{r echo=TRUE}
+# Obs this code does not work yet but should follow what is written above. 
+# age_str should contain population for each year of age
+
+#age_str = obtain_demography("Albania")
+# 
+# age_str = age_str %>% group_by(age) %>%
+#   mutate(#pop = 
+#         #age=as.numeric((gsub("\\+", "", gsub("s", "", gsub(" year", "", age))))),
+#          age_group = cut(age, right=FALSE, breaks = c(seq(0,80, by=5), 101)))
+# 
+# age_str = age_str %>% mutate(age_group = as.character(age_group),
+#                    age_group = gsub(")", "", age_group),
+#                    age_group = gsub("\\[", "", age_group))
+# 
+# age_str = age_str %>% 
+#   mutate(lwr = as.numeric(sapply(age_str$age_group, 
+#                                  function(x) str_split(x, ",")[[1]][1])),
+#          upr = as.numeric(sapply(age_str$age_group, 
+#                                  function(x) str_split(x, ",")[[1]][2]))-1,
+#          age_group = paste0(lwr, "-", upr)) %>%
+#   select(age, pop, age_group) %>%
+#   arrange(age)
+# 
+# age_str = age_str %>% group_by(age_group) %>%
+#   mutate(share_age_group=pop/sum(pop)) %>% ungroup()
+```
+
+```{r echo=TRUE}
+# cont_yearly = expand_grid(age = unique(age_str$age), 
+#                           age_contact = unique(age_str$age))
+# cont_yearly = cont_yearly %>% left_join(age_str %>% 
+#                                           select(age, age_group, pop))
+# cont_yearly = cont_yearly %>% 
+#   left_join(age_str %>% 
+#               select(age_contact=age, 
+#                      age_group_contact = age_group,
+#                      share_age_group_contact = share_age_group,
+#                      pop_contact = pop))
+# 
+# cont_yearly = cont_yearly %>% 
+#   left_join(dat_long %>% rename(age_group_contact = contact_age))
+# 
+# cont_yearly = cont_yearly %>% 
+#   mutate(number_contacts = number_contacts*share_age_group_contact)
+# 
+# cont_yearly_80 = cont_yearly %>% filter(age>=80)
+# cont_yearly_0_79 = cont_yearly %>% filter(age<80)
+# 
+# # 80+ meet have same number of contacts with different age-groups as 79
+# cont_yearly_80 = cont_yearly_80 %>% select(-number_contacts) %>%
+#   left_join(cont_yearly_0_79 %>% filter(age==79) %>% 
+#               select(age_contact, number_contacts))
+# 
+# cont_yearly = rbind(cont_yearly_0_79, cont_yearly_80)
+# 
+# cont_yearly_cont_80 = cont_yearly %>% filter(age_contact >= 80)
+# cont_yearly_cont_0_79 = cont_yearly %>% filter(age_contact < 80)
+# 
+# cont_rate_to79 = cont_yearly_cont_0_79 %>% filter(age_contact==79) %>% 
+#   mutate(cont_79_div_pop_79 = number_contacts/pop_contact) %>% 
+#   select(age, cont_79_div_pop_79)
+# 
+# cont_yearly_cont_80 = cont_yearly_cont_80 %>% left_join(cont_rate_to79) %>% 
+#   mutate(number_contacts = pop_contact*cont_79_div_pop_79) %>%
+#   select(-cont_79_div_pop_79)
+# 
+# cont_yearly = rbind(cont_yearly_cont_0_79, cont_yearly_cont_80) %>%
+#   arrange(age, age_contact)
+```
+
+We can check the implementation of our *algorithm* by reproducing the original Polymod contact matrix from derived year-specific contact frequencies (using assumptions 1. and 2.). The results should be identical to the original Polymod contact matrix.
+
+```{r echo=TRUE}
+# cont_yearly = cont_yearly %>% 
+#   mutate(age_group_5 = cut(age, right=FALSE, breaks = c(seq(0,80, by=5))),
+#          age_group_cont_5 = cut(age_contact, right=FALSE, breaks = c(seq(0,80, by=5))),
+#          age_group_vac = cut(age, right=FALSE, 
+#                              breaks = c(0,12,16,18,30,40,50,60,70,80,90,101)),
+#          age_group_cont_vac = cut(age_contact, right=FALSE, 
+#                              breaks = c(0,12,16,18,30,40,50,60,70,80,90,101)))
+# 
+# cont_old = cont_yearly %>% 
+#   filter(age<80, age_contact<80) %>%
+#   group_by(age, age_group_cont_5) %>%
+#   summarise(age_group_5 = age_group_5[1],
+#             pop = pop[1], 
+#             number_contacts = sum(number_contacts)) %>%
+#   ungroup() %>%
+#   group_by(age_group_5, age_group_cont_5) %>%
+#   summarise(number_contacts = sum(pop*number_contacts)/sum(pop)) %>%
+#   ungroup()
+# 
+# cont_old %>% ggplot() +
+#   geom_tile(aes(x=age_group_5, y=age_group_cont_5, fill = number_contacts)) +
+#   scale_fill_gradient2(low = "white", mid="orange", high="darkred", 
+#                        midpoint = 7, limits = c(0,15.1))
+
+```

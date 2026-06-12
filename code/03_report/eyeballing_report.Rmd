@@ -1,0 +1,155 @@
+---
+title: "X-modelling — surveillance data eyeballing"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+# Large figures throughout; each figure prints full width with its findings underneath.
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE,
+                      out.width="100%", dpi=110, fig.align="center")
+library(here)
+
+# Build the figure manifest once. If `eb` already exists in the knitting environment
+# (e.g. you ran the pipeline in 00_main.R and knit from there) we reuse it; otherwise we
+# rebuild from the local snapshots so the report is self-contained.
+if (!exists("eb")) {
+  source(here("code/01_main_supporting/setup.R"))
+  source(here("code/02_settings/settings_version0.R")); params = settings()
+  source(here("code/01_main_supporting/flu_functions.R"))
+  source(here("code/01_main_supporting/load_data.R"))
+  source(here("code/01_main_supporting/gen_model_input.R"))
+  source(here("code/01_main_supporting/eyeballing.R"))
+  data      = load_data(params, regenerate=FALSE, new_from_online=FALSE)
+  data      = load_data_epi(data, params, regenerate=TRUE, new_from_online=FALSE) # ensure fresh epi from snapshot
+  models_in = gen_model_input(params, data)
+  eb        = eyeballing(models_in, params, data)
+}
+
+# small helper: print a figure's subtitle + narrative bullets as markdown
+print_findings = function(fig){
+  cat("*", fig$subtitle, "*\n\n", sep="")
+  cat(paste0("- ", fig$bullets), sep="\n")
+  cat("\n")
+}
+```
+
+This report eyeballs the canonical tables built by `gen_model_input()` for
+**`r eb$meta$n_countries` countries** across **`r eb$meta$n_seasons` seasons**
+(`r min(eb$meta$seasons)` to `r max(eb$meta$seasons)`). It is split into
+**data-quality** figures (how complete/reliable each indicator is) and
+**temporal-dynamics** figures (how indicators move over time by disease and country).
+Bullets are editable narrative placeholders — replace them with what you actually see.
+
+# Data quality
+
+## `r eb$figures$completeness$title`
+
+```{r completeness, fig.width=15, fig.height=10}
+eb$figures$completeness$plot
+```
+
+```{r completeness-bullets, results="asis"}
+print_findings(eb$figures$completeness)
+```
+
+## `r eb$figures$testing_volume$title`
+
+```{r testing-volume, fig.width=15, fig.height=9}
+eb$figures$testing_volume$plot
+```
+
+```{r testing-volume-bullets, results="asis"}
+print_findings(eb$figures$testing_volume)
+```
+
+# Temporal dynamics
+
+## `r eb$figures$iliplus_dynamics$title`
+
+```{r iliplus, fig.width=18, fig.height=12}
+eb$figures$iliplus_dynamics$plot
+```
+
+```{r iliplus-bullets, results="asis"}
+print_findings(eb$figures$iliplus_dynamics)
+```
+
+## `r eb$figures$iliplus_aligned$title`
+
+```{r iliplus-aligned, fig.width=15, fig.height=22}
+eb$figures$iliplus_aligned$plot
+```
+
+```{r iliplus-aligned-bullets, results="asis"}
+print_findings(eb$figures$iliplus_aligned)
+```
+
+## `r eb$figures$positivity_dynamics$title`
+
+```{r positivity, fig.width=18, fig.height=12}
+eb$figures$positivity_dynamics$plot
+```
+
+```{r positivity-bullets, results="asis"}
+print_findings(eb$figures$positivity_dynamics)
+```
+
+## `r eb$figures$syndromic_dynamics$title`
+
+```{r syndromic, fig.width=18, fig.height=12}
+eb$figures$syndromic_dynamics$plot
+```
+
+```{r syndromic-bullets, results="asis"}
+print_findings(eb$figures$syndromic_dynamics)
+```
+
+# Supplement
+
+Additional views worth keeping handy: an alternative completeness measure that ignores the
+off-season, a cross-source ILI+ consistency check, age structure, and raw detection counts.
+
+## `r eb$figures$completeness_active$title`
+
+```{r completeness-active, fig.width=15, fig.height=10}
+eb$figures$completeness_active$plot
+```
+
+```{r completeness-active-bullets, results="asis"}
+print_findings(eb$figures$completeness_active)
+```
+
+## `r eb$figures$iliplus_source_compare$title`
+
+```{r iliplus-source, fig.width=18, fig.height=12}
+eb$figures$iliplus_source_compare$plot
+```
+
+```{r iliplus-source-bullets, results="asis"}
+print_findings(eb$figures$iliplus_source_compare)
+```
+
+## `r eb$figures$age_dynamics$title`
+
+```{r age, fig.width=18, fig.height=12}
+eb$figures$age_dynamics$plot
+```
+
+```{r age-bullets, results="asis"}
+print_findings(eb$figures$age_dynamics)
+```
+
+## `r eb$figures$detections_dynamics$title`
+
+```{r detections, fig.width=18, fig.height=12}
+eb$figures$detections_dynamics$plot
+```
+
+```{r detections-bullets, results="asis"}
+print_findings(eb$figures$detections_dynamics)
+```

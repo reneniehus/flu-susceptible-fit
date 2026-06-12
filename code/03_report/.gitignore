@@ -1,0 +1,6 @@
+fit_flip.pdf
+
+# rendered reports (build artifacts) and their figure caches
+*.html
+figure/
+*_cache/
