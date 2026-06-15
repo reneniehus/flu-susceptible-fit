@@ -4,9 +4,14 @@ Fitting **flu ILI+** with a susceptible-reconstruction **SIR model**, in two fla
 
 - **Bayesian SIR (Stan)** — `stan/SIR_multiseason_age_vax_2.stan`: an age- and vaccination-structured,
   multi-season SIR fit by HMC (rstan), with scenario projections.
-- **Extended Kalman Filter SIR (R)** — `code/01_main_supporting/model_kalman_sir.R`: the same
-  generative model (SIR → ILI+, neg-binomial-like noise) fit with an EKF likelihood and
-  `optim()` (MAP), entirely in base R — fast and dependency-light.
+- **Deterministic susceptibility SIR (R)** — `code/01_main_supporting/model_kalman_sir.R`
+  (`fit_sir_susceptibility`): fixes R0, the infectious period and the seed (from settings), and reads
+  a per-season **susceptibility** `S0` — plus a per-season **reporting fraction** `c` — off each ILI+
+  wave, with a shared off-season baseline and overdispersion. Deterministic and transparent; the
+  closest match to the Stan model's intent. Demo: `code/04_modelling/fit_kalman_sir_multiseason_demo.R`.
+- **Extended Kalman Filter SIR (R)** — same file (`fit_kalman_sir`): the same generative model fit
+  with an EKF likelihood and `optim()` (MAP) as a single-season state-space **tracking/nowcasting**
+  fit, entirely in base R — fast and dependency-light.
 
 The repo also carries the full data layer it builds on: ECDC **ERVISS** + **RespiCompass**
 surveillance (ILI/ARI, typing/positivity), contact matrices, vaccination and demography, turned
@@ -33,6 +38,20 @@ Demo that fits two countries (Denmark, Greece) and saves a figure:
 
 ```sh
 Rscript code/04_modelling/fit_kalman_sir_demo.R     # -> output/kalman_sir_fit.png
+```
+
+Or read per-season **susceptibility** across a country's seasons (fixed R0/seed; deterministic):
+
+```r
+source("code/01_main_supporting/model_kalman_sir.R")
+sl  <- load_flu_iliplus_slim("DK")                  # committed slim panel, base R (no pipeline)
+fit <- fit_sir_susceptibility(sl$ylist, R0 = 1.5, seed_i0 = 1e-5)
+fit$params$S0                          # per-season susceptibility (interpret the RANKING across seasons)
+fit$params$c                           # per-season reporting fraction
+```
+
+```sh
+Rscript code/04_modelling/fit_kalman_sir_multiseason_demo.R   # -> output/kalman_sir_multiseason_fit.png
 ```
 
 ## The model in one paragraph

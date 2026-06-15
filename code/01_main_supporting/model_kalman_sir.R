@@ -1,20 +1,20 @@
 # model_kalman_sir.R
 #
-# An R re-implementation of the Stan SIR model (stan/SIR_multiseason_age_vax_2.stan), fitting
-# flu ILI+ with an Extended Kalman Filter (EKF) instead of HMC. Everything is in base R.
-#
-# Idea (same generative story as the Stan model, single-population form):
+# Base-R SIR fits for flu ILI+, sharing one generative story with the Stan model
+# (stan/SIR_multiseason_age_vax_2.stan), single-population form:
 #   - latent SIR in population proportions:  dS/dt = -beta S I,  dI/dt = beta S I - gamma I
 #   - weekly ILI+ is proportional to weekly new infections:  E[y_t] = c * (new infections in week t)
 #     (c folds in the infection->ILI fraction "prop_ili", positivity scaling and the per-100k rate)
 #   - observation noise is neg-binomial-like:  Var(y) = mu + mu^2 / phi   (matches the Stan obs model)
-# The EKF linearises the one-week SIR map to propagate a Gaussian state (S, I, C), where C is the
-# within-week cumulative incidence (reset to 0 each week so the weekly increment IS the observation).
-# Parameters are fit by maximising the EKF log-likelihood with optim().
 #
-# Fixed by choice (kept simple / identifiable): gamma (recovery rate) -> mean infectious period.
-# Fitted: R0, initial susceptible S0, initial infectious I0, obs scale c, overdispersion phi,
-#         process-noise sd on I (q_I).
+# This file holds two fits on that model:
+#   1. Extended Kalman Filter (single season, fit_kalman_sir): a state-space TRACKING fit that
+#      fits R0, S0, I0, c, b, phi and a process-noise sd q_I by maximising the EKF log-likelihood.
+#      Good for nowcasting; the filter can track a wave even where the dynamics are mis-specified.
+#   2. Deterministic per-season SUSCEPTIBILITY fit (fit_sir_susceptibility): R0, gamma and the seed
+#      I0 are FIXED (from settings); each season's susceptibility S0 and reporting fraction c are
+#      fitted, with a shared baseline b and overdispersion phi. No filter -- S0 is identified by the
+#      wave's rise rate, r = gamma*(R0*S0 - 1). This is the path for reading per-season susceptibility.
 
 # ---- |-one sub-step (Euler) of the SIR in proportions, tracking cumulative incidence C ----
 .sir_substep = function(x, beta, gamma, dt){
@@ -71,8 +71,8 @@
 }
 
 # ---- |-core EKF pass over one weekly series: returns log-lik + filtered trajectory ----
-# Shared by the single-series fit (ekf_sir_negloglik) and the multi-season fit
-# (ekf_sir_ms_negloglik). All parameters arrive on the natural scale; beta = R0 * gamma.
+# The state-space TRACKING likelihood used by the single-season fit (ekf_sir_negloglik). All
+# parameters arrive on the natural scale; beta = R0 * gamma.
 # y: numeric vector (NA allowed). c, b: obs scale + baseline. qI: process-noise sd on I.
 .ekf_filter = function(y, S0, I0, c, b, phi, beta, gamma, n_sub, qI){
   Tn = length(y)
@@ -177,111 +177,130 @@ kalman_sir_trajectory = function(fit, n_weeks = length(fit$y), n_sub = 7){
 }
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-### Stan-matched re-parameterisation: fixed R0, per-season initial conditions ##########
+### Per-season susceptibility fit: deterministic SIR, fixed R0 and seed ##########
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# Mirrors the fitted-parameter set of the Stan model (stan/SIR_multiseason_age_vax_2.stan):
-#   - R0 is FIXED from the literature (Stan passes Rnull as data, beta = rate_infectious*Rnull),
-#   - the initial state (S0, I0) is fitted SEPARATELY FOR EACH SEASON (Stan's SIR_ini per season),
-#   - the reporting fraction c and overdispersion phi are SHARED across seasons (Stan's prop_ili_mu,
-#     reciprocal_phi).
-# gamma (recovery), the off-season baseline b and the process-noise sd qI are fixed by choice
-# (b defaults to 0, matching the Stan model, which has no baseline term). Fitted vector, K seasons:
-#   logit_S0[1..K], log_I0[1..K], log_c, log_phi.
+# Goal: read a per-season "sense of susceptibility" off the observed ILI+ wave. Susceptibility
+# (pre-existing exposure, vaccine uptake/match, circulating strains) is summarised by the initial
+# susceptible fraction S0, which the wave's RISE RATE identifies:  r = gamma*(R0*S0 - 1).  This is
+# a DETERMINISTIC SIR (no Kalman filter): the per-season S0 has to be earned by the dynamics, not
+# laundered through state updates. It is the same deterministic-SIR -> overdispersed-ILI generative
+# model the Stan file fits by HMC (stan/SIR_multiseason_age_vax_2.stan), in single-population form.
+#
+# Fixed by assumption (from settings): R0 (literature), gamma (infectious period) and the seed I0
+# (a small constant import -- "flu is always seeded from the southern hemisphere"), planted at week
+# 1 of every season (the season start, ~August). Because I0 is fixed and shared across seasons, the
+# ABSOLUTE S0 is conditional on R0/I0, but the RELATIVE S0 across seasons (which season is more
+# susceptible) is robust -- that ranking is the quantity of interest.
+#
+# Fitted, per country (K seasons):
+#   per season : S0[1..K] (susceptibility) and c[1..K] (reporting fraction = detection likelihood)
+#   shared     : b (additive off-season baseline) and phi (observation overdispersion)
 
-# ---- |-unpack the multi-season parameter vector (K seasons) into natural-scale params ----
-.kf_unpack_ms = function(par, K){
+# ---- |-deterministic weekly new-infection incidence for one season (proportions) ----
+# Seeds (S0, I0) at week 1 and integrates the SIR forward; returns the weekly new-infection
+# proportion (the C accumulator of .sir_week), i.e. the quantity the reporting fraction c scales.
+.sir_season_incidence = function(S0, I0, beta, gamma, n_weeks, n_sub){
+  SI = c(S0, I0); inc = numeric(n_weeks)
+  for (t in seq_len(n_weeks)){
+    w = .sir_week(SI, beta, gamma, n_sub)
+    inc[t] = w[3]; SI = w[1:2]
+  }
+  inc
+}
+
+# ---- |-unpack the susceptibility parameter vector into natural-scale params (K seasons) ----
+.susc_unpack = function(par, K){
   list(
-    S0  = plogis(par[1:K]),                            # per-season initial susceptible (0,1)
-    I0  = exp(par[(K+1):(2*K)]),                        # per-season initial infectious (>0, small)
-    c   = exp(par[[2*K + 1]]),                          # shared infection -> observed-ILI+ scale
-    phi = exp(par[[2*K + 2]])                           # shared neg-binomial-like overdispersion
+    S0  = plogis(par[1:K]),                              # per-season susceptibility (0,1)
+    c   = exp(par[(K+1):(2*K)]),                          # per-season reporting fraction / obs scale
+    b   = exp(par[[2*K + 1]]),                            # shared additive off-season baseline
+    phi = exp(par[[2*K + 2]])                             # shared observation overdispersion
   )
 }
 
-# ---- |-weakly-informative log-priors for the multi-season fit (per-season ICs + shared phi) ----
-# Same priors as the single-series fit, applied to every season's initial state, plus the shared
-# phi. R0 is fixed (not penalised); the reporting scale c is left free (data-scale).
-.kf_logprior_ms = function(par, K){
-  sum(dnorm(par[1:K],         qlogis(0.55), 1.2, log = TRUE)) +   # logit_S0 per season
-  sum(dnorm(par[(K+1):(2*K)], log(1e-5),    1.5, log = TRUE)) +   # log_I0 per season
-  dnorm(par[[2*K + 2]],       log(15),      0.8, log = TRUE)      # shared log_phi
+# ---- |-weakly-informative log-priors (regularise S0 and phi; c, b left free) ----
+# With R0 fixed the wave only grows when R0*S0 > 1, so S0 is centred in the plausible epidemic
+# range; phi is kept finite. The data-scale reporting c and baseline b are unpenalised.
+.susc_logprior = function(par, K){
+  sum(dnorm(par[1:K], qlogis(0.75), 1.0, log = TRUE)) +  # logit_S0 per season
+  dnorm(par[[2*K + 2]], log(15), 0.8, log = TRUE)        # shared log_phi
 }
 
-# ---- |-EKF negative log-(posterior) over several seasons sharing c, phi (fixed R0) ----
-# ylist: list of weekly ILI+ vectors, one per season (NA allowed). R0 fixed; beta = R0 * gamma.
-# Sums each season's EKF log-likelihood (shared c, phi) and adds the per-season IC priors.
-ekf_sir_ms_negloglik = function(par, ylist, R0, gamma, n_sub = 7, qI = 1e-4, b = 0,
-                                use_prior = TRUE, return_fit = FALSE){
+# ---- |-deterministic negative log-(posterior) over a country's seasons (fixed R0, I0) ----
+# ylist: list of weekly ILI+ vectors, one per season (NA allowed), each seeded at week 1. The
+# expected ILI+ is  mu = c[s] * (weekly new infections) + b,  with overdispersed observation noise
+# Var = mu + mu^2/phi (neg-binomial-like, the Gaussian analogue used for these rate data).
+sir_susceptibility_negll = function(par, ylist, R0, gamma, I0, n_sub = 7,
+                                    use_prior = TRUE, return_fit = FALSE){
   K = length(ylist); beta = R0 * gamma
-  p = .kf_unpack_ms(par, K)
+  p = .susc_unpack(par, K)
 
-  ll = 0; fits = vector("list", K)
+  ll = 0; mu_list = vector("list", K)
   for (s in seq_len(K)){
-    f = .ekf_filter(ylist[[s]], p$S0[s], p$I0[s], p$c, b, p$phi, beta, gamma, n_sub, qI)
-    ll = ll + f$loglik; fits[[s]] = f
+    y   = ylist[[s]]
+    inc = .sir_season_incidence(p$S0[s], I0, beta, gamma, length(y), n_sub)
+    mu  = p$c[s] * inc + p$b
+    mu_list[[s]] = mu
+    ok = !is.na(y)
+    if (any(ok)){
+      v  = mu[ok] + mu[ok]^2 / p$phi                     # neg-binomial-like observation variance
+      ll = ll + sum(dnorm(y[ok], mean = mu[ok], sd = sqrt(v), log = TRUE))
+    }
   }
 
-  lp = if (use_prior) .kf_logprior_ms(par, K) else 0
+  lp = if (use_prior) .susc_logprior(par, K) else 0
 
-  if (return_fit) return(list(negloglik = -(ll + lp), loglik = ll, params = p, fits = fits))
+  if (return_fit) return(list(negloglik = -(ll + lp), loglik = ll, params = p, mu = mu_list))
   if (!is.finite(ll + lp)) return(1e10)
   -(ll + lp)
 }
 
-# ---- |-fit the multi-season EKF-SIR (fixed R0) via multi-start optim ----
-# ylist: list of weekly ILI+ vectors (one per season). R0 fixed from literature (seasonal flu
-# ~1.3). Returns the shared (c, phi) + per-season (S0, I0) MAP estimate and the filtered fits.
-fit_kalman_sir_multiseason = function(ylist, R0 = 1.3, infectious_period_days = 3, n_sub = 7,
-                                      qI = 1e-4, b = 0, n_starts = 4, seed = 1){
-  gamma = 7 / infectious_period_days                   # per-week recovery rate
+# ---- |-fit the per-season susceptibility model for one country via multi-start optim ----
+# ylist: list of weekly ILI+ vectors (one per season, seeded at week 1). R0, infectious period and
+# seed I0 come from settings. Returns per-season (S0, c) + shared (b, phi) and the fitted curves.
+fit_sir_susceptibility = function(ylist, R0 = 1.5, infectious_period_days = 3, seed_i0 = 1e-5,
+                                  n_sub = 7, n_starts = 4, seed = 1){
+  gamma = 7 / infectious_period_days                     # per-week recovery rate
   K = length(ylist)
-  ymax = max(vapply(ylist, function(y){ yp = y[is.finite(y) & y > 0]
-                                        if (length(yp)) max(yp) else NA_real_ }, numeric(1)),
-             na.rm = TRUE)
+  pos    = lapply(ylist, function(y) y[is.finite(y) & y > 0])
+  ymax   = max(vapply(pos, function(y) if (length(y)) max(y)                  else NA_real_, numeric(1)), na.rm = TRUE)
+  bguess = max(vapply(pos, function(y) if (length(y)) as.numeric(quantile(y, 0.1)) else NA_real_, numeric(1)), na.rm = TRUE)
 
-  # a sensible starting point (shared across seasons), then jittered restarts. The negloglik is
-  # smooth in the transformed parameters, so gradient-based BFGS converges in ~10 s for a 5-season
-  # country (vs minutes for Nelder-Mead at this 2K+2 dimensionality); restarts guard local optima.
-  base = c(rep(qlogis(0.6), K), rep(log(1e-5), K), log(ymax / 0.02), log(10))
-  names(base) = c(paste0("logit_S0_", seq_len(K)), paste0("log_I0_", seq_len(K)), "log_c", "log_phi")
-  jit_sd = c(rep(0.8, K), rep(1.0, K), 0.6, 0.6)
+  # start in the GROWING regime (S0 high) so the optimiser finds the wave, not a decaying solution
+  base = c(rep(qlogis(0.8), K), rep(log(ymax / 0.02), K), log(max(bguess, 1e-3)), log(15))
+  names(base) = c(paste0("logit_S0_", seq_len(K)), paste0("log_c_", seq_len(K)), "log_b", "log_phi")
+  jit_sd = c(rep(0.8, K), rep(0.5, K), 0.5, 0.5)        # wider spread on S0 to explore growth rates
   set.seed(seed)
   best = NULL
   for (s in seq_len(n_starts)){
     start = base + if (s == 1) 0 else rnorm(length(base), 0, jit_sd)
     fit = tryCatch(
-      optim(start, ekf_sir_ms_negloglik, ylist = ylist, R0 = R0, gamma = gamma, n_sub = n_sub,
-            qI = qI, b = b, method = "BFGS", control = list(maxit = 300, reltol = 1e-9)),
+      optim(start, sir_susceptibility_negll, ylist = ylist, R0 = R0, gamma = gamma, I0 = seed_i0,
+            n_sub = n_sub, method = "BFGS", control = list(maxit = 200, reltol = 1e-8)),
       error = function(e) NULL)
     if (!is.null(fit) && is.finite(fit$value) && (is.null(best) || fit$value < best$value)) best = fit
   }
-  if (is.null(best)) stop("fit_kalman_sir_multiseason: all optim starts failed")
+  if (is.null(best)) stop("fit_sir_susceptibility: all optim starts failed")
 
-  fitted = ekf_sir_ms_negloglik(best$par, ylist = ylist, R0 = R0, gamma = gamma, n_sub = n_sub,
-                                qI = qI, b = b, return_fit = TRUE)
+  fitted = sir_susceptibility_negll(best$par, ylist = ylist, R0 = R0, gamma = gamma, I0 = seed_i0,
+                                    n_sub = n_sub, return_fit = TRUE)
   list(par = best$par, negloglik = best$value, convergence = best$convergence,
-       R0 = R0, gamma = gamma, infectious_period_days = infectious_period_days, qI = qI, b = b,
-       params = fitted$params, fits = fitted$fits, ylist = ylist)
+       R0 = R0, gamma = gamma, infectious_period_days = infectious_period_days, seed_i0 = seed_i0,
+       params = fitted$params, mu = fitted$mu, ylist = ylist)
 }
 
-# ---- |-deterministic SIR trajectory for one fitted season (smooth curve / projection) ----
-# The susceptible-reconstruction analogue of the Stan generated-quantities mean: runs season s
-# forward from its fitted (S0, I0) with no filter updates. n_weeks > length(y) projects forward.
-kalman_sir_ms_trajectory = function(fit, s, n_weeks = length(fit$ylist[[s]]), n_sub = 7){
-  beta = fit$R0 * fit$gamma
-  SI = c(fit$params$S0[s], fit$params$I0[s]); mu = numeric(n_weeks)
-  for (t in seq_len(n_weeks)){
-    w = .sir_week(SI, beta, fit$gamma, n_sub)
-    mu[t] = fit$params$c * w[3] + fit$b
-    SI = w[1:2]
-  }
-  mu
+# ---- |-deterministic ILI+ trajectory for one fitted season (smooth curve / projection) ----
+# Identical to the fitted mu within the data window; set n_weeks > length(y) to project forward.
+sir_susceptibility_trajectory = function(fit, s, n_weeks = length(fit$ylist[[s]]), n_sub = 7){
+  inc = .sir_season_incidence(fit$params$S0[s], fit$seed_i0, fit$R0 * fit$gamma, fit$gamma, n_weeks, n_sub)
+  fit$params$c[s] * inc + fit$params$b
 }
 
 # ---- |-load the committed slim flu ILI+ panel (base R) -> per-season weekly series ----
 # Reads data/slim_flu_iliplus.csv (country_short, season, week, season_week, date, value) and
-# returns, for one country, an ordered list of weekly ILI+ vectors (one per season) plus the
-# season labels and season-week indices -- ready for fit_kalman_sir_multiseason(). No tidyverse.
+# returns, for one country, an ordered list of weekly ILI+ vectors (one per season, indexed from
+# the season start at week 1) plus the season labels and season-week indices -- ready for
+# fit_sir_susceptibility(). No tidyverse needed.
 load_flu_iliplus_slim = function(country, path = "data/slim_flu_iliplus.csv"){
   d = read.csv(path, stringsAsFactors = FALSE)
   d = d[d$country_short == country, ]
