@@ -8,7 +8,7 @@ test_that("every registered method runs and produces the standard summary schema
   schema <- c("method", "country", "season", "S0", "R_eff", "c",
               "peak_week", "onset_week", "cor", "process_noise", "convergence")
   for (m in names(sir_methods())){
-    fit  <- run_method(m, sl, params, n_starts = 2)
+    fit  <- run_method(m, sl, params, n_starts = 1)   # contract/schema only -> cheapest fit
     expect_equal(fit$country, "DK")
     expect_equal(fit$method_name, m)
 

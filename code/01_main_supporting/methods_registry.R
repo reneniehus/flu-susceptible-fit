@@ -16,8 +16,8 @@
 # Built lazily so it only references fit functions that have been sourced.
 sir_methods = function(){
   list(
-    deterministic = list(label = "Deterministic SIR (no process noise)", fit = fit_sir_deterministic)
-    # ekf = list(label = "EKF SIR (fitted process noise)", fit = fit_sir_ekf)   # added with its file
+    deterministic = list(label = "Deterministic SIR (no process noise)", fit = fit_sir_deterministic),
+    ekf           = list(label = "EKF SIR (fitted process noise)",        fit = fit_sir_ekf)
   )
 }
 

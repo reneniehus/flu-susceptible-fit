@@ -4,7 +4,8 @@ library(here)
 suppressMessages(source(here("code/01_main_supporting/setup.R")))
 source(here("code/02_settings/settings_version0.R")); params <- settings()
 for (f in c("flu_functions", "validate", "load_data", "gen_model_input", "eyeballing",
-            "sir_core", "methods/method_sir_deterministic", "methods_registry"))
+            "sir_core", "methods/method_sir_deterministic", "methods/method_sir_ekf",
+            "methods_registry"))
   source(here(paste0("code/01_main_supporting/", f, ".R")))
 
 data      <- load_data(params, regenerate = FALSE, new_from_online = FALSE)

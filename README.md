@@ -12,8 +12,10 @@ reference Bayesian model:
   - `deterministic` — the season's wave *is* a single deterministic SIR; observations are
     overdispersed noise around it. `S0` is identified by the wave's rise rate. Transparent; misfit
     shows up as honest residuals.
-  - `ekf` *(next)* — the same model with an Extended Kalman Filter, admitting **process noise** so
-    the epidemic can wander off the deterministic SIR (fitted, one shared `q_I` per country).
+  - `ekf` — the same model with an Extended Kalman Filter, admitting **process noise** so the
+    epidemic can wander off the deterministic SIR (one shared `q_I` per country, fitted but
+    regularised small). The two methods agree on wave shape but the EKF draws more contrast between
+    seasons' `S0` — comparing them is exactly what the framework is for.
 - **Bayesian SIR (Stan)** — `stan/SIR_multiseason_age_vax_2.stan`: an age- and vaccination-
   structured, multi-season SIR fit by HMC, with scenario projections (reference model).
 
