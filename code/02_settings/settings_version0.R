@@ -26,9 +26,10 @@ settings = function() {
   # immunity parameters
   params$ve_spread = 0.20 # vaccine effect on onward spread when vaccinated individual is infected
 
-  # ---- |-Susceptibility fit (deterministic SIR, code/01_main_supporting/model_kalman_sir.R) ----
+  # ---- |-Susceptibility fits (methods in code/01_main_supporting/methods/) ----
   # R0 and the seed are FIXED here; the per-season susceptibility S0 and reporting fraction c are
   # fitted. Only the RELATIVE S0 across seasons is interpreted (absolute S0 is conditional on these).
+  # Shared by every method (deterministic, EKF, ...).
   params$susc_R0                    = 1.5   # fixed seasonal-influenza R0 (literature)
   params$susc_infectious_period_days = 3    # mean infectious period -> gamma = 7/this (per week)
   params$susc_seed_i0               = 1e-5  # constant seed (~0.001% of pop, southern-hemisphere import)

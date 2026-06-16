@@ -76,27 +76,28 @@ Two worked SIR implementations of the same flu ILI+ model are included:
 - **`stan/SIR_multiseason_age_vax_2.stan`** — the full age- and vaccination-structured,
   multi-season Bayesian SIR (HMC via rstan), with scenario projections. Note its priors are
   currently commented out; re-enable them before production use.
-- **`code/01_main_supporting/model_kalman_sir.R`** — a single-population R re-implementation
-  fitting the same generative story (SIR → ILI+, neg-binomial-like noise) with an **Extended
-  Kalman Filter** for the likelihood and `optim()` (MAP, with weakly-informative priors) for
-  fitting. Everything is base R. Fit one country/season:
+- **`code/01_main_supporting/` method framework** — a single-population R version of the same
+  generative story (SIR → ILI+, neg-binomial-like noise) as a swappable set of methods: a shared
+  engine (`sir_core.R`), one file per method (`methods/method_sir_*.R`) and a registry
+  (`methods_registry.R`). Each method fixes R0 / infectious period / seed and reads a per-season
+  **susceptibility** `S0` and **reporting fraction** `c` off the ILI+ waves. Base R. Fit a country:
   ```r
-  s   <- kalman_sir_series(models_in, "DK", "2023/2024")
-  fit <- fit_kalman_sir(s$value, infectious_period_days = 3)
-  fit$params                       # R0, S0, I0, c, b, phi, qI
-  kalman_sir_trajectory(fit)       # deterministic curve; n_weeks > length(y) projects forward
+  sl  <- load_flu_iliplus_slim("DK")               # committed slim panel (no pipeline needed)
+  fit <- run_method("deterministic", sl, params)   # any registered method, same call
+  summarise_method_fit(fit)                         # S0, R_eff, c, peak/onset week, cor, ...
   ```
-  Demo (fits two countries, saves a figure): `Rscript code/04_modelling/fit_kalman_sir_demo.R`.
-  Tested in `tests/testthat/test-kalman-sir.R`.
+  Demo (every method, figure per method): `Rscript code/04_modelling/fit_methods_demo.R`.
+  Tested in `tests/testthat/test-sir-deterministic.R` and `test-methods-registry.R`.
 
 ## Layout
 ```
 code/00_main.R                 orchestrator (run this)
 code/01_main_supporting/       setup, validate, load_data, gen_model_input, eyeballing,
-                               run_model, process_and_save, send_report, model_* scaffolds
+                               sir_core, methods/, methods_registry, run_model, process_and_save
 code/02_settings/              settings_version0.R (params)
 code/03_report/                eyeballing_report.Rmd
-code/04_modelling/             fit_kalman_sir_demo.R
+code/04_modelling/             fit_methods_demo.R
+code/05_analysis/              correlate_summaries.R (scaffold)
 stan/                          SIR_multiseason_age_vax_2.stan (Bayesian SIR)
 data/                          committed raw snapshots (offline bootstrap)
 output/                        cached data lists (gitignored, regenerated)

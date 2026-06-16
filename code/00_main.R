@@ -14,7 +14,9 @@ source("code/01_main_supporting/load_data.R")
 source("code/01_main_supporting/gen_model_input.R")
 source("code/01_main_supporting/eyeballing.R")
 source("code/01_main_supporting/run_model.R")
-source("code/01_main_supporting/model_kalman_sir.R") # EKF-SIR fit of flu ILI+ (R analogue of the Stan model)
+source("code/01_main_supporting/sir_core.R")                          # shared SIR engine + data loaders
+source("code/01_main_supporting/methods/method_sir_deterministic.R")  # method: deterministic SIR fit
+source("code/01_main_supporting/methods_registry.R")                  # swappable-method registry + summaries
 source("code/01_main_supporting/process_and_save.R")
 source("code/01_main_supporting/send_report.R")
 
