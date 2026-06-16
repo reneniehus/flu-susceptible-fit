@@ -33,6 +33,7 @@ settings = function() {
   params$susc_R0                    = 1.5   # fixed seasonal-influenza R0 (literature)
   params$susc_infectious_period_days = 3    # mean infectious period -> gamma = 7/this (per week)
   params$susc_seed_i0               = 1e-5  # constant seed (~0.001% of pop, southern-hemisphere import)
+  params$susc_countries             = c("DK", "FR", "IE", "HU")  # countries in the slim panel / fits
   
   # ---- |-Data ----
   params$latest_start_year = 2025 # if the last partly/fully observed season is 2024/25, put 2024

@@ -14,7 +14,7 @@ source("code/01_main_supporting/methods/method_sir_ekf.R")
 source("code/01_main_supporting/methods_registry.R")
 
 # ---- |-settings ----
-countries = c("DK", "FR")
+countries = params$susc_countries                      # the slim panel's countries (settings)
 n_panels  = 5                                          # max season panels per country row
 
 # ---- |-one figure + summary table per registered method ----
