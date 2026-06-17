@@ -96,6 +96,23 @@ tests/testthat/                contract + method tests
 documentation/                 data_overview.md, quickstart.md
 ```
 
+## Documentation
+
+Where each kind of information lives:
+
+| File | Holds |
+|---|---|
+| `README.md` | what the repo does, quick start, the method framework, layout |
+| `documentation/quickstart.md` | how to set up and run |
+| `documentation/data_overview.md` | what data is present (`data`, `models_in`, indicators) |
+| `documentation/documentation.Rmd` | the model maths / science (SIR, inference, contact matrix) |
+| `documentation/decisions.md` | **why** — rationale for key modelling / method / data decisions |
+| `PROJECT_SCOPE.md` | project scope (in / out of scope) |
+| inline header comments | why each function / file works the way it does |
+
+New design decisions go in `documentation/decisions.md` (append-only), so the reasoning is kept
+with the code rather than only in commit messages.
+
 ## Reproducibility
 
 `renv.lock` pins all dependencies (R 4.3.3); `renv::restore()` reproduces the environment.
