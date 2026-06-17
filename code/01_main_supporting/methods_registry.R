@@ -31,7 +31,7 @@ run_method = function(method_name, panel, params, n_sub = 7, n_starts = 4, seed 
   fit = spec$fit(panel$ylist, R0 = params$susc_R0,
                  infectious_period_days = params$susc_infectious_period_days,
                  seed_i0 = params$susc_seed_i0,
-                 smooth_span = if (is.null(params$susc_smooth_span)) 0.3 else params$susc_smooth_span,
+                 smooth_window = if (is.null(params$susc_smooth_window)) 4 else params$susc_smooth_window,
                  n_sub = n_sub, n_starts = n_starts, seed = seed)
   fit$method_name  = method_name
   fit$method_label = spec$label

@@ -3,7 +3,7 @@
 # descriptive features are well-formed.
 
 sl  <- load_flu_iliplus_slim("DK", path = here::here("data/slim_flu_iliplus.csv"))
-fit <- fit_descriptive(sl$ylist, R0 = 1.5, infectious_period_days = 3, smooth_span = 0.3)
+fit <- fit_descriptive(sl$ylist, R0 = 1.5, infectious_period_days = 3, smooth_window = 4)
 fit$country <- "DK"; fit$seasons <- sl$seasons; fit$season_week <- sl$season_week   # as run_method attaches
 K   <- length(sl$ylist)
 

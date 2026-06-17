@@ -16,9 +16,9 @@ reference Bayesian model:
     epidemic can wander off the deterministic SIR (one shared `q_I` per country, fitted but
     regularised small). The two methods agree on wave shape but the EKF draws more contrast between
     seasons' `S0` — comparing them is exactly what the framework is for.
-  - `descriptive` — non-mechanistic: **smooths** each curve (loess) and reads off features (AUC,
-    peak height, onset week, steepness). Steepness maps to an implied `S0` via the rise-rate
-    relation, so it sits on the same axis as the SIR methods.
+  - `descriptive` — non-mechanistic: **smooths** each curve (centered moving average) and reads off
+    features (AUC, peak height, onset week, steepness). Steepness maps to an implied `S0` via the
+    rise-rate relation, so it sits on the same axis as the SIR methods.
 - **Bayesian SIR (Stan)** — `stan/SIR_multiseason_age_vax_2.stan`: an age- and vaccination-
   structured, multi-season SIR fit by HMC, with scenario projections (reference model).
 

@@ -34,7 +34,7 @@ settings = function() {
   params$susc_infectious_period_days = 3    # mean infectious period -> gamma = 7/this (per week)
   params$susc_seed_i0               = 1e-5  # constant seed (~0.001% of pop, southern-hemisphere import)
   params$susc_countries             = c("DK", "FR", "IE", "HU")  # countries in the slim panel / fits
-  params$susc_smooth_span           = 0.3   # loess span for the descriptive method's curve smoothing
+  params$susc_smooth_window         = 4     # centered moving-average window (weeks) for the descriptive method
   
   # ---- |-Data ----
   params$latest_start_year = 2025 # if the last partly/fully observed season is 2024/25, put 2024
