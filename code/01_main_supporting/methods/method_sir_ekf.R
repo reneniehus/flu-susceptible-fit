@@ -64,7 +64,7 @@
 # ---- |-fit the EKF method for one country via multi-start optim ----
 # Same signature as the other methods (so the registry can call it uniformly).
 fit_sir_ekf = function(ylist, R0 = 1.5, infectious_period_days = 3, seed_i0 = 1e-5,
-                       n_sub = 7, n_starts = 4, seed = 1){
+                       n_sub = 7, n_starts = 4, seed = 1, ...){   # ... ignores cross-method args
   gamma = 7 / infectious_period_days                     # per-week recovery rate
   K = length(ylist)
   pos    = lapply(ylist, function(y) y[is.finite(y) & y > 0])

@@ -67,7 +67,7 @@
 # ylist: list of weekly ILI+ vectors (one per season, seeded at week 1). Returns the common
 # method-fit contract.
 fit_sir_deterministic = function(ylist, R0 = 1.5, infectious_period_days = 3, seed_i0 = 1e-5,
-                                 n_sub = 7, n_starts = 4, seed = 1){
+                                 n_sub = 7, n_starts = 4, seed = 1, ...){   # ... ignores cross-method args
   gamma = 7 / infectious_period_days                     # per-week recovery rate
   K = length(ylist)
   pos    = lapply(ylist, function(y) y[is.finite(y) & y > 0])

@@ -11,6 +11,7 @@ source("code/02_settings/settings_version0.R"); params = settings()
 source("code/01_main_supporting/sir_core.R")
 source("code/01_main_supporting/methods/method_sir_deterministic.R")
 source("code/01_main_supporting/methods/method_sir_ekf.R")
+source("code/01_main_supporting/methods/method_descriptive.R")
 source("code/01_main_supporting/methods_registry.R")
 
 # ---- |-settings ----

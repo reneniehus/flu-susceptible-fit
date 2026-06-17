@@ -112,6 +112,35 @@
 }
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+### Curve features (method-agnostic descriptors of a weekly ILI+ curve) ##########
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Computed from any method's curve mu (a fitted SIR mean OR a smoothed observation), so every method
+# reports the same descriptive features. baseline = off-season floor (a low quantile of the curve).
+
+# ---- |-off-season baseline (low quantile of the curve) ----
+.curve_baseline = function(mu) as.numeric(quantile(mu[is.finite(mu)], 0.10, names = FALSE))
+
+# ---- |-area under the curve above baseline (seasonal burden) ----
+.curve_auc = function(mu, b) sum(pmax(mu - b, 0), na.rm = TRUE)
+
+# ---- |-absolute peak height of the curve ----
+.curve_peak_height = function(mu) max(mu, na.rm = TRUE)
+
+# ---- |-steepness = exponential growth rate over the rise (slope of log(above-baseline), onset->peak) ----
+# Maps to S0 via the SIR rise-rate relation r = gamma*(R0*S0 - 1). A regression over the whole rising
+# limb (not a single-week jump), so it is robust to local noise in the curve.
+.curve_steepness = function(mu, season_week, b, onset_frac = 0.1){
+  above = mu - b; pkv = max(above, na.rm = TRUE)
+  if (!is.finite(pkv) || pkv <= 0) return(NA_real_)
+  pk = which.max(mu); on = which(above >= onset_frac * pkv)[1]
+  if (is.na(on) || pk - on < 2) return(NA_real_)
+  idx = on:pk; z = log(pmax(above[idx], 1e-9)); x = season_week[idx]
+  ok = is.finite(z) & is.finite(x)
+  if (sum(ok) < 3) return(NA_real_)
+  unname(coef(lm(z[ok] ~ x[ok]))[2])
+}
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ### Data loaders ##########
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

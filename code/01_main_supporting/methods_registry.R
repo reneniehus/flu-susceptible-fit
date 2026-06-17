@@ -17,7 +17,8 @@
 sir_methods = function(){
   list(
     deterministic = list(label = "Deterministic SIR (no process noise)", fit = fit_sir_deterministic),
-    ekf           = list(label = "EKF SIR (fitted process noise)",        fit = fit_sir_ekf)
+    ekf           = list(label = "EKF SIR (fitted process noise)",        fit = fit_sir_ekf),
+    descriptive   = list(label = "Descriptive (smoothed-curve features)", fit = fit_descriptive)
   )
 }
 
@@ -26,9 +27,12 @@ sir_methods = function(){
 run_method = function(method_name, panel, params, n_sub = 7, n_starts = 4, seed = 1){
   spec = sir_methods()[[method_name]]
   if (is.null(spec)) stop(sprintf("run_method: unknown method '%s'", method_name))
+  # pass a superset of method arguments; each method takes what it needs and ignores the rest (...)
   fit = spec$fit(panel$ylist, R0 = params$susc_R0,
                  infectious_period_days = params$susc_infectious_period_days,
-                 seed_i0 = params$susc_seed_i0, n_sub = n_sub, n_starts = n_starts, seed = seed)
+                 seed_i0 = params$susc_seed_i0,
+                 smooth_span = if (is.null(params$susc_smooth_span)) 0.3 else params$susc_smooth_span,
+                 n_sub = n_sub, n_starts = n_starts, seed = seed)
   fit$method_name  = method_name
   fit$method_label = spec$label
   fit$country      = panel$country
@@ -55,16 +59,21 @@ summarise_method_fit = function(fit, onset_frac = 0.1){
   pn = if (is.null(fit$params$qI)) NA_real_ else fit$params$qI[1]
   rows = lapply(seq_along(fit$seasons), function(s){
     mu = fit$mu[[s]]; wk = fit$season_week[[s]]; y = fit$ylist[[s]]
+    b  = .curve_baseline(mu)                            # off-season floor of THIS season's curve
     ok = is.finite(y) & is.finite(mu)
+    S0 = fit$params$S0[s]
     data.frame(
-      method        = fit$method_name,
+      method        = fit$method,                       # mechanistic estimates (NA where a method lacks them)
       country       = fit$country,
       season        = fit$seasons[s],
-      S0            = fit$params$S0[s],
-      R_eff         = fit$R0 * fit$params$S0[s],
+      S0            = S0,
+      R_eff         = fit$R0 * S0,
       c             = fit$params$c[s],
+      auc           = .curve_auc(mu, b),                # curve features (every method's mu yields these)
+      peak_height   = .curve_peak_height(mu),
       peak_week     = wk[which.max(mu)],
-      onset_week    = .onset_week(mu, wk, fit$params$b, onset_frac),
+      onset_week    = .onset_week(mu, wk, b, onset_frac),
+      steepness     = .curve_steepness(mu, wk, b, onset_frac),
       cor           = if (sum(ok) > 2) cor(y[ok], mu[ok]) else NA_real_,
       process_noise = pn,
       convergence   = fit$convergence,
