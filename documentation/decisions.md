@@ -7,17 +7,37 @@ and the main alternative considered.
 
 ## Inference & modelling
 
-- **Fix R0 from the literature (`susc_R0 = 1.5`); do not fit it.** Jointly fitting R0 and S0 is
-  weakly identified (R0 drifts to its prior and S0 follows), so the susceptibility estimate becomes
-  meaningless. Fixing R0 lets the wave's *rise rate* `r = gamma*(R0*S0 - 1)` identify S0.
-  *Alternative:* fit R0 — rejected (degenerate; R0 drifted to the prior edge, deterministic
-  reconstruction poor).
+- **Fix R0 from the literature (`susc_R0 = 1.5`); fit a single susceptibility `S0` per season.** How
+  fast a season's virus spreads is set by the effective reproduction number `R_eff = R0 * S0`
+  (equivalently the early growth rate `r = gamma*(R0*S0 - 1)`): intrinsic transmissibility `R0` and
+  the susceptible fraction `S0` are multiplicatively linked, so a single curve identifies their
+  *product*, not each separately — fitting both jointly is degenerate (R0 drifts to its prior and S0
+  follows). We therefore fix R0 and let one per-season `S0` act as the "sensor" of how easily that
+  season's virus spread. This is appropriate because the factors of interest here act mainly on the
+  *susceptible fraction* — vaccine coverage, antigenic match/mismatch and prior-season population
+  immunity (see `PROJECT_SCOPE.md`, refs 4, 6–8) — whereas the determinants of intrinsic
+  transmissibility (contact patterns, behavioural restrictions, viral subtype infectivity) are either
+  out of scope or reasonably treated as season-invariant. Inferring a susceptibility state from
+  incidence under a fixed transmission model is the established *susceptible-reconstruction* approach
+  (Bjørnstad et al. 2002; Finkenstädt & Grenfell 2000). **Caveat:** holding R0 fixed means any genuine
+  season-to-season variation in transmissibility — notably subtype infectivity, with A(H3N2) seasons
+  more transmissible than A(H1N1) (Infection, Genetics and Evolution 2018) — is absorbed into the
+  fitted S0. The fitted S0 is therefore a *composite* index of "how easily the season spread", not a
+  pure immunity measure; in particular, an apparent association between S0 and dominant subtype may
+  partly reflect this absorption rather than susceptibility alone.
 
-- **Fix the seed `I0` (`susc_seed_i0 = 1e-5`) and plant it at the season start (~Aug).** Encodes a
-  constant "flu is always seeded from the southern hemisphere" import. With the seed size and timing
-  both fixed, the wave's timing is explained by S0 alone, so "an earlier / steeper season = a more
-  susceptible population" holds. *Alternative:* fit I0 per season — rejected (confounds wave timing
-  with S0).
+- **Fix the seed `I0` (`susc_seed_i0 = 1e-5`), plant it at the season start (~Aug), and read the
+  reporting fraction `c` only in relative terms.** The seed size `I0` and the reporting fraction `c`
+  both act on the *scale* of the modelled curve — a larger seed and a larger reporting fraction are
+  largely interchangeable in their effect on the observed level — so they are not jointly identifiable
+  from one curve. We resolve this by fixing `I0` (a small constant import, encoding the assumption
+  that flu is reliably re-seeded each year, e.g. from the southern hemisphere) and fitting `c`.
+  Planting the seed at a *fixed time* (the season start) as well as a fixed size means a wave's timing
+  is then explained by `S0` alone, so "an earlier / steeper season = a more susceptible population"
+  holds. Consequence: the *absolute* value of `c` is not interpretable (it is anchored to the
+  arbitrary `I0`), whereas *relative* variation in `c` across seasons may still carry meaning
+  (care-seeking, testing intensity, severity-driven detection). *Alternative:* fit `I0` per season —
+  rejected (confounds the curve's scale and timing with `c` and `S0`).
 
 - **Interpret S0 as RELATIVE across seasons, not absolute.** The absolute level is conditional on the
   fixed R0 and seed (e.g. a lower R0 forces a higher S0); only the ranking / spacing across seasons
@@ -44,12 +64,13 @@ and the main alternative considered.
   method fits the same per-season panel and returns one common summary table — the input the
   downstream correlation analysis consumes. Adding a method = one new file + one registry line.
 
-- **Why we do NOT focus on the deterministic SIR.** The deterministic method (the SIR *is* the truth;
-  residuals are pure noise) is rigid: it cannot fit seasons whose shape departs from a single SIR
-  (e.g. the early, sharp FR 2022/23 wave fails outright). Real epidemics have process noise, so the
-  **EKF** — which admits a fitted `q_I` so the latent state can wander off the SIR — is the preferred
-  mechanistic method. The deterministic fit is kept as a transparent *reference / sanity check*, not
-  the headline.
+- **Why we do NOT focus on the deterministic SIR.** Beyond the general caution about mechanistic fits
+  to aggregate data (see the phenomenological-approach decision), the deterministic method is the most
+  rigid: it treats the SIR as the truth with residuals as pure noise, so it cannot bend to seasons
+  whose shape departs from a single SIR (e.g. the early, sharp FR 2022/23 wave fails outright). It is
+  kept only as a transparent *reference / sanity check*. Among the mechanistic fits the **EKF** is
+  preferred, because epidemics have genuine process noise and its fitted `q_I` lets the latent state
+  wander off the SIR.
 
 - **EKF process noise is fitted but regularised small, with a tight initial covariance.** This keeps
   S0 identified by the rise rate rather than absorbed by filter freedom. Observed trade-off: the EKF
@@ -57,11 +78,28 @@ and the main alternative considered.
   descriptive method's rise-rate S0 agrees with the deterministic, indicating the extra EKF spread is
   filter freedom, not raw signal — so read the EKF *ranking*, not the absolute gaps.
 
-- **A descriptive (non-mechanistic) method** smooths each curve and extracts AUC, peak height, onset
-  and steepness; steepness maps to an implied S0 via the rise-rate relation, so it sits on the same
-  axis as the SIR methods and acts as a cross-check. Note: AUC and peak height are reporting-scale
-  dependent (comparable across seasons *within* a country, not across countries); steepness and onset
-  are scale-free.
+- **Take the descriptive (phenomenological) characterisation as a first-class, low-assumption lens —
+  and do not over-trust the mechanistic SIR.** A single-population SIR (deterministic or filtered)
+  assumes the national ILI+ curve is generated by *one well-mixed epidemic*. National surveillance
+  curves are not: they are the **overlay of many local epidemics** that ignite at different times and
+  travel across a country, and the aggregate signal is further blurred by reporting delays that
+  themselves vary in space and time. Influenza spreads hierarchically, as travelling waves structured
+  by human mobility, taking weeks to months to diffuse nationally (Viboud et al. 2006; Gog et al.
+  2014). A mechanistic SIR fitted to the aggregate therefore **mis-specifies the data-generating
+  process**, and its fitted parameters (e.g. `S0`) can be distorted by aggregation — inviting spurious
+  mechanistic interpretation. Following the precautionary, parsimonious principle, we judge it more
+  honest to **compare the observable shapes** of the epidemics directly (onset, peak, intensity,
+  steepness, burden) and look for predictable patterns than to assume a transmission mechanism we know
+  holds only approximately. For an EU agency working closely with the member-state experts who produce
+  these data, this is also the more **responsible** stance: phenomenological summaries make minimal,
+  transparent assumptions about each country's data instead of imposing a model that may not hold
+  uniformly across settings. The mechanistic methods are kept as interpretable cross-checks — and
+  comparing the phenomenological and mechanistic readings is itself a worthwhile, separate question —
+  but the phenomenological characterisation is the primary lens.
+  *Method specifics:* smooth each curve and extract AUC, peak height, onset and steepness; steepness
+  maps to an implied `S0` via the rise-rate relation, so it sits on the same axis as the SIR methods.
+  AUC and peak height are reporting-scale dependent (comparable across seasons *within* a country, not
+  across countries); steepness and onset are scale-free.
 
 - **Smoothing = centered moving average, window 4 (not loess).** On regular, single-wave weekly data
   a moving average gives essentially the same features as loess (steepness ~0.31 vs 0.29), so the
@@ -88,3 +126,21 @@ and the main alternative considered.
 - **Environment.** CRAN is blocked in the managed environment; dependencies install from Posit
   Package Manager binaries (the setup script sets the repo URL + HTTP user agent) and are restored
   via `renv`.
+
+## References
+
+Methodological and supporting literature for the decisions above. Driver references (dominant
+subtype, vaccine coverage, antigenic match / effectiveness, prior immunity) are in `PROJECT_SCOPE.md`
+(refs 4–8).
+
+- Viboud C, Bjørnstad ON, Smith DL, Simonsen L, Miller MA, Grenfell BT. Synchrony, waves, and spatial
+  hierarchies in the spread of influenza. *Science.* 2006;312(5772):447–451.
+- Gog JR, Ballesteros S, Viboud C, et al. Spatial transmission of 2009 pandemic influenza in the US.
+  *PLoS Computational Biology.* 2014;10(6):e1003635.
+- Bjørnstad ON, Finkenstädt BF, Grenfell BT. Dynamics of measles epidemics: estimating scaling of
+  transmission rates using a time series SIR model. *Ecological Monographs.* 2002;72(2):169–184.
+- Finkenstädt BF, Grenfell BT. Time series modelling of childhood diseases: a dynamical systems
+  approach. *Journal of the Royal Statistical Society: Series C (Applied Statistics).*
+  2000;49(2):187–205.
+- Transmissibility and severity of influenza virus by subtype. *Infection, Genetics and Evolution.*
+  2018. https://www.sciencedirect.com/science/article/abs/pii/S1567134818306051
