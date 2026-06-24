@@ -64,13 +64,18 @@ and the main alternative considered.
   method fits the same per-season panel and returns one common summary table — the input the
   downstream correlation analysis consumes. Adding a method = one new file + one registry line.
 
-- **Why we do NOT focus on the deterministic SIR.** Beyond the general caution about mechanistic fits
-  to aggregate data (see the phenomenological-approach decision), the deterministic method is the most
-  rigid: it treats the SIR as the truth with residuals as pure noise, so it cannot bend to seasons
-  whose shape departs from a single SIR (e.g. the early, sharp FR 2022/23 wave fails outright). It is
-  kept only as a transparent *reference / sanity check*. Among the mechanistic fits the **EKF** is
-  preferred, because epidemics have genuine process noise and its fitted `q_I` lets the latent state
-  wander off the SIR.
+- **Primary-analysis method choice is deliberately deferred.** The project is still maturing, so the
+  entries below record the *rationale and observed properties* of each method, not a final selection
+  of which method(s) lead the primary analysis. All methods are kept and compared; the
+  phenomenological vs mechanistic comparison is itself part of the inquiry.
+
+- **Properties of the deterministic SIR (the rigid end of the spectrum).** The deterministic method
+  treats the SIR as the truth with residuals as pure noise, which makes it the most rigid: it cannot
+  bend to seasons whose shape departs from a single SIR (e.g. the early, sharp FR 2022/23 wave fails
+  outright). The **EKF** sits at the other end, admitting genuine process noise (a fitted `q_I` that
+  lets the latent state wander off the SIR). Which of these — if either — is carried into the primary
+  analysis is left open (see the deferral note); at minimum the deterministic fit is a transparent
+  reference / sanity check.
 
 - **EKF process noise is fitted but regularised small, with a tight initial covariance.** This keeps
   S0 identified by the rise rate rather than absorbed by filter freedom. Observed trade-off: the EKF
@@ -93,9 +98,10 @@ and the main alternative considered.
   holds only approximately. For an EU agency working closely with the member-state experts who produce
   these data, this is also the more **responsible** stance: phenomenological summaries make minimal,
   transparent assumptions about each country's data instead of imposing a model that may not hold
-  uniformly across settings. The mechanistic methods are kept as interpretable cross-checks — and
-  comparing the phenomenological and mechanistic readings is itself a worthwhile, separate question —
-  but the phenomenological characterisation is the primary lens.
+  uniformly across settings. We therefore treat the phenomenological characterisation as a first-class
+  approach alongside the mechanistic fits, and keep all methods; which method(s) lead the primary
+  analysis is left open at this stage (see the deferral note), and comparing the phenomenological and
+  mechanistic readings is itself part of the inquiry.
   *Method specifics:* smooth each curve and extract AUC, peak height, onset and steepness; steepness
   maps to an implied `S0` via the rise-rate relation, so it sits on the same axis as the SIR methods.
   AUC and peak height are reporting-scale dependent (comparable across seasons *within* a country, not
