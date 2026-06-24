@@ -43,11 +43,14 @@ and the main alternative considered.
   fixed R0 and seed (e.g. a lower R0 forces a higher S0); only the ranking / spacing across seasons
   is robust — and that is the quantity of interest.
 
-- **Per season fit S0 and the reporting fraction `c`; per country share the baseline `b` and
-  overdispersion `phi`** (plus, for the EKF, the process noise `q_I`). S0 (a rate) and c (a level)
-  control different features of the curve, so they separate cleanly; reporting is allowed to vary by
-  season (severity / testing / behaviour). *Alternative:* a single shared c — over-constrains size
-  vs timing.
+- **Per season fit S0 and the reporting fraction `c`; share the baseline `b`, overdispersion `phi`
+  and (EKF) process noise `q_I` across a country's seasons.** S0 (a rate) and c (a level) control
+  different features of the curve, so they separate cleanly, and both are allowed to vary season to
+  season (susceptibility; reporting via severity / testing / behaviour). `b`, `phi` and `q_I` are
+  instead **shared across the country's seasons**: they are treated as stable country / reporting /
+  process properties, and sharing them keeps the parameter count down and **stabilises the fit**.
+  *Alternative:* a single shared c (over-constrains size vs timing), or per-season `b` / `phi` / `q_I`
+  (more parameters competing with S0 and c).
 
 - **Off-season activity is an additive observation baseline `b`, not part of the dynamics.** The
   off-season ILI+ floor is non-SIR (sporadic / cross-reacting detections); absorbing it in `b` frees
@@ -87,11 +90,16 @@ and the main alternative considered.
   analysis is left open (see the deferral note); at minimum the deterministic fit is a transparent
   reference / sanity check.
 
-- **EKF process noise is fitted but regularised small, with a tight initial covariance.** This keeps
-  S0 identified by the rise rate rather than absorbed by filter freedom. Observed trade-off: the EKF
-  draws more between-season S0 contrast (0.70–0.90) than the deterministic (0.73–0.76); the
-  descriptive method's rise-rate S0 agrees with the deterministic, indicating the extra EKF spread is
-  filter freedom, not raw signal — so read the EKF *ranking*, not the absolute gaps.
+- **EKF process noise is fitted but regularised small, with a tight initial covariance.** The aim is
+  to keep S0 identified by the rise rate rather than absorbed by filter "tracking": a small initial
+  covariance `p0` and small process noise `q_I` keep the latent-state covariance small relative to the
+  observation noise, so the filter trusts the dynamics over the data. **Caveat (finite sample):** with
+  only ~50 weekly observations per season the state covariance still accumulates enough over the
+  season that S0 is not fully pinned — seen as the EKF drawing more between-season S0 contrast
+  (0.70–0.90) than the deterministic fit (0.73–0.76), while the descriptive rise-rate agrees with the
+  deterministic. So read the EKF *ranking*, not the absolute gaps. **This limited-data caveat must be
+  stated clearly in the final reporting**, and — if the EKF stays in focus — probed by a sensitivity
+  analysis on `p0` / `q_I` (see the planned sensitivity analyses).
 
 - **Take the descriptive (phenomenological) characterisation as a first-class, low-assumption lens —
   and do not over-trust the mechanistic SIR.** A single-population SIR (deterministic or filtered)
@@ -157,7 +165,10 @@ pipeline is in place:
 - **Fixed `R0` value** — vary around 1.5.
 - **Seed `I0` and seed week** — vary the seed size and the season-start week (the latter also tests
   the "early season = more susceptible" reading).
-- **Parameter granularity** — whether `b` and `phi` should be shared (per country) or vary per season.
+- **EKF `p0` / `q_I` and finite-sample identifiability** — with only ~50 weekly points per season the
+  EKF S0 is not fully pinned (see the EKF entry); vary the initial covariance and process-noise
+  regularisation to quantify how much of the between-season S0 spread is filter freedom rather than
+  signal. To be added at the very end, if the EKF remains in focus.
 
 ## References
 
