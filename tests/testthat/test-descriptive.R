@@ -7,13 +7,12 @@ fit <- fit_descriptive(sl$ylist, R0 = 1.5, infectious_period_days = 3, smooth_wi
 fit$country <- "DK"; fit$seasons <- sl$seasons; fit$season_week <- sl$season_week   # as run_method attaches
 K   <- length(sl$ylist)
 
-test_that("descriptive fit returns the common contract with an implied S0", {
+test_that("descriptive fit returns the common contract (curve only, no mechanistic params)", {
   expect_equal(fit$method, "descriptive")
   expect_equal(fit$convergence, 0L)
-  expect_length(fit$params$S0, K); expect_length(fit$mu, K)
-  expect_true(all(is.finite(fit$params$S0)))
-  expect_true(all(fit$params$S0 > 0.3 & fit$params$S0 < 1.2))     # implied S0 in a sane range
-  expect_true(all(is.na(fit$params$c)) && is.na(fit$params$qI))   # no SIR data-scale params
+  expect_length(fit$mu, K)
+  expect_true(all(is.na(fit$params$S0)))                         # no implied S0 -- steepness is the feature
+  expect_true(all(is.na(fit$params$c)) && is.na(fit$params$qI))  # no SIR parameters
 })
 
 test_that("the smoothed curve tracks the observed data", {

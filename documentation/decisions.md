@@ -58,6 +58,16 @@ and the main alternative considered.
   For the EKF the curve is the filtered mean, which tracks data and can give early onsets; this is
   accepted as a property of that method rather than something to "fix".
 
+- **Neg-binomial-like observation noise** (`Var = mu + mu^2/phi`). Inherited from the Stan generative
+  model — but note that Stan fits absolute *counts* whereas we fit a *rate* (ILI+), so a count-style
+  variance may not be ideal here. Alternative noise models (e.g. multiplicative / log-scale) should be
+  tested — see the planned sensitivity analyses below.
+
+- **Fix the recovery rate `gamma` from a 3-day mean infectious period** (`susc_infectious_period_days`).
+  A defensible literature value, fixed for simplicity; estimates span ~2–4 days, and `gamma`
+  propagates into `beta = R0*gamma` and the rise-rate scaling, so the value moves the fitted numbers.
+  Kept fixed, but flagged for the planned sensitivity analyses below.
+
 ## Method framework
 
 - **A swappable multi-method framework** (`sir_core.R` + `methods/` + `methods_registry.R`): every
@@ -102,10 +112,13 @@ and the main alternative considered.
   approach alongside the mechanistic fits, and keep all methods; which method(s) lead the primary
   analysis is left open at this stage (see the deferral note), and comparing the phenomenological and
   mechanistic readings is itself part of the inquiry.
-  *Method specifics:* smooth each curve and extract AUC, peak height, onset and steepness; steepness
-  maps to an implied `S0` via the rise-rate relation, so it sits on the same axis as the SIR methods.
-  AUC and peak height are reporting-scale dependent (comparable across seasons *within* a country, not
-  across countries); steepness and onset are scale-free.
+  *Method specifics:* smooth each curve and extract AUC, peak height, onset and steepness — all
+  observed-shape descriptors. None is a clean susceptibility: the observed national rise reflects not
+  only transmissibility but also how a country's local epidemics overlay (staggered starts, travel)
+  and how reporting is delayed in space and time. AUC, peak height and steepness are therefore
+  compared across seasons *within* a country, not across countries (onset timing likewise needs care
+  across countries). The method deliberately does **not** map steepness onto an SIR susceptibility —
+  that mechanistic-vs-phenomenological mapping is a separate question, out of scope here.
 
 - **Smoothing = centered moving average, window 4 (not loess).** On regular, single-wave weekly data
   a moving average gives essentially the same features as loess (steepness ~0.31 vs 0.29), so the
@@ -132,6 +145,19 @@ and the main alternative considered.
 - **Environment.** CRAN is blocked in the managed environment; dependencies install from Posit
   Package Manager binaries (the setup script sets the repo URL + HTTP user agent) and are restored
   via `renv`.
+
+## Open questions & planned sensitivity analyses
+
+Choices made for simplicity or by assumption that should be probed downstream, once the analysis
+pipeline is in place:
+
+- **Observation-noise model** — test alternatives to the neg-binomial-like variance (the data are
+  rates, not counts).
+- **Infectious period / `gamma`** — vary around the 3-day default.
+- **Fixed `R0` value** — vary around 1.5.
+- **Seed `I0` and seed week** — vary the seed size and the season-start week (the latter also tests
+  the "early season = more susceptible" reading).
+- **Parameter granularity** — whether `b` and `phi` should be shared (per country) or vary per season.
 
 ## References
 

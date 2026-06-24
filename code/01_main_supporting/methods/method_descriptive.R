@@ -4,13 +4,17 @@
 # Requires sir_core.R (the .curve_* feature helpers) to be sourced first.
 #
 # A deliberately NON-mechanistic, parsimonious method: it does not fit an SIR at all. It just
-# SMOOTHS each observed ILI+ curve (centered moving average, NA-aware) and reads descriptive features
-# off the smooth:
-#   area under the curve, peak height, onset week, and a STEEPNESS (the exponential growth rate over
-#   the rise). Steepness maps to susceptibility via the SIR rise-rate relation r = gamma*(R0*S0 - 1),
-#   so the method also reports an implied S0 = (r/gamma + 1)/R0 comparable to the mechanistic methods.
-# The features themselves (auc, peak_height, onset_week, steepness) are computed uniformly for every
-# method by summarise_method_fit(); this method's job is to provide the smoothed curve as fit$mu.
+# SMOOTHS each observed ILI+ curve (centered moving average, NA-aware); the descriptive features --
+# area under the curve, peak height, onset week, and STEEPNESS (the rate of rise) -- are then read off
+# the smoothed curve uniformly for every method by summarise_method_fit(). This method's only job is
+# to provide the smoothed curve as fit$mu; it reports no mechanistic parameters (S0/c/b/phi/qI are NA).
+#
+# Note on interpretation: steepness is an OBSERVED-SHAPE feature, not a clean susceptibility. The
+# observed national rise reflects not only how fast the virus spreads but also how a country's many
+# local epidemics overlay (staggered starts, travel) and how reporting is delayed in space and time.
+# So steepness -- like AUC and peak height -- is compared across seasons WITHIN a country, not across
+# countries. Mapping steepness onto an SIR susceptibility is a separate mechanistic-vs-phenomenological
+# question and is deliberately out of scope here.
 #
 # Key smoothing choice: a centered moving average (settings: params$susc_smooth_window, default 4)
 # was preferred over loess -- on these regular, single-wave weekly curves it gives essentially the
@@ -36,22 +40,14 @@
   }, numeric(1))
 }
 
-# ---- |-fit the descriptive method for one country (smooth every season; implied S0 from steepness) ----
+# ---- |-fit the descriptive method for one country (just smooth every season) ----
 # Same call shape as the other methods (extra arguments are ignored via ...), so the registry can
-# dispatch it uniformly. Only R0, the infectious period (for the S0 mapping) and smooth_window are used.
+# dispatch it uniformly. Only smooth_window is used; the features are read off fit$mu by the summary.
 fit_descriptive = function(ylist, R0 = 1.5, infectious_period_days = 3, smooth_window = 4, ...){
-  gamma = 7 / infectious_period_days
   K = length(ylist)
-  mu = vector("list", K); S0 = numeric(K)
-  for (s in seq_len(K)){
-    y  = ylist[[s]]; wk = seq_along(y)                   # contiguous weekly grid (week index from season start)
-    m  = pmax(.smooth_curve(y, smooth_window), 0); mu[[s]] = m   # ILI+ cannot be negative
-    b  = .curve_baseline(m)
-    r  = .curve_steepness(m, wk, b)                      # empirical exponential growth rate (per week)
-    S0[s] = if (is.na(r)) NA_real_ else (r / gamma + 1) / R0   # S0 implied by the rise rate
-  }
-  list(method = "descriptive", R0 = R0, gamma = gamma, seed_i0 = NA_real_,
-       params = list(S0 = S0, c = rep(NA_real_, K), b = NA_real_, phi = NA_real_, qI = NA_real_,
-                     smooth_window = smooth_window),
+  mu = lapply(ylist, function(y) pmax(.smooth_curve(y, smooth_window), 0))   # ILI+ cannot be negative
+  list(method = "descriptive", R0 = R0, gamma = 7 / infectious_period_days, seed_i0 = NA_real_,
+       params = list(S0 = rep(NA_real_, K), c = rep(NA_real_, K), b = NA_real_, phi = NA_real_,
+                     qI = NA_real_, smooth_window = smooth_window),
        mu = mu, ylist = ylist, convergence = 0L, negloglik = NA_real_)
 }

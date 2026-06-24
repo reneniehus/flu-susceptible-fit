@@ -16,9 +16,9 @@ test_that("every registered method runs and produces the standard summary schema
     expect_named(smry, schema)
     expect_equal(nrow(smry), length(sl$seasons))               # one row per season
     expect_true(all(smry$method == m))
-    expect_true(all(is.finite(smry$S0) & smry$S0 > 0))         # not bounded < 1 (descriptive S0 is implied)
-    expect_true(all(smry$R_eff > 0))
-    expect_true(all(smry$auc > 0 & smry$peak_height > 0))
+    expect_true(all(is.na(smry$S0)    | (is.finite(smry$S0) & smry$S0 > 0)))   # NA for methods w/o S0 (descriptive)
+    expect_true(all(is.na(smry$R_eff) | smry$R_eff > 0))
+    expect_true(all(smry$auc > 0 & smry$peak_height > 0))       # curve features exist for every method
     expect_true(all(smry$peak_week >= 1, na.rm = TRUE))
     expect_true(all(is.finite(smry$onset_week)))               # threshold onset resolves for real waves
   }
