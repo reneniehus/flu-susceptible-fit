@@ -154,18 +154,28 @@ and the main alternative considered.
   positivity, using **sentinel** positivity (re-derived as detections/tests), **except non-sentinel
   positivity for Malta, Iceland, Croatia, Romania, Latvia and Finland**, which lacked an adequate
   number of weeks of sentinel test positivity — following RespiCompass. This assumes non-sentinel test
-  positivity reflects influenza positivity in a similar way as sentinel data would.
+  positivity reflects influenza positivity in a similar way as sentinel data would. **Consultation-rate
+  units also differ by country:** ERVISS reports per 100 000 population, except Cyprus, Luxembourg and
+  Malta (per 100 consultations) and Finland (per 100 000 consultations); to match RespiCompass the
+  per-100-consultations countries (CY, LU, MT) are scaled ×1000 onto the per-100 000 basis.
 
-- **The 2023/24 overlap validates the reconstruction and anchors the stitch.** Comparing the ERVISS
-  reconstruction with RespiCompass on 2023/24: **15 of 24 countries match exactly** (cor ≈ 1, ratio ≈
-  1), confirming RespiCompass sources ERVISS ILI+ and that the reconstruction is correct. The rest are
-  informative, not method errors: LU and MT carry a **consistent ILI-rate unit offset (≈ ×1000)** that
-  RespiCompass harmonises (perfectly correlated → correctable by the overlap factor); IE/BE/LT differ
-  by a constant scale; LV is genuinely messy (a May "peak", ~2% positivity); NO has **no ERVISS ILI
-  consultation rate** so cannot be reconstructed; ES/SK lack RespiCompass 2023/24 so cannot be
-  cross-checked there. **Stitch plan:** RespiCompass up to 2023/24, ERVISS reconstruction for 2024/25+,
-  with a **per-country alignment factor estimated from 2023/24** applied to the ERVISS era (≈1 for the
-  exact-match countries); LV and the no-overlap countries handled case by case.
+- **The 2023/24 overlap validates the reconstruction, explains the offsets, and anchors the stitch.**
+  On 2023/24, **15 of 24 countries match RespiCompass exactly** (cor ≈ 1, ratio ≈ 1). The deviations
+  are understood, not method errors:
+  - **Consultation-rate units (CY, LU, MT):** off by ×1000 (per-100-consultations vs per-100 000) — a
+    deterministic, principled correction; after it LU matches exactly.
+  - **Positivity-construction differences (IE ≈ ×0.59, BE ≈ ×1.18, LT):** RespiCompass's influenza
+    positivity differs from the re-derived detections/tests by a roughly constant per-country factor;
+    once applied the dynamics are identical (IE cor 1.00, BE 0.996; LT 0.91, a few noisy weeks).
+  - **LV:** the *RespiCompass* series is anomalous (flat winter, a single May 2024 spike) while the
+    ERVISS reconstruction is sensible (January peak) — here the source data, not the method, is wrong.
+  - **No clean overlap (NO, ES, SK):** kept on a **single source — whichever has the most non-COVID
+    seasons — dismissing the other**: NO → RespiCompass (6 seasons), ES → RespiCompass (5), SK → ERVISS
+    (3). No alignment factor is applied to single-source countries.
+  **Stitch:** RespiCompass ≤ 2023/24 + ERVISS reconstruction 2024/25+, with a per-country alignment
+  factor from 2023/24 applied to the ERVISS era (= 1 for the 15 exact-match countries; the unit /
+  positivity factors above otherwise). LV: use ERVISS only (its reconstruction is the sound one) or
+  exclude — to confirm.
 
 - **A committed slim panel (`data/slim_flu_iliplus.csv`), loadable in base R.** The susceptibility
   fits run offline from this file (a contiguous weekly grid, seeded from the season start), so they
