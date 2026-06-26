@@ -136,11 +136,10 @@ and the main alternative considered.
 
 ## Data & infrastructure
 
-- **Seasons impacted by the acute COVID-19 pandemic phase are excluded.** 2019/2020, 2020/2021 and
-  2022/2023 are treated as disrupted by the pandemic and the response to it (NPIs, collapsed/atypical
-  influenza circulation, and changes in care-seeking and testing), so they are excluded from the
-  seasonal-driver analysis. (2021/2022 is also atypical and is currently outside the target set —
-  status to confirm.)
+- **Four seasons impacted by the acute COVID-19 pandemic phase are excluded:** 2019/2020, 2020/2021,
+  2021/2022 and 2022/2023. They are treated as disrupted by the pandemic and the response to it (NPIs,
+  collapsed/atypical influenza circulation, and changes in care-seeking and testing). The analysis
+  therefore spans 2014/2015–2018/2019 and 2023/2024–2025/2026 (8 seasons).
 
 - **The two ILI+ sources span different eras and must be combined for a long record.** ERVISS sentinel
   ILI+ (reconstructed as ILI consultation rate × influenza positivity) only reaches back to 2020/21,
@@ -150,6 +149,23 @@ and the main alternative considered.
   axis risks a spurious "source/era effect" in the very inter-seasonal comparison of interest; the
   overlap season is used to quantify and adjust for that difference. (See `code/03_report/
   data_availability.R` for the coverage picture.)
+
+- **ERVISS ILI+ is reconstructed RespiCompass-style.** ILI+ = ILI consultation rate × influenza test
+  positivity, using **sentinel** positivity (re-derived as detections/tests), **except non-sentinel
+  positivity for Malta, Iceland, Croatia, Romania, Latvia and Finland**, which lacked an adequate
+  number of weeks of sentinel test positivity — following RespiCompass. This assumes non-sentinel test
+  positivity reflects influenza positivity in a similar way as sentinel data would.
+
+- **The 2023/24 overlap validates the reconstruction and anchors the stitch.** Comparing the ERVISS
+  reconstruction with RespiCompass on 2023/24: **15 of 24 countries match exactly** (cor ≈ 1, ratio ≈
+  1), confirming RespiCompass sources ERVISS ILI+ and that the reconstruction is correct. The rest are
+  informative, not method errors: LU and MT carry a **consistent ILI-rate unit offset (≈ ×1000)** that
+  RespiCompass harmonises (perfectly correlated → correctable by the overlap factor); IE/BE/LT differ
+  by a constant scale; LV is genuinely messy (a May "peak", ~2% positivity); NO has **no ERVISS ILI
+  consultation rate** so cannot be reconstructed; ES/SK lack RespiCompass 2023/24 so cannot be
+  cross-checked there. **Stitch plan:** RespiCompass up to 2023/24, ERVISS reconstruction for 2024/25+,
+  with a **per-country alignment factor estimated from 2023/24** applied to the ERVISS era (≈1 for the
+  exact-match countries); LV and the no-overlap countries handled case by case.
 
 - **A committed slim panel (`data/slim_flu_iliplus.csv`), loadable in base R.** The susceptibility
   fits run offline from this file (a contiguous weekly grid, seeded from the season start), so they

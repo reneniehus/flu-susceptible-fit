@@ -1,48 +1,64 @@
 # data_availability.R
 #
-# A picture of ILI+ data availability: observed weeks per country x season, for each source
-# (ERVISS sentinel reconstruction vs RespiCompass), so the country/season coverage -- and the gap
-# between the two sources -- is visible at a glance. COVID-impacted seasons are greyed; the current
-# target seasons are boxed. Run from the repo root:  Rscript code/03_report/data_availability.R
+# The combined influenza ILI+ analysis dataset at a glance: for each country x season, the source we
+# would use (RespiCompass where available, i.e. up to 2023/24; ERVISS reconstruction for 2024/25+),
+# the number of observed weeks, and which country-seasons are EXCLUDED -- the four COVID-impacted
+# seasons (greyed) and any cell with < 15 observed weeks (red X). The vertical divider after 2023/24
+# marks the RespiCompass -> ERVISS hand-over (2023/24 is the overlap used to align the two streams).
+#
+# ERVISS ILI+ is reconstructed RespiCompass-style: ILI consultation rate x influenza SENTINEL test
+# positivity, except NON-sentinel positivity for MT, IS, HR, RO, LV, FI (per the RespiCompass note).
+#
+# Run from the repo root:  Rscript code/03_report/data_availability.R
 
 source("code/01_main_supporting/setup.R")
 models_in <- readRDS("output/models_in.rds")
 
-covid  <- c("2019/2020", "2020/2021", "2022/2023")
-target <- c("2017/2018", "2018/2019", "2023/2024", "2024/2025", "2025/2026")
+covid    <- c("2019/2020", "2020/2021", "2021/2022", "2022/2023")   # excluded (acute COVID phase)
+min_wk   <- 15                                                       # min observed weeks to include a season
+nonsent  <- c("MT", "IS", "HR", "RO", "LV", "FI")                   # non-sentinel positivity countries
 
-avail <- models_in$data_timeseries_long %>%
-  filter(indicator=="ili_plus", pathogen=="Influenza", agegroup=="age_total",
-         stream %in% c("ili_plus_respicompass","ili_plus_sentinel")) %>%
-  group_by(source = recode(stream, ili_plus_respicompass="RespiCompass ILI+",
-                                    ili_plus_sentinel="ERVISS sentinel ILI+ (reconstructed)"),
-           country_short, season) %>%
-  summarise(obs = sum(is.finite(value) & value>0), .groups="drop") %>%
-  filter(obs > 0)
+ip <- models_in$data_timeseries_long %>%
+  filter(indicator=="ili_plus", pathogen=="Influenza", agegroup=="age_total")
 
-lvl  <- sort(unique(avail$season)); avail$season <- factor(avail$season, levels=lvl)
-avail$country_short <- factor(avail$country_short, levels=rev(sort(unique(avail$country_short))))
-xc <- match(intersect(covid, lvl), lvl); xt <- match(intersect(target, lvl), lvl)
+erv <- ip %>% filter(stream %in% c("ili_plus_sentinel","ili_plus_nonsentinel")) %>%
+  mutate(pick = ifelse(country_short %in% nonsent, "ili_plus_nonsentinel", "ili_plus_sentinel")) %>%
+  filter(stream==pick) %>%
+  group_by(country_short, season) %>% summarise(erv_wk=sum(is.finite(value) & value>0), .groups="drop")
+rsp <- ip %>% filter(stream=="ili_plus_respicompass") %>%
+  group_by(country_short, season) %>% summarise(rsp_wk=sum(is.finite(value) & value>0), .groups="drop")
 
-p <- ggplot(avail, aes(season, country_short, fill=obs)) +
-  annotate("rect", xmin=xc-0.5, xmax=xc+0.5, ymin=-Inf, ymax=Inf, fill="grey55", alpha=0.30) +
-  geom_tile(color="white", linewidth=0.25) +
-  annotate("rect", xmin=xt-0.5, xmax=xt+0.5, ymin=-Inf, ymax=Inf, fill=NA, color="red", linewidth=0.7) +
-  facet_wrap(~source, ncol=1) +
+av <- full_join(erv, rsp, by=c("country_short","season")) %>%
+  mutate(erv_wk=coalesce(erv_wk,0L), rsp_wk=coalesce(rsp_wk,0L),
+         source = ifelse(rsp_wk>0, "RespiCompass", "ERVISS"),       # RespiCompass where it exists, else ERVISS
+         weeks  = ifelse(rsp_wk>0, rsp_wk, erv_wk)) %>%
+  filter(weeks>0) %>%
+  mutate(status = case_when(season %in% covid ~ "excluded: COVID",
+                            weeks < min_wk      ~ "excluded: <15 wks",
+                            TRUE                ~ "included"))
+
+lvl <- sort(unique(av$season)); av$season <- factor(av$season, levels=lvl)
+av$country_short <- factor(av$country_short, levels=rev(sort(unique(av$country_short))))
+xcov <- match(intersect(covid, lvl), lvl)
+xdiv <- match("2023/2024", lvl) + 0.5                                # RespiCompass | ERVISS hand-over
+
+p <- ggplot(av, aes(season, country_short)) +
+  annotate("rect", xmin=xcov-0.5, xmax=xcov+0.5, ymin=-Inf, ymax=Inf, fill="grey60", alpha=0.35) +
+  geom_tile(aes(fill=weeks, color=source), linewidth=0.6, width=0.92, height=0.92) +
+  geom_text(data=subset(av, status=="excluded: <15 wks"), aes(label="x"), color="red", size=3) +
+  geom_vline(xintercept=xdiv, linetype="dashed", color="grey20") +
   scale_fill_viridis_c(name="observed\nweeks", option="D", limits=c(0,40), oob=scales::squish) +
-  labs(title="Influenza ILI+ data availability by country, season and source",
-       subtitle="red box = target seasons | grey = COVID-impacted (excluded) | tile colour = observed weeks",
+  scale_color_manual(name="source", values=c(RespiCompass="#1b9e77", ERVISS="#d95f02")) +
+  labs(title="Combined influenza ILI+ analysis dataset: coverage and exclusions",
+       subtitle="tile = observed weeks | border = source (RespiCompass <=2023/24, ERVISS 2024/25+) | grey = COVID excluded | red x = <15 weeks | dashed = stream hand-over",
        x=NULL, y=NULL) +
   theme_minimal(base_size=11) +
-  theme(axis.text.x=element_text(angle=45, hjust=1), panel.grid=element_blank(),
-        strip.text=element_text(face="bold"))
+  theme(axis.text.x=element_text(angle=45, hjust=1), panel.grid=element_blank())
 
 dir.create("output", showWarnings=FALSE)
-ggsave("output/data_availability.png", p, width=11, height=10, dpi=110)
+ggsave("output/data_availability.png", p, width=12, height=8.5, dpi=110)
 cat("figure -> output/data_availability.png\n\n")
 
-cat("Target seasons: countries with >=15 observed weeks, by source:\n")
-avail %>% filter(season %in% target, obs>=15) %>%
-  count(source, season, name="n_countries") %>%
-  tidyr::pivot_wider(names_from=source, values_from=n_countries, values_fill=0) %>%
-  as.data.frame() %>% print(row.names=FALSE)
+cat("Included country-seasons per season (>=15 weeks, non-COVID):\n")
+av %>% filter(status=="included") %>% count(season, source, name="n") %>%
+  tidyr::pivot_wider(names_from=source, values_from=n, values_fill=0) %>% as.data.frame() %>% print(row.names=FALSE)
