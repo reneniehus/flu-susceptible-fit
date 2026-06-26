@@ -167,15 +167,16 @@ and the main alternative considered.
   - **Positivity-construction differences (IE ≈ ×0.59, BE ≈ ×1.18, LT):** RespiCompass's influenza
     positivity differs from the re-derived detections/tests by a roughly constant per-country factor;
     once applied the dynamics are identical (IE cor 1.00, BE 0.996; LT 0.91, a few noisy weeks).
-  - **LV:** the *RespiCompass* series is anomalous (flat winter, a single May 2024 spike) while the
-    ERVISS reconstruction is sensible (January peak) — here the source data, not the method, is wrong.
+  - **LV → ERVISS only (decided).** The RespiCompass LV series is anomalous (flat all winter, a single
+    May 2024 spike) while the ERVISS reconstruction is sensible (a January peak) — the source data, not
+    the method, is wrong. LV's RespiCompass seasons are therefore dropped and LV is kept on the ERVISS
+    reconstruction only (2023/24–2025/26), treated like the single-source countries below.
   - **No clean overlap (NO, ES, SK):** kept on a **single source — whichever has the most non-COVID
     seasons — dismissing the other**: NO → RespiCompass (6 seasons), ES → RespiCompass (5), SK → ERVISS
-    (3). No alignment factor is applied to single-source countries.
+    (3). No alignment factor is applied to single-source countries (LV likewise: ERVISS only).
   **Stitch:** RespiCompass ≤ 2023/24 + ERVISS reconstruction 2024/25+, with a per-country alignment
   factor from 2023/24 applied to the ERVISS era (= 1 for the 15 exact-match countries; the unit /
-  positivity factors above otherwise). LV: use ERVISS only (its reconstruction is the sound one) or
-  exclude — to confirm.
+  positivity factors above otherwise).
 
 - **A committed slim panel (`data/slim_flu_iliplus.csv`), loadable in base R.** The susceptibility
   fits run offline from this file (a contiguous weekly grid, seeded from the season start), so they
