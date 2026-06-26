@@ -136,6 +136,21 @@ and the main alternative considered.
 
 ## Data & infrastructure
 
+- **Seasons impacted by the acute COVID-19 pandemic phase are excluded.** 2019/2020, 2020/2021 and
+  2022/2023 are treated as disrupted by the pandemic and the response to it (NPIs, collapsed/atypical
+  influenza circulation, and changes in care-seeking and testing), so they are excluded from the
+  seasonal-driver analysis. (2021/2022 is also atypical and is currently outside the target set —
+  status to confirm.)
+
+- **The two ILI+ sources span different eras and must be combined for a long record.** ERVISS sentinel
+  ILI+ (reconstructed as ILI consultation rate × influenza positivity) only reaches back to 2020/21,
+  whereas RespiCompass ILI+ runs 2014/15–2023/24. Covering the pre-pandemic seasons (2017/18, 2018/19)
+  *and* the most recent ones (2024/25, 2025/26) therefore requires both sources, with **2023/24 as the
+  overlap** for cross-checking. Because the two construct ILI+ differently, mixing them along the time
+  axis risks a spurious "source/era effect" in the very inter-seasonal comparison of interest; the
+  overlap season is used to quantify and adjust for that difference. (See `code/03_report/
+  data_availability.R` for the coverage picture.)
+
 - **A committed slim panel (`data/slim_flu_iliplus.csv`), loadable in base R.** The susceptibility
   fits run offline from this file (a contiguous weekly grid, seeded from the season start), so they
   need no tidyverse pipeline — fast, dependency-light, reproducible. Countries: DK, FR, IE, HU (each
