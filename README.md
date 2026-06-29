@@ -107,7 +107,9 @@ Where each kind of information lives:
 | `documentation/data_overview.md` | what data is present (`data`, `models_in`, indicators) |
 | `documentation/documentation.Rmd` | the model maths / science (SIR, inference, contact matrix) |
 | `documentation/decisions.md` | **why** — rationale for key modelling / method / data decisions |
-| `PROJECT_SCOPE.md` | project scope (in / out of scope) |
+| `documentation/analysis_strategy.md` | the driver analysis — strategy, principles, what we've learned, ranked next steps |
+| `documentation/findings_descriptors.md` | results of the descriptor / driver analyses |
+| `PROJECT_SCOPE.md` | project scope (in / out of scope), research aim, references |
 | inline header comments | why each function / file works the way it does |
 
 New design decisions go in `documentation/decisions.md` (append-only), so the reasoning is kept
