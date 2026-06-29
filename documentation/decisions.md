@@ -211,6 +211,13 @@ pipeline is in place:
   EKF S0 is not fully pinned (see the EKF entry); vary the initial covariance and process-noise
   regularisation to quantify how much of the between-season S0 spread is filter freedom rather than
   signal. To be added at the very end, if the EKF remains in focus.
+- **FOLLOW-UP (surveillance/ERVISS experts): why ERVISS and RespiCompass positivity differ for IE,
+  BE, LT.** Their ILI+ offset is a *positivity-construction* difference, not a units one — RespiCompass's
+  influenza positivity differs from the re-derived ERVISS detections/tests by a roughly constant
+  per-country factor (IE ≈ ×0.59, BE ≈ ×1.18; LT matches but is noisy). The exact reason (different
+  test denominator, a different/blended positivity source, published vs re-derived) is unknown and
+  should be clarified with ERVISS / surveillance colleagues. For now these countries are aligned
+  empirically via the 2023/24 overlap factor.
 
 ## References
 
