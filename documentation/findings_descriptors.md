@@ -61,6 +61,29 @@ figure `output/bayes_subtype.png`):
 These directions align with known epidemiology (H3N2 seasons earlier/sharper; B later) but, given the
 confound, remain among-season differences pending more single-source seasons.
 
+## Prior-season burden (immunity carryover)
+
+Does the previous season's burden predict the current season, within country? Burden is lagged by
+exactly one year (the COVID gap auto-excludes invalid lags) → **120 lagged country-seasons** (25
+countries; 2015/16–2018/19 and 2024/25–2025/26). Bayesian hierarchical model borrowing strength across
+all countries (Gibbs: country random intercept **and** random slope; shared EU/EEA slope; R-hat ≈ 1.00,
+matches lme4). Predictor and outcomes standardised, predictor within-country-centred.
+
+**Prior burden is a weak-to-null predictor of everything** (all 95% CrIs span zero, SD units): current
+AUC −0.06 [−0.39, 0.24], peak height −0.08 [−0.41, 0.21], peak week +0.36 [−0.41, 1.05], onset +0.13
+[−0.57, 0.77], steepness +0.03 [−0.61, 0.68]. The point estimates lean *faintly* immunity-consistent
+(bigger prior → slightly smaller burden, later peak), and notably the AUC/peak slopes are **negative
+despite** a reporting-persistence confound that should push them positive — so a small true depletion
+signal is plausible but not credible at this n. The prior→peak-week effect is also very heterogeneous
+across countries (random-slope SD 0.79).
+
+Why so weak — and the proper test we can't yet run: (1) **subtype rotation breaks cross-protection** —
+total prior burden is a poor immunity proxy when the dominant subtype changes year to year (it does:
+H1N1→B→H3N2 post-COVID), so the right predictor is prior burden *of the same subtype*, which our data
+can't support yet (subtype is post-COVID only, and those seasons rotate); (2) antigenic drift restores
+susceptibility annually; (3) reporting persistence masks the burden magnitude; (4) national curves are
+spatial overlays. Figure `output/bayes_prior_burden.png`.
+
 ## Framing
 
 We characterise 166 country-seasons by descriptors read off centred-moving-average smooths of weekly
