@@ -33,6 +33,34 @@ null with CIs spanning zero (pre-COVID block, n=97, 22 countries): peak-height 0
 
 *(The cross-country analysis below is retained for context but is NOT used for inference — confounded.)*
 
+## Dominant subtype and the subtype → descriptor analysis
+
+**Method (WHO/ECDC).** Dominant (sub)type per country-season = the (sub)type with the largest share of
+**characterised** influenza detections over the season, among A(H1N1)pdm09, A(H3N2) and B (sentinel +
+non-sentinel combined), requiring ≥ 20 typed detections for a call. 84% of country-seasons have a clear
+plurality (top share ≥ 50%; median 64%).
+
+**Coverage.** ERVISS typing starts 2021, so only the post-COVID analysis seasons get a subtype: **59 of
+166 descriptor country-seasons (36%)** — all of 2023/24, 2024/25, 2025/26; none of the pre-COVID seasons
+(2014/15–2018/19), which would need external WHO/ECDC season reports.
+
+**Critical confound.** The dominant subtype is essentially **season-determined**: 2023/24 = H1N1 (23/29
+countries), 2024/25 = B (23/31), 2025/26 = H3N2 (24/30). With only three post-COVID seasons, subtype is
+nearly collinear with season, so a "subtype effect" cannot be separated from anything else specific to
+those three seasons (vaccine match, prior-season immunity, weather). Read the results as among-**season**
+differences labelled by subtype, NOT causal subtype effects.
+
+**Bayesian model** (Gibbs sampler: descriptor ~ subtype + country random intercept, weak priors;
+posterior means match lme4; R-hat ≤ 1.01). Within-country contrasts (SD units; * = 95% CrI excludes 0;
+figure `output/bayes_subtype.png`):
+- **Burden:** B-dominant seasons have higher AUC than both H1N1 (+0.31*) and H3N2 (+0.22*), and higher
+  peak height than H1N1 (+0.24*).
+- **Timing:** H3N2 seasons peak ~1.1 SD **earlier** than H1N1 (−1.11*); B peaks and onsets later than
+  H3N2 (peak +1.36*, onset +0.78*). Ordering H3N2 → H1N1 → B from earliest to latest.
+- **Steepness:** no subtype difference (all CrIs span 0).
+These directions align with known epidemiology (H3N2 seasons earlier/sharper; B later) but, given the
+confound, remain among-season differences pending more single-source seasons.
+
 ## Framing
 
 We characterise 166 country-seasons by descriptors read off centred-moving-average smooths of weekly
