@@ -4,6 +4,35 @@
 method. Produced by a multi-agent analysis with adversarial verification of every claim; figures in
 `output/analysis_patterns.png`, stats in `code/05_analysis/analyse_patterns.R`.*
 
+## Within-country hierarchical models (partial pooling) — the precise answers
+
+*Cross-country correlations are dropped as confounded (latitude, health system, age structure). This
+section is WITHIN country with partial pooling (lme4: predictor group-mean-centred within country,
+country random intercepts + random slopes), so the shared EU/EEA slope learns from all 25 countries
+while across-country heterogeneity is estimated. Slopes are standardised (log AUC/peak) ≈ within-
+country correlations; 95% CI in brackets; figure `output/hierarchical_effects.png`. Frequentist partial
+pooling; a full Bayesian fit would give near-identical inference at this n.*
+
+**Which 2 of {steepness, peak height, AUC} share the most information? → AUC and peak height,
+overwhelmingly.** Within-country standardised slope peak-height~AUC = **0.98 [0.90, 1.05]** (near-
+collinear, and largely mechanical — peak height is the dominant component of AUC). Steepness shares
+almost nothing with burden: steepness~peak-height = 0.07 [0.01, 0.14] (tiny but non-zero, the
+"peakedness" channel), steepness~AUC = 0.02 [−0.05, 0.08] (null).
+
+**What does onset week predict? → the peak's TIMING, and nothing about its size.** onset→peak-week =
+**0.99 [0.69, 1.28]** (a season starting a week later peaks ~a week later, almost 1:1; real across-
+country heterogeneity, random-slope SD 0.61). But onset does NOT predict intensity: onset→peak-height =
+0.07 [−0.05, 0.18], onset→AUC = 0.06 [−0.04, 0.16] (both null), nor steepness (−0.05 [−0.33, 0.22]). So
+onset is a clean TIMING sensor, uninformative about how big or how steep the season will be.
+
+**What does 65+ vaccination coverage predict? → nothing detectable.** Every within-country effect is
+null with CIs spanning zero (pre-COVID block, n=97, 22 countries): peak-height 0.13 [−0.29, 0.55], AUC
+0.14 [−0.26, 0.53], onset −0.23 [−1.18, 0.72], peak-week −0.24 [−1.35, 0.87], steepness 0.26 [−0.73,
+1.25]. Wide intervals reflect limited within-country coverage variation → "no detectable effect," not
+"proven zero." (Random slopes were not identifiable here → random-intercept fits.)
+
+*(The cross-country analysis below is retained for context but is NOT used for inference — confounded.)*
+
 ## Framing
 
 We characterise 166 country-seasons by descriptors read off centred-moving-average smooths of weekly
