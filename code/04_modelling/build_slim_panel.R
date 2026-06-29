@@ -36,7 +36,7 @@ rsp <- ip %>% filter(stream=="ili_plus_respicompass") %>%
 
 m <- full_join(erv, rsp, by=c("country_short","season","date","season_week"))
 
-# per-country alignment factor from the 2023/24 overlap (median RespiCompass / ERVISS over shared weeks)
+# per-country alignment factor from the 2023/24 overlap (median RespiCompass / ERVISS over weeks where BOTH streams are finite and > 0)
 fac <- m %>% filter(season=="2023/2024", is.finite(erv), erv>0, is.finite(rsp), rsp>0) %>%
   group_by(country_short) %>% summarise(factor = median(rsp/erv), .groups="drop")
 

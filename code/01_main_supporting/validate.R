@@ -25,7 +25,7 @@ check_required_columns = function(df, required, what="data frame"){
 # columns (pathogen / pathogentype / pathogensubtype) are NOT universal -- severity,
 # sequencing and variants files do not carry them -- so they are checked where they are
 # actually consumed instead (extract_typing(), via check_required_columns()).
-erviss_required_cols = function(schema=NULL){
+erviss_required_cols = function(schema=NULL){   # schema is accepted for call-site symmetry but unused: these 5 base cols are required for every schema
   c("countryname", "yearweek", "age", "indicator", "value")
 }
 

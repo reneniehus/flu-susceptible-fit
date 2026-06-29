@@ -1,7 +1,7 @@
 # analyse_patterns.R -- core statistical patterns among the descriptive features (and vs vaccination).
 # AUC/peak_height are reporting-scale dependent -> analysed WITHIN country (log + country-demeaned);
 # steepness/onset_week/peak_week are scale-free -> also compared ACROSS countries. Run from repo root.
-suppressMessages({library(dplyr); library(tidyr)})
+suppressMessages({library(dplyr)})
 d <- read.csv("output/descriptors_vax.csv", stringsAsFactors=FALSE) %>%
   mutate(lauc=log(auc), lpk=log(peak_height), era=ifelse(source=="RespiCompass","pre","post"))
 V <- c("lauc","lpk","onset_week","peak_week","steepness")
@@ -14,7 +14,7 @@ cat("\n--- WITHIN-country correlations (country-demeaned) ---\n")
 print(round(cor(dw[,V], use="pairwise"),2))
 
 # across-country: country means of the scale-free features
-cm <- d %>% group_by(country) %>% summarise(across(c(onset_week,peak_week,steepness), mean, na.rm=TRUE), .groups="drop")
+cm <- d %>% group_by(country) %>% summarise(across(c(onset_week,peak_week,steepness), ~ mean(.x, na.rm=TRUE)), .groups="drop")
 cat("\n--- ACROSS-country correlations (country means, scale-free only) ---\n")
 print(round(cor(cm[,c("onset_week","peak_week","steepness")]),2))
 
@@ -29,7 +29,7 @@ cat("\n--- ERA check (source confound): scale-free descriptor means pre(RespiCom
 print(d %>% group_by(era) %>% summarise(n=n(), onset=round(mean(onset_week),1), peak_wk=round(mean(peak_week),1),
                                         steep=round(mean(steepness),2), .groups="drop") %>% as.data.frame())
 
-# vaccination (pre-COVID block only, 97 obs): cross-country (country means) and within-country
+# vaccination (pre-COVID block only; live count printed below): cross-country (country means) and within-country
 dv <- d %>% filter(is.finite(vax_cov_65))
 cat(sprintf("\n=== Vaccination linkage: %d country-seasons (%d countries) ===\n", nrow(dv), n_distinct(dv$country)))
 vm <- dv %>% group_by(country) %>% summarise(vax=mean(vax_cov_65), onset=mean(onset_week), steep=mean(steepness),

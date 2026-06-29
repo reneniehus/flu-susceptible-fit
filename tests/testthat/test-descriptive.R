@@ -1,6 +1,6 @@
 # Tests for the descriptive curve-feature method (code/01_main_supporting/methods/method_descriptive.R).
-# Smooths the slim DK panel offline and checks the common contract, the implied S0, and that the
-# descriptive features are well-formed.
+# Smooths the slim DK panel offline and checks the common contract (no implied S0 -- steepness is
+# the feature) and that the descriptive features are well-formed.
 
 sl  <- load_flu_iliplus_slim("DK", path = here::here("data/slim_flu_iliplus.csv"))
 fit <- fit_descriptive(sl$ylist, R0 = 1.5, infectious_period_days = 3, smooth_window = 4)

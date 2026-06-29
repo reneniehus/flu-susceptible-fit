@@ -18,7 +18,7 @@ library(readr)
 #library(rethinking)
 library(patchwork)
 library(viridis)
-library(tidylog) # only temporarily
+library(tidylog) # loaded only to wrap dplyr verbs with row-count logging; detached again further down
 library(summarytools)
 library(here)
 # library(dagitty)

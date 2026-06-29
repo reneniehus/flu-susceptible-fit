@@ -1,8 +1,11 @@
 # Inter-seasonal influenza variability in the EU/EEA: what phenomenological descriptors of ILI+ curves tell us
 
 *Analysis of 166 country-seasons (25 EU/EEA countries, 8 seasons) using the descriptive (smoothed-curve)
-method. Produced by a multi-agent analysis with adversarial verification of every claim; figures in
-`output/analysis_patterns.png`, stats in `code/05_analysis/analyse_patterns.R`.*
+method. Produced by a multi-agent analysis with adversarial verification of every claim. Figures in
+`output/` (`analysis_patterns.png`, `hierarchical_effects.png`, `bayes_subtype.png`,
+`bayes_prior_burden.png`); stats in `code/05_analysis/` (pooled correlations in `analyse_patterns.R`,
+partial pooling in `hierarchical_models.R`, subtype in `bayes_subtype.R`, prior burden in
+`bayes_prior_burden.R`).*
 
 ## Within-country hierarchical models (partial pooling) — the precise answers
 

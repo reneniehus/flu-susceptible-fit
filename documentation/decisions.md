@@ -181,7 +181,7 @@ and the main alternative considered.
 - **A committed slim panel (`data/slim_flu_iliplus.csv`), loadable in base R.** The susceptibility
   fits run offline from this file (a contiguous weekly grid, seeded from the season start), so they
   need no tidyverse pipeline — fast, dependency-light, reproducible. Countries: DK, FR, IE, HU (each
-  with 5 clean seasons; chosen for completeness), set via `params$susc_countries`.
+  complete across all 8 non-COVID seasons; chosen for completeness), set via `params$susc_countries`.
 
 - **Retired the single-season, free-R0 EKF tracking fit.** Superseded by the EKF susceptibility
   method; removing it keeps the repo focused. The shared `.ekf_filter` engine is kept in `sir_core.R`.

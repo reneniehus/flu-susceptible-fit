@@ -31,13 +31,14 @@ seasons = sort(unique(summ$season))
 dir.create("output", showWarnings = FALSE)
 png("output/ekf_overview.png", width = 1600, height = 950)
 nc = length(countries)
-layout(cbind(matrix(1:(nc*5), nrow = nc, byrow = TRUE), nc*5 + 1), widths = c(rep(1, 5), 2.0))
+n_panels = 5                                       # season columns drawn per country (LEFT grid); later seasons are not shown
+layout(cbind(matrix(1:(nc*n_panels), nrow = nc, byrow = TRUE), nc*n_panels + 1), widths = c(rep(1, n_panels), 2.0))
 par(mar = c(3, 3, 2.4, 1), mgp = c(1.8, 0.6, 0))
 
 # LEFT: row per country, column per season -- observed points + fitted EKF (red) curve
 for (i in seq_along(countries)){
   fit = fits[[countries[i]]]
-  for (j in 1:5){
+  for (j in 1:n_panels){
     if (j <= length(fit$seasons)){
       y = fit$ylist[[j]]; wk = fit$season_week[[j]]; mu = fit$mu[[j]]
       plot(wk, y, pch = 19, cex = 0.5, col = "grey45",

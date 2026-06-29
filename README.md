@@ -17,8 +17,9 @@ reference Bayesian model:
     regularised small). The two methods agree on wave shape but the EKF draws more contrast between
     seasons' `S0` — comparing them is exactly what the framework is for.
   - `descriptive` — non-mechanistic: **smooths** each curve (centered moving average) and reads off
-    features (AUC, peak height, onset week, steepness). Steepness maps to an implied `S0` via the
-    rise-rate relation, so it sits on the same axis as the SIR methods.
+    features (AUC, peak height, onset week, steepness) directly. It fits no SIR and reports no `S0` —
+    the observed-shape features are compared *within* a country, not mapped onto the SIR
+    susceptibility axis (that mechanistic-vs-phenomenological mapping is deliberately out of scope).
 - **Bayesian SIR (Stan)** — `stan/SIR_multiseason_age_vax_2.stan`: an age- and vaccination-
   structured, multi-season SIR fit by HMC, with scenario projections (reference model).
 
@@ -86,14 +87,19 @@ code/01_main_supporting/       setup, validate, load_data, gen_model_input, eyeb
                                methods/ (one file per fitting method),
                                methods_registry (registry + per-season summary schema)
 code/02_settings/              settings_version0.R (params, incl. susc_* fixed values)
-code/03_report/                eyeballing_report.Rmd (data-quality / dynamics report)
-code/04_modelling/             fit_methods_demo.R (run every method, plot + summarise)
-code/05_analysis/              correlate_summaries.R (SCAFFOLD: summaries vs vax / subtype)
+code/03_report/                eyeballing_report.Rmd (data-quality / dynamics report),
+                               data_availability.R (coverage + exclusions heatmap)
+code/04_modelling/             build_slim_panel.R (assemble the slim panel), fit_methods_demo.R
+                               (run every method, plot + summarise), descriptive_overview.R, ekf_overview.R
+code/05_analysis/              the driver analysis: prepare_descriptors.R, analyse_patterns.R,
+                               hierarchical_models.R, dominant_subtype.R, bayes_subtype.R,
+                               bayes_prior_burden.R, plot_patterns.R, plot_vax_scatter.R
 stan/                          SIR_multiseason_age_vax_2.stan (Bayesian SIR)
 data/                          committed ERVISS / RespiCompass snapshots + slim_flu_iliplus.csv
 output/                        cached data lists + figures (gitignored, regenerated)
 tests/testthat/                contract + method tests
-documentation/                 data_overview.md, quickstart.md
+documentation/                 quickstart, data_overview, decisions, analysis_strategy,
+                               findings_descriptors, documentation.Rmd (see table below)
 ```
 
 ## Documentation

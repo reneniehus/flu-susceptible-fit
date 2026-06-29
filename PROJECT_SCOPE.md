@@ -35,7 +35,7 @@ The strategy is to turn each country–season influenza epidemic into a small se
      Filter, summarising a season by an initial **susceptibility** `S0` (read off the wave's rise
      rate) and a reporting fraction;
    - a **descriptive** method that smooths the curve and reads timing, intensity and steepness
-     directly, with steepness mapped onto the same susceptibility axis.
+     directly as observed-shape features (no SIR fit, no susceptibility mapping).
    The SIR here is a *summarising* device — a susceptibility reconstruction — not a causal
    transmission model (see Out of scope): transmission parameters are fixed from the literature and
    only the *relative* susceptibility across seasons is interpreted.
@@ -49,9 +49,10 @@ The strategy is to turn each country–season influenza epidemic into a small se
    reporting robust, plausible associations and interpreting them for preparedness — i.e. which
    factors most deserve attention when anticipating a season.
 
-*Current state:* the surveillance data layer and the feature-extraction method framework are
-implemented (see `README.md`); driver assembly and the association analysis are the next stage
-(scaffolded in `code/05_analysis/`).
+*Current state:* the surveillance data layer, the feature-extraction methods, and a first pass of the
+within-country driver analysis are implemented (`code/05_analysis/`; results in
+`documentation/findings_descriptors.md`, reasoning in `documentation/analysis_strategy.md`). Further
+drivers (climate, subtype novelty, vaccine effectiveness) are the next stage.
 
 ## In scope
 

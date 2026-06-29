@@ -8,7 +8,8 @@
 # and shares the signature fit_*(ylist, R0, infectious_period_days, seed_i0, n_sub, n_starts, seed).
 #
 # To ADD A METHOD: write methods/method_<name>.R, source it, and add ONE line to sir_methods().
-# Everything downstream (run, summarise, plot, correlate) is method-agnostic.
+# Everything downstream (run + summarise into the common per-season table) is method-agnostic; the
+# demo plotting and the code/05_analysis driver models then consume that one table.
 #
 # Requires: sir_core.R and the method files to be sourced first.
 
@@ -56,7 +57,7 @@ run_method = function(method_name, panel, params, n_sub = 7, n_starts = 4, seed 
 # curve's timing (peak + onset week), the process noise, and fit diagnostics. This is the single
 # table the downstream cross-season / cross-country analysis consumes.
 summarise_method_fit = function(fit, onset_frac = 0.1){
-  pn = if (is.null(fit$params$qI)) NA_real_ else fit$params$qI[1]
+  pn = if (is.null(fit$params$qI)) NA_real_ else fit$params$qI[1]   # NA for methods w/o process noise
   rows = lapply(seq_along(fit$seasons), function(s){
     mu = fit$mu[[s]]; wk = fit$season_week[[s]]; y = fit$ylist[[s]]
     b  = .curve_baseline(mu)                            # off-season floor of THIS season's curve

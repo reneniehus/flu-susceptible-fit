@@ -33,7 +33,7 @@ settings = function() {
   params$susc_R0                    = 1.5   # fixed seasonal-influenza R0 (literature)
   params$susc_infectious_period_days = 3    # mean infectious period -> gamma = 7/this (per week)
   params$susc_seed_i0               = 1e-5  # constant seed (~0.001% of pop, southern-hemisphere import)
-  params$susc_countries             = c("DK", "FR", "IE", "HU")  # countries in the slim panel / fits
+  params$susc_countries             = c("DK", "FR", "IE", "HU")  # countries for the SIR / method fits + demos (NOT the slim panel, which spans all 25 countries with usable data; see build_slim_panel.R)
   params$susc_smooth_window         = 4     # centered moving-average window (weeks) for the descriptive method
   
   # ---- |-Data ----

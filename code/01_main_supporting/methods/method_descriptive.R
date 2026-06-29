@@ -21,8 +21,8 @@
 # same features, is simpler/transparent, and the even "2x4" window preserves the peak while staying
 # smooth. NA-aware, so it bridges short gaps in the series.
 #
-# Returns the common method-fit contract (mu = the smoothed curves; params$S0 = implied S0; the
-# data-scale SIR parameters c/b/phi/qI are NA -- this method does not have them).
+# Returns the common method-fit contract (mu = the smoothed curves; ALL SIR parameters S0/c/b/phi/qI
+# are NA -- this method is non-mechanistic and does not have them).
 
 # ---- |-centered, NA-aware moving-average smooth of one season's weekly ILI+ curve ----
 # Even windows use half-weights at the two ends (a symmetric "2xk" average, so there is no timing
@@ -42,7 +42,8 @@
 
 # ---- |-fit the descriptive method for one country (just smooth every season) ----
 # Same call shape as the other methods (extra arguments are ignored via ...), so the registry can
-# dispatch it uniformly. Only smooth_window is used; the features are read off fit$mu by the summary.
+# dispatch it uniformly. Only smooth_window drives the computation; R0/gamma are echoed into the
+# contract unchanged, and the features are read off fit$mu by summarise_method_fit().
 fit_descriptive = function(ylist, R0 = 1.5, infectious_period_days = 3, smooth_window = 4, ...){
   K = length(ylist)
   mu = lapply(ylist, function(y) pmax(.smooth_curve(y, smooth_window), 0))   # ILI+ cannot be negative

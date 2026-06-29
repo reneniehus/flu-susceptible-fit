@@ -36,14 +36,15 @@ seasons = sort(unique(summ$season))
 # ---- |-side-by-side figure: feature-annotated curve grid (left) | feature trajectories (right) ----
 dir.create("output", showWarnings = FALSE)
 nc = length(countries)
+n_panels = 5                                       # season columns drawn per country (LEFT grid); later seasons are not shown
 png("output/descriptive_overview.png", width = 1800, height = 1000)
-layout(cbind(matrix(1:(nc*5), nc, 5, byrow = TRUE), nc*5 + seq_len(nc)), widths = c(rep(1, 5), 1.7))
+layout(cbind(matrix(1:(nc*n_panels), nc, n_panels, byrow = TRUE), nc*n_panels + seq_len(nc)), widths = c(rep(1, n_panels), 1.7))
 par(mar = c(3, 3, 2.2, 1), mgp = c(1.8, 0.6, 0))
 
 # LEFT: row per country, column per season -- smoothed curve with AUC shaded, peak dot, onset line
 for (i in seq_len(nc)){
   fit = fits[[countries[i]]]
-  for (j in 1:5){
+  for (j in 1:n_panels){
     if (j <= length(fit$seasons)){
       y  = fit$ylist[[j]]; wk = fit$season_week[[j]]; mu = fit$mu[[j]]
       b  = .curve_baseline(mu); ok = is.finite(mu)

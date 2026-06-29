@@ -5,7 +5,7 @@ A clone-and-go template for loading ERVISS / RespiCompass respiratory-surveillan
 with a quality/dynamics report. See `data_overview.md` for what data is available.
 
 ## 1. Prerequisites
-- **R 4.3+** (the renv lockfile pins R 4.3.3 and 164 packages).
+- **R 4.3+** (the renv lockfile pins R 4.3.3 and 149 packages).
 - System libraries for two optional features: **pandoc** (to render the HTML report) and
   **libmagick++** (pulled in by `summarytools`). On Debian/Ubuntu:
   `apt-get install pandoc libmagick++-dev`.
@@ -95,12 +95,14 @@ code/00_main.R                 orchestrator (run this)
 code/01_main_supporting/       setup, validate, load_data, gen_model_input, eyeballing,
                                sir_core, methods/, methods_registry, run_model, process_and_save
 code/02_settings/              settings_version0.R (params)
-code/03_report/                eyeballing_report.Rmd
-code/04_modelling/             fit_methods_demo.R
-code/05_analysis/              correlate_summaries.R (scaffold)
+code/03_report/                eyeballing_report.Rmd, data_availability.R
+code/04_modelling/             build_slim_panel.R, fit_methods_demo.R, descriptive_overview.R, ekf_overview.R
+code/05_analysis/              driver analysis (prepare_descriptors, analyse_patterns,
+                               hierarchical_models, dominant_subtype, bayes_*, plot_*)
 stan/                          SIR_multiseason_age_vax_2.stan (Bayesian SIR)
 data/                          committed raw snapshots (offline bootstrap)
 output/                        cached data lists (gitignored, regenerated)
 tests/testthat/                contract + invariant tests
-documentation/                 data_overview.md, quickstart.md
+documentation/                 quickstart, data_overview, decisions, analysis_strategy,
+                               findings_descriptors, documentation.Rmd
 ```

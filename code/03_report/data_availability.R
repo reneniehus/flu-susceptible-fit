@@ -5,7 +5,7 @@
 #     overlap used to align the two streams);
 #   - single-source overrides (most non-COVID seasons / data quality): NO, ES = RespiCompass only;
 #     SK, LV = ERVISS only (the other source is dismissed for those countries);
-#   - four COVID-impacted seasons excluded (greyed); cells with < 15 observed weeks excluded (red X).
+#   - four COVID-impacted seasons excluded (greyed); cells with < 15 observed weeks excluded (red x).
 # Border colour = source; the dashed line marks the RespiCompass -> ERVISS hand-over.
 #
 # ERVISS ILI+ is reconstructed RespiCompass-style: ILI rate x SENTINEL positivity, except NON-sentinel
@@ -55,7 +55,7 @@ p <- ggplot(av, aes(season, country_short)) +
   geom_tile(aes(fill=weeks, color=source), linewidth=0.6, width=0.92, height=0.92) +
   geom_text(data=subset(av, status=="excluded: <15 wks"), aes(label="x"), color="red", size=3) +
   geom_vline(xintercept=xdiv, linetype="dashed", color="grey20") +
-  scale_fill_viridis_c(name="observed\nweeks", option="D", limits=c(0,40), oob=scales::squish) +
+  scale_fill_viridis_c(name="observed\nweeks", option="D", limits=c(0,40), oob=scales::squish) +   # 40 ~ a full season of weekly reports; higher values squish to the top colour
   scale_color_manual(name="source", values=c(RespiCompass="#1b9e77", ERVISS="#d95f02")) +
   labs(title="Final influenza ILI+ analysis dataset: coverage and exclusions",
        subtitle="border = source | grey = COVID excluded | red x = <15 weeks | dashed = stream hand-over | single-source: NO,ES=RespiCompass, SK,LV=ERVISS",

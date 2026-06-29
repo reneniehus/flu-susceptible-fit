@@ -127,8 +127,8 @@
 .curve_peak_height = function(mu) max(mu, na.rm = TRUE)
 
 # ---- |-steepness = exponential growth rate over the rise (slope of log(above-baseline), onset->peak) ----
-# Maps to S0 via the SIR rise-rate relation r = gamma*(R0*S0 - 1). A regression over the whole rising
-# limb (not a single-week jump), so it is robust to local noise in the curve.
+# A regression over the whole rising limb (not a single-week jump), so it is robust to local noise
+# in the curve. (Phenomenological: it is NOT converted to an SIR S0 -- see method_descriptive.R.)
 .curve_steepness = function(mu, season_week, b, onset_frac = 0.1){
   above = mu - b; pkv = max(above, na.rm = TRUE)
   if (!is.finite(pkv) || pkv <= 0) return(NA_real_)
@@ -158,14 +158,4 @@ load_flu_iliplus_slim = function(country, path = "data/slim_flu_iliplus.csv"){
   ylist = by_season("value"); names(ylist) = seasons
   weeks = by_season("season_week"); names(weeks) = seasons
   list(country = country, seasons = seasons, ylist = ylist, season_week = weeks)
-}
-
-# ---- |-extract one country x season weekly flu ILI+ series from models_in (tidyverse path) ----
-kalman_sir_series = function(models_in, country, season,
-                             stream = "ili_plus_sentinel", pathogen = "Influenza"){
-  models_in$data_timeseries_long %>%
-    filter(indicator == "ili_plus", stream == !!stream, pathogen == !!pathogen,
-           agegroup == "age_total", country_short == !!country, season == !!season) %>%
-    arrange(date) %>%
-    transmute(date, season_week, value)
 }

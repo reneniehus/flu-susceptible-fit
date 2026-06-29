@@ -36,5 +36,4 @@ models_out = run_model( params, data , models_in ) # runs the model scripts
 # render the data-eyeballing report: rmarkdown::render("code/03_report/eyeballing_report.Rmd")
 
 # ---- |-The end
-# (temporary code for any quick checking)
-eb = eyeballing(models_in, params, data) # quality + dynamics figure manifest (see eyeballing.R)
+eb = eyeballing(models_in, params, data) # build the quality + dynamics figure manifest for the report (see eyeballing.R)
