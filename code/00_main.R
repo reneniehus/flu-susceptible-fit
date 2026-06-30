@@ -25,6 +25,7 @@ data = load_data( params, regenerate = F, new_from_online = F) # loads the data 
 
 # ---- |-generate model inputs ----
 models_in = gen_model_input( params, data )
+saveRDS(models_in, "output/models_in.rds") # persist the model-ready inputs (gitignored cache); the panel build + analysis read this (code/04_modelling/build_slim_panel.R, code/05_analysis/)
 
 # ---- |-report ----
 # render the data-eyeballing report: rmarkdown::render("code/03_report/eyeballing_report.Rmd")

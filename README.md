@@ -124,8 +124,12 @@ with the code rather than only in commit messages.
 ## Reproducibility
 
 `renv.lock` pins all dependencies (R 4.3.3); `renv::restore()` reproduces the environment.
-Data is public ECDC ERVISS / RespiCompass surveillance data. See `documentation/quickstart.md`
-and `documentation/data_overview.md` for more.
+Data is public ECDC ERVISS / RespiCompass surveillance data. The build chain regenerates every
+analysis input from the committed snapshots: `code/00_main.R` writes the model-ready inputs to
+`output/models_in.rds` (a gitignored cache), from which `code/04_modelling/build_slim_panel.R`
+reproduces the committed panel `data/slim_flu_iliplus.csv` (verified byte-identical) and
+`code/05_analysis/prepare_descriptors.R` the descriptor tables the analyses consume. See
+`documentation/quickstart.md` and `documentation/data_overview.md` for more.
 
 ## Note on the Stan model
 
