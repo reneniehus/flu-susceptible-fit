@@ -186,6 +186,18 @@ and the main alternative considered.
 - **Retired the single-season, free-R0 EKF tracking fit.** Superseded by the EKF susceptibility
   method; removing it keeps the repo focused. The shared `.ekf_filter` engine is kept in `sir_core.R`.
 
+- **Retired the legacy SIR run-path scaffolding.** The original-pipeline orchestration was dead and
+  fully superseded by the method framework (`sir_core.R` + `methods/` + `methods_registry.R`) for the
+  driver analysis. Removed: the no-op `run_model.R` stub, the unreachable `process_and_save.R`
+  (RespiCompass hub-submission saver), the five orphaned single-model scripts (`model_SIR_multiseason`,
+  `model_SIR_simple`, `model_SIR_simple_r0`, `model_arima_simple`, `model_last_year_burden` — several
+  also broken: missing Stan files, a stray `browser()`, a `load()`-for-`log()` typo), and the dead
+  helpers they alone used in `flu_functions.R` (`data_into_all_season`, `get_contact_matrix`, the
+  severity helpers, `rep_warning_wed`, `mnaming`, `squash_axis`). None was sourced or called by the
+  active path (tests, `build_slim_panel.R`, `code/05_analysis/`); the reference Stan model
+  `stan/SIR_multiseason_age_vax_2.stan` is kept. Git history preserves all removed code, and `00_main.R`
+  is now data-build + eyeballing only.
+
 - **NA handling.** The moving average is NA-aware and bridges short gaps; a week whose whole window
   is missing stays NA and is skipped by the feature helpers. As more countries bring longer internal
   gaps, the planned step is linear interpolation of internal gaps before smoothing (hook noted in

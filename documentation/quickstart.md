@@ -66,10 +66,8 @@ It checks the data contracts, the canonical tables, and the key invariant
 (`ILI+ == ILI × positivity`, and agreement with the RespiCompass ILI+).
 
 ## 8. Modelling
-`run_model.R` is an intentionally empty orchestration stub; `model_*.R` in
-`code/01_main_supporting/` are parked single-model templates (SIR, ARIMA, last-year-burden)
-to graduate into production when a project needs them. The contact-matrix transform lives in
-`flu_functions.R`.
+The active modelling is the swappable **method framework** plus a reference Stan model (both below).
+The data layer's contact-matrix transform lives in `flu_functions.R`.
 
 Two worked SIR implementations of the same flu ILI+ model are included:
 
@@ -92,8 +90,8 @@ Two worked SIR implementations of the same flu ILI+ model are included:
 ## Layout
 ```
 code/00_main.R                 orchestrator (run this)
-code/01_main_supporting/       setup, validate, load_data, gen_model_input, eyeballing,
-                               sir_core, methods/, methods_registry, run_model, process_and_save
+code/01_main_supporting/       setup, validate, load_data, gen_model_input, flu_functions, eyeballing,
+                               sir_core, methods/, methods_registry, send_report
 code/02_settings/              settings_version0.R (params)
 code/03_report/                eyeballing_report.Rmd, data_availability.R
 code/04_modelling/             build_slim_panel.R, fit_methods_demo.R, descriptive_overview.R, ekf_overview.R
