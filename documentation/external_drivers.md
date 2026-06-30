@@ -16,7 +16,11 @@ Copernicus-style endpoints. Only `WebSearch` (which returns sourced result summa
   here** — all gridded-data endpoints are blocked. A turn-key pull recipe for an egress-enabled run is given.
 
 Each value below was cross-checked where possible; the four pre-COVID dominant subtypes and two VE seasons
-were independently verified against primary sources. Data files live in `data/external/`.
+were independently verified against primary sources. Data files live in `data/external/`. An
+**availability panel** (companion to the ILI+ one, to sit below it) is produced by
+`code/03_report/driver_availability.R` → `output/driver_availability.png`: subtype & VE show as single
+season-level "EU/EEA" strips, 65+ coverage as a country×season grid (in-repo pre-COVID + the partial
+post-COVID pull + the gaps).
 
 ---
 
