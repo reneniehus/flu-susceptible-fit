@@ -1,0 +1,9 @@
+season,europe_djf_temp_anomaly_c,character,precip_note,regional_pattern,source
+2014/2015,NA,mild,positive NAO (wetter NW Europe),"positive-NAO pattern: mild/wet NW Europe, drier S",Copernicus European temperature; OS 18/953/2022 (NAO)
+2015/2016,NA,very mild (~2nd-warmest European winter at the time; Dec 2015 warmest December on record),very wet/stormy NW Europe (record UK December rainfall),warm/wet/stormy NW (Atlantic cyclone train),Copernicus warmest-winter; McCarthy 2016 (RMetS Weather)
+2016/2017,NA,mixed / near-normal (blocking-driven),UNKNOWN,"strong N-S split: mild N/NW vs cold S/SE (Jan 2017 cold spell to approx -30C in SE Europe)",ECMWF cold-spell Jan 2017; Copernicus Climate in 2017
+2017/2018,NA,near-normal overall with a sharp late-winter cold,heavy snow during the cold outbreak,"mild early; late Feb-Mar 'Beast from the East' (SSW-driven) cold wave; Iberia/Ireland/Scandinavia colder",Copernicus European temperature; MDPI Atmosphere 11/664
+2018/2019,NA,mild overall,UNKNOWN,"above-average esp. central Europe, Ireland, UK",Copernicus ESOTC 2019 European temperature
+2023/2024,1.44,very mild (2nd-warmest European winter on record),large wet/dry contrasts across Europe,"within-winter N-S contrast: cooler N Europe, warmer S",Copernicus ESOTC 2024 Temperature
+2024/2025,1.46,very mild (joint-2nd-warmest; Jan 2025 +2.51),predominantly drier than average (Iberia drought; storms Eowyn/Herminia),warm almost everywhere; greatest warmth NE Europe/Alps/Adriatic,Copernicus surface air temperature Jan/Feb 2025; ESOTC 2025
+2025/2026,0.09,near-normal/cold (one of two coldest European winters in 13 years; Jan 2026 -1.63 = coldest January since 2010),UNKNOWN,"severe cold Jan 2026 over Fennoscandia, Baltics, E Europe; milder Dec/Feb",Copernicus January/February 2026 bulletins

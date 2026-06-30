@@ -2,8 +2,8 @@
 
 *The thinking behind the driver analysis: the strategy, the methodological principles we've arrived at,
 what we've learned, and the next steps with their logic. Companion to `PROJECT_SCOPE.md` (the why),
-`findings_descriptors.md` (the results), and `decisions.md` (the modelling/data decisions). Living
-document — update as the analysis evolves.*
+`findings_descriptors.md` (the results), `external_drivers.md` (externally-pulled driver data +
+provenance), and `decisions.md` (the modelling/data decisions). Living document — update as it evolves.*
 
 ## 1. The strategy in one line
 

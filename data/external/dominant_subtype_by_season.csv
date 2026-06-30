@@ -1,0 +1,9 @@
+season,dominant,b_lineage,basis,confidence,source,note
+2014/2015,A(H3N2),,continental_literature,high,ECDC Summary of the influenza 2014-2015 season in Europe; Eurosurveillance ES2015.20.4.21023,Drifted A(H3N2) dominant in almost all countries; B/Yamagata circulation rose late in the season
+2015/2016,A(H1N1),B/Victoria,continental_literature,high,ECDC Summary of the influenza 2015-2016 season; Eurosurveillance ES.2016.21.13.30184,A(H1N1)pdm09 6B.1 dominant; B/Victoria co-circulated (lineage mismatched to the trivalent vaccine)
+2016/2017,A(H3N2),,continental_literature,high,ECDC Summary 2016-2017; Eurosurveillance/PMC5883452,A(H3N2) approx 76 percent of sentinel detections; little geographic deviation
+2017/2018,B,B/Yamagata,continental_literature,high,Eurosurveillance/PMC5883452; ECDC AER 2017-18,Type B dominant overall; 97 percent of subtyped B were B/Yamagata (mismatched to the trivalent vaccine); A(H1N1)pdm09 > A(H3N2) among A
+2018/2019,A(H1N1),,continental_literature,medium-high,ECDC AER 2018-2019; Eurosurveillance ES.2019.24.9.1900125,99 percent type A; A(H1N1)pdm09 held the EU/EEA-wide plurality; BIPHASIC - A(H3N2) led late and in some countries
+2023/2024,A(H1N1),,erviss_typing,high,ERVISS typing (this project: code/05_analysis/dominant_subtype.R); VEBIS 2023/24 (Eurosurveillance ES.2025.30.23.2500011),A(H1N1)pdm09 predominance across EU/EEA
+2024/2025,B,B/Victoria,erviss_typing,medium,ERVISS typing (this project); Interim 2024/25 VE eight European studies (Eurosurveillance ES.2025.30.7.2500102),Influenza B prominent (Victoria) with influenza A co-circulation
+2025/2026,A(H3N2),,erviss_typing,high,ERVISS typing (this project); Eurosurveillance ES.2026.31.7.2600109,Drifted A(H3N2) subclade K predominance

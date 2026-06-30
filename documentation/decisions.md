@@ -208,6 +208,18 @@ and the main alternative considered.
   Package Manager binaries (the setup script sets the repo URL + HTTP user agent) and are restored
   via `renv`.
 
+- **External driver data pulled into `data/external/`.** To fill the seasons/variables missing in-repo,
+  four candidate-driver streams were web-sourced (full provenance + caveats in
+  `documentation/external_drivers.md`): (1) **dominant subtype** for the 5 pre-COVID seasons (ECDC /
+  Eurosurveillance), completing all 8 seasons and enabling `code/05_analysis/subtype_8season.R` (subtype
+  now recurs across both eras → far less season-confounded); (2) **65+ vaccination coverage** for
+  2023/24–24/25 (~10 panel countries; Eurostat/ECDC/national; comparability caveats); (3) **winter
+  climate** — only *continental* C3S anomalies were obtainable here (gridded reanalysis APIs are egress-
+  blocked), so per-country ERA5 is a documented next step; (4) **vaccine effectiveness** (I-MOVE/VEBIS,
+  point estimates + 95% CIs). Constraint of record: in this environment `WebFetch` and data APIs return
+  403 (egress policy); only `WebSearch` was available, so literature data was pulled but not raw APIs.
+  Decision: the dominant subtype is assumed ~identical across EU/EEA countries within a season (continental).
+
 ## Open questions & planned sensitivity analyses
 
 Choices made for simplicity or by assumption that should be probed downstream, once the analysis

@@ -1,0 +1,43 @@
+season,subtype,age_group,setting,ve_point,ci_low,ci_high,value_type,timing,network,source,source_url
+2014/2015,A(H1N1)pdm09,all,primary_care,54.2,31.2,69.6,point,end_of_season,I-MOVE,Eurosurveillance ES.2016.21.7.30139,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2016.21.7.30139
+2014/2015,A(H3N2),all,primary_care,14.4,-6.3,31.0,point,end_of_season,I-MOVE,Eurosurveillance ES.2016.21.7.30139,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2016.21.7.30139
+2014/2015,A(H3N2),0-14,primary_care,20.7,-22.3,48.5,point,end_of_season,I-MOVE,Eurosurveillance ES.2016.21.7.30139,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2016.21.7.30139
+2014/2015,A(H3N2),15-59,primary_care,10.9,-30.8,39.3,point,end_of_season,I-MOVE,Eurosurveillance ES.2016.21.7.30139,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2016.21.7.30139
+2014/2015,A(H3N2),60+,primary_care,15.8,-20.2,41.0,point,end_of_season,I-MOVE,Eurosurveillance ES.2016.21.7.30139,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2016.21.7.30139
+2014/2015,B,all,primary_care,48.0,28.9,61.9,point,end_of_season,I-MOVE,Eurosurveillance ES.2016.21.7.30139,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2016.21.7.30139
+2015/2016,A(H1N1)pdm09,all,primary_care,32.9,15.5,46.7,point,end_of_season,I-MOVE,Eurosurveillance/PMC6005601,https://pmc.ncbi.nlm.nih.gov/articles/PMC6005601/
+2015/2016,A(H1N1)pdm09,15-64,primary_care,41.4,20.5,56.7,point,end_of_season,I-MOVE,Eurosurveillance/PMC6005601,https://pmc.ncbi.nlm.nih.gov/articles/PMC6005601/
+2015/2016,A(H1N1)pdm09,65+,primary_care,13.2,-38.0,45.3,point,end_of_season,I-MOVE,Eurosurveillance/PMC6005601,https://pmc.ncbi.nlm.nih.gov/articles/PMC6005601/
+2015/2016,A(H1N1)pdm09,65+,hospital,42,22,57,point,end_of_season,I-MOVE+,Eurosurveillance ES.2017.22.30.30580,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.30.30580
+2015/2016,B,65+,hospital,52,24,70,point,end_of_season,I-MOVE+,Eurosurveillance ES.2017.22.30.30580,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.30.30580
+2016/2017,A(H3N2),0-14,primary_care,44.1,NA,NA,point,interim,I-MOVE,Eurosurveillance ES.2017.22.7.30464,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.7.30464
+2016/2017,A(H3N2),15-64,primary_care,46.9,NA,NA,point,interim,I-MOVE,Eurosurveillance ES.2017.22.7.30464,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.7.30464
+2016/2017,A(H3N2),65+,primary_care,23.4,NA,NA,point,interim,I-MOVE,Eurosurveillance ES.2017.22.7.30464,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.7.30464
+2016/2017,A(H3N2),65+,hospital,17,1,31,point,end_of_season,I-MOVE+,Eurosurveillance ES.2017.22.41.17-00645,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.41.17-00645
+2016/2017,A(H3N2),65-79,hospital,25,2,43,point,end_of_season,I-MOVE+,Eurosurveillance ES.2017.22.41.17-00645,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.41.17-00645
+2016/2017,A(H3N2),80+,hospital,13,-15,30,point,end_of_season,I-MOVE+,Eurosurveillance ES.2017.22.41.17-00645,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.41.17-00645
+2017/2018,any,all,primary_care,NA,25,52,study_range,interim,five European studies,Eurosurveillance ES.2018.23.9.18-00086,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2018.23.9.18-00086
+2017/2018,A(H1N1)pdm09,all,primary_care,NA,55,68,study_range,interim,five European studies,Eurosurveillance ES.2018.23.9.18-00086,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2018.23.9.18-00086
+2017/2018,A(H3N2),all,primary_care,NA,-42,7,study_range,interim,five European studies,Eurosurveillance ES.2018.23.9.18-00086,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2018.23.9.18-00086
+2017/2018,B,all,primary_care,NA,36,54,study_range,interim,five European studies,Eurosurveillance ES.2018.23.9.18-00086,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2018.23.9.18-00086
+2018/2019,influenza_A,all,primary_care,NA,32,43,study_range,interim,six European studies,Eurosurveillance ES.2019.24.1900121,https://pmc.ncbi.nlm.nih.gov/articles/PMC6446950/
+2018/2019,A(H3N2),all,primary_care,-1,-24,18,point,end_of_season,I-MOVE,Eurosurveillance ES.2019.24.48.1900604,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2019.24.48.1900604
+2018/2019,A(H3N2),15-64,primary_care,46,8,68,point,end_of_season,I-MOVE,Eurosurveillance ES.2019.24.48.1900604,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2019.24.48.1900604
+2018/2019,A(H3N2),65+,primary_care,20,-20,46,point,end_of_season,I-MOVE,Eurosurveillance ES.2019.24.48.1900604,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2019.24.48.1900604
+2023/2024,A(H1N1)pdm09,all,primary_care,52,44,59,point,end_of_season,VEBIS,Eurosurveillance ES.2025.30.23.2500011,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2025.30.23.2500011
+2023/2024,A(H3N2),all,primary_care,35,20,48,point,end_of_season,VEBIS,Eurosurveillance ES.2025.30.23.2500011,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2025.30.23.2500011
+2023/2024,B/Victoria,all,primary_care,83,65,94,point,end_of_season,VEBIS,Eurosurveillance ES.2025.30.23.2500011,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2025.30.23.2500011
+2023/2024,A(H1N1)pdm09,all,primary_care,53,41,63,point,interim,VEBIS,Eurosurveillance ES.2024.29.8.2400089,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2024.29.8.2400089
+2023/2024,A(H3N2),all,primary_care,30,-3,54,point,interim,VEBIS,Eurosurveillance ES.2024.29.8.2400089,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2024.29.8.2400089
+2023/2024,A(H1N1)pdm09,all,hospital,44,30,55,point,interim,VEBIS,Eurosurveillance ES.2024.29.8.2400089,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2024.29.8.2400089
+2023/2024,A(H3N2),all,hospital,14,-32,43,point,interim,VEBIS,Eurosurveillance ES.2024.29.8.2400089,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2024.29.8.2400089
+2024/2025,A(H1N1)pdm09,all,primary_care,30,19,40,point,end_of_season,I-MOVE/VEBIS,Expert Rev Vaccines 2026.2645378,https://www.tandfonline.com/doi/10.1080/14760584.2026.2645378
+2024/2025,A(H3N2),all,primary_care,38,26,49,point,end_of_season,I-MOVE/VEBIS,Expert Rev Vaccines 2026.2645378,https://www.tandfonline.com/doi/10.1080/14760584.2026.2645378
+2024/2025,influenza_A,all,primary_care,NA,32,53,study_range,interim,eight European studies,Eurosurveillance ES.2025.30.7.2500102,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2025.30.7.2500102
+2024/2025,influenza_A,all,hospital,NA,33,56,study_range,interim,eight European studies,Eurosurveillance ES.2025.30.7.2500102,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2025.30.7.2500102
+2025/2026,influenza_A,all,outpatient_and_hospital,NA,25,45,study_range,interim,nine European studies,Eurosurveillance ES.2026.31.7.2600109,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2026.31.7.2600109
+2025/2026,influenza_A,children,outpatient_and_hospital,NA,47,72,study_range,interim,nine European studies,Eurosurveillance ES.2026.31.7.2600109,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2026.31.7.2600109
+2025/2026,any (mostly A(H3N2) subclade K),65+,outpatient,28,17,37,point,interim,France national,Eurosurveillance ES.2026.31.2.2500992,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2026.31.2.2500992
+2025/2026,any (mostly A(H3N2) subclade K),18-64,outpatient,45,36,53,point,interim,France national,Eurosurveillance ES.2026.31.2.2500992,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2026.31.2.2500992
+2025/2026,A(H3N2),0-17,primary_care,52,21,72,point,early,ECDC early,ECDC early estimates wk41-49 2025,https://www.ecdc.europa.eu/en/news-events/early-estimates-seasonal-influenza-vaccine-effectiveness-against-influenza-requiring
+2025/2026,A(H3N2),18-64,primary_care,57,4,84,point,early,ECDC early,ECDC early estimates wk41-49 2025,https://www.ecdc.europa.eu/en/news-events/early-estimates-seasonal-influenza-vaccine-effectiveness-against-influenza-requiring

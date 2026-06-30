@@ -1,0 +1,25 @@
+country_short,country,season,coverage_pct,age_band,panel_country,confidence,source,note
+DK,Denmark,2023/2024,77.5,65+,TRUE,high,Eurostat hlth_ps_immu (calendar 2023),Eurostat reports by calendar year; 2023 ~ 2023/24 season
+DK,Denmark,2024/2025,76,65+,TRUE,high,ECDC 2024/25 survey; SSI,SSI integrated surveillance ~76 percent
+IE,Ireland,2023/2024,75.7,65+,TRUE,high,HSE/HPSC 2023-24; Eurostat 2023,
+IE,Ireland,2024/2025,74.7,65+,TRUE,high,HSE/HPSC 2024-25; ECDC 2024/25,
+PT,Portugal,2023/2024,71.8,65+,TRUE,high,Eurostat hlth_ps_immu (calendar 2023),Register-based; a Vacinometro survey panel reported ~80 percent (method-inflated)
+PT,Portugal,2024/2025,70.5,65+,TRUE,high,ECDC 2024/25 survey,
+ES,Spain,2023/2024,65.9,65+ (mayores de 64),TRUE,medium-high,Ministerio de Sanidad (via FENAER),
+ES,Spain,2024/2025,52.5,65+,TRUE,low,Indirect/implied (FENAER coberturas dispares),Not a clean Ministerio figure; treat as indicative only
+FR,France,2023/2024,54.0,65+,TRUE,medium-high,Sante publique France (derived: 2024/25 53.7 reported -0.3pt vs 2023/24),Approximate/derived
+FR,France,2024/2025,53.7,65+,TRUE,high,Sante publique France bulletin (28 Apr 2025),65-74y 46.7 percent; 75+ 60.7 percent
+IT,Italy,2023/2024,53.3,65+,TRUE,high,Ministero della Salute (via TrueNumbers/Fedaiisf),
+IT,Italy,2024/2025,52.5,65+,TRUE,high,Ministero della Salute (via TrueNumbers/Fedaiisf),
+NL,Netherlands,2023/2024,55,60+ (of invited),TRUE,medium,RIVM/Nivel NPG monitor 2023,NON-COMPARABLE: 60+ target group and denominator = invitees (overstates population coverage)
+NL,Netherlands,2024/2025,54,60+ (of invited),TRUE,medium,RIVM/Nivel NPG monitor 2024,NON-COMPARABLE: 60+ target group and denominator = invitees
+BE,Belgium,2023/2024,50.7,65+ (excl. nursing homes),TRUE,medium-high,Sciensano/MLOZ (calendar 2023),Excludes nursing-home residents
+PL,Poland,2023/2024,9.6,65+,TRUE,high,Eurostat hlth_ps_immu (calendar 2023),Lowest in EU
+SK,Slovakia,2023/2024,11.7,65+,TRUE,high,Eurostat hlth_ps_immu (calendar 2023),
+SE,Sweden,2023/2024,69,65+,FALSE,high,Folkhalsomyndigheten Influenza in Sweden 2023-2024,NOT a panel country (Sweden absent from the 25-country panel)
+SE,Sweden,2024/2025,68,65+,FALSE,high,Folkhalsomyndigheten Influenza in Sweden 2024-2025,NOT a panel country
+DE,Germany,2024/2025,34.5,60+,FALSE,high,RKI/GBE (KV billing data),NOT a panel country; Germany measures 60+ (lower than 65+)
+BG,Bulgaria,2023/2024,15.2,65+,FALSE,high,Eurostat hlth_ps_immu (calendar 2023),NOT a panel country
+UK-ENG,England (UK),2023/2024,77.8,65+,FALSE,high,UKHSA GP-patient uptake 2023-24,NOT EU/EEA panel; eligibility start changed from 2024/25 (England not comparable across seasons)
+UK-ENG,England (UK),2024/2025,74.9,65+,FALSE,high,UKHSA GP-patient uptake 2024-25,NOT EU/EEA panel
+EU,EU aggregate,2023/2024,47.1,65+,FALSE,high,Eurostat news (vaccination rate of older people 2023),Continental aggregate (calendar 2023); for context only

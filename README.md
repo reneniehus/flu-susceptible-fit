@@ -115,6 +115,7 @@ Where each kind of information lives:
 | `documentation/decisions.md` | **why** — rationale for key modelling / method / data decisions |
 | `documentation/analysis_strategy.md` | the driver analysis — strategy, principles, what we've learned, ranked next steps |
 | `documentation/findings_descriptors.md` | results of the descriptor / driver analyses |
+| `documentation/external_drivers.md` | externally-sourced drivers (subtype, vaccination, climate, VE) — provenance, values, caveats |
 | `PROJECT_SCOPE.md` | project scope (in / out of scope), research aim, references |
 | inline header comments | why each function / file works the way it does |
 
