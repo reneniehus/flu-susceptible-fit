@@ -206,3 +206,36 @@ leave **timing (onset) unmoved**. Instead:
 effect is not identifiable here and apparent "VE effects" are entangled with subtype/season. The subtype
 contrasts are the informative — if season-confounded — signal. This is the clean pre-COVID baseline against
 which a later, era-controlled model that adds the post-COVID seasons should be read.
+
+## Pre-COVID model + prior-season AUC, cross-validated on post-COVID burden
+
+`code/05_analysis/precovid_predict_postcovid.R`. Extends the model with **prior-season AUC** (last season's
+log burden — a country x season predictor, unlike season-level subtype/VE) and asks two things: what does the
+within-country model say, and **does a pre-COVID-fitted model predict post-COVID burden out of sample?**
+(Cross-val requires the 2022/23 season the panel excludes; it is reconstructed by the identical build minus
+the COVID filter — verified to reproduce the committed 2023/24 AUC exactly.)
+
+**Whisker (pre-COVID, within-country random intercepts; subtype + protection + prior-AUC; SD units).**
+Subtype timing is the clear signal — **A(H3N2) onsets earliest** (H3N2-H1N1 −1.21\* on onset), **B latest**
+(B-H3N2 +0.97\*); burden contrasts are weaker (B-H1N1 AUC +0.25, borderline). **Protection ≈ 0** on every
+descriptor. **Prior-AUC's WITHIN-country slope is small and slightly negative** (AUC −0.08; peak −0.10\*) —
+after removing the country level, last season's *deviation* barely persists (a faint depletion hint,
+consistent with the weak/null prior-burden result above).
+
+**Cross-validation (predict 2023/24 from 2022/23, 2024/25 from 2023/24; log AUC).** A pooled AR model
+(subtype + prior-AUC; prior-AUC carries each country's reporting scale) predicts post-COVID burden well:
+**cor(observed, predicted) = 0.95, RMSE = 0.46 (log AUC), 9/10 inside the 95% predictive interval** (IE
+2023/24 the miss — an unusually low season after a large 2022/23). But the **within-country deviation
+correlation is only 0.34**: the model nails the country *level* (reporting scale, the easy part) and gets
+the season-to-season *move* only modestly.
+
+**Two findings worth keeping:**
+1. **The prior-AUC duality.** Between countries, burden is strongly persistent (pooled prior-AUC slope 0.94 —
+   this is reporting scale) and hence very predictable; *within* a country the season-to-season deviation
+   barely persists (or slightly depletes). "We can predict next season's burden" is mostly "we know this
+   country's scale," not epidemiological skill — the reporting-persistence caveat, quantified.
+2. **Protection does not transfer across the COVID divide.** It had to be **dropped from the out-of-sample
+   predictor set**: VE against the dominant subtype jumped from 14–45% (pre-COVID) to 52–58% (2023/24–24/25),
+   so post-COVID protection sits outside the training range and extrapolates to nonsense (and its
+   within-country effect is ~0 anyway). This is a concrete instance of the **pre/post-COVID confounding**
+   flagged in `reflections.md` — a driver whose regime shifts across the divide cannot be carried over it.

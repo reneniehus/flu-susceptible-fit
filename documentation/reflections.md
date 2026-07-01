@@ -42,6 +42,17 @@ already track.) **Strategy:** fit the analysis on **pre-COVID seasons only** fir
 only then, carefully, add the post-COVID seasons with an explicit era control, treating any era term as
 soaking up an unknown mixture of behaviour + reporting, not a clean effect.
 
+**Confirmed (2026-07), and stronger than expected.** VE itself shifted *regime* across the divide — VE
+against the dominant subtype ran 14–45% pre-COVID vs 52–58% in 2023/24–24/25 — so in the cross-validation
+(`precovid_predict_postcovid.R`) the VE×coverage "protection" predictor could not be carried across the
+divide at all: post-COVID protection lies outside the pre-COVID range and extrapolates to nonsense, so it
+had to be dropped from the out-of-sample model. **A driver whose distribution shifts across the divide is
+not merely confounded — it is non-transferable.** By contrast prior-season AUC (which shifts far less)
+transferred fine and predicted post-COVID burden well (cor 0.95) — but mostly via the **country reporting
+scale**, not epidemiological skill (within-country season-to-season deviation cor only 0.34). So "we can
+predict next season's burden" is largely "we know this country's scale," which sharpens what would count
+as a real driver signal: it must move the *within-country deviation*, the part we predict poorly.
+
 ### 3. A mechanistic lens that stays phenomenological
 
 - **Vaccines act in tandem: effective protection ≈ VE × coverage.** Halving VE and doubling coverage roughly
