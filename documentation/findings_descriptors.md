@@ -174,3 +174,35 @@ must guard against the rise = peak - onset definitional coupling. Highest-value 
 subtype (H3N2/H1N1/B), latitude/connectivity, and a sub-national (spatial-synchrony) decomposition to
 convert these phenomenological descriptors into mechanistically interpretable sensors, and validate the
 post-COVID timing shift as ERVISS accumulates more seasons under a single source.
+
+## Pre-COVID VE + dominant subtype (first single-era model)
+
+`code/05_analysis/bayes_precovid_ve_subtype.R`. **Pre-COVID only** (2014/15-2018/19: 107 country-seasons,
+23 countries, 5 seasons; 97 with 65+ coverage) — one clean era, avoiding the pre/post-COVID
+behaviour/reporting confound (see `reflections.md`). Within-country partial pooling (country random
+intercept), Gibbs, lme4-validated (R-hat approx 1.00). Outcomes standardised: log(AUC), onset week,
+log(peak height). **Model 1** (as specified): dominant subtype (categorical) + VE (season-level VE against
+the dominant subtype). **Model 2** (mechanistic refinement): subtype + **protection = VE x 65+ coverage**,
+which varies by country x season. Effects in SD units, 95% CrI; `*` = excludes 0.
+
+**Robust signal — subtype contrasts (consistent with the 8-season analysis):** **B seasons carry the
+largest burden** (AUC B-H1N1 **+0.50***, B-H3N2 **+0.63***) and highest peak; **A(H3N2) onsets earliest**
+(H3N2-H1N1 **-1.54*** on onset week), B latest (B-H3N2 **+1.86***). *Caveat:* pre-COVID **B rests on a
+single season** (2017/18), so its contrasts are essentially "2017/18 vs the rest" — season-confounded.
+
+**VE / protection — the predicted vaccine mechanism is NOT evident, and a confounded one appears.** The
+mechanistic prediction (see `reflections.md`) was: protection should push **burden (AUC/peak) down** and
+leave **timing (onset) unmoved**. Instead:
+- burden: protection slope on AUC **-0.08 (ns, -0.25 to 0.09)**, on peak **-0.03 (ns)** — the expected
+  reduction is weak and not distinguishable from zero;
+- timing: the **only** significant VE/protection association is with **earlier onset** (VE **-0.65***;
+  protection **-0.38***) — but vaccines cannot plausibly shift onset timing, so this is **season-level
+  confounding**: VE co-varies with subtype and with season-specific onset. Even the country x season
+  protection term is dominated by its season-level VE component (65+ coverage is nearly constant within a
+  country), so it **inherits the confounded timing signal instead of isolating the burden mechanism**.
+
+**Takeaway (the identifiability limit made explicit):** with subtype and VE both **season-level** over only
+5 seasons, and coverage carrying too little within-country variation to rescue it, the vaccine-**burden**
+effect is not identifiable here and apparent "VE effects" are entangled with subtype/season. The subtype
+contrasts are the informative — if season-confounded — signal. This is the clean pre-COVID baseline against
+which a later, era-controlled model that adds the post-COVID seasons should be read.
