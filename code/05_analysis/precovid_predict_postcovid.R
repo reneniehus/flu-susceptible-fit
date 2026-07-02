@@ -126,30 +126,61 @@ ggsave("output/precovid3_whisker.png",
          subtitle="Country random intercepts; SD units, 95% CrI. Prior-AUC is a country x season predictor (unlike season-level subtype/VE).",
          x="effect (SD units)", y=NULL)+theme_minimal(base_size=10), width=12, height=4, dpi=110)
 
-# ---- |-cross-validation: pooled AR (prior log-AUC carries the country scale); Gaussian predictive ----
-# For PREDICTION we let prior-season log(AUC) carry each country's reporting scale directly (AR-style)
-# rather than a country random intercept -- the two are collinear (both encode scale) and the RE model
-# cannot extrapolate out of sample. Fit a pooled linear model; the 95% prediction interval is the Gaussian
-# posterior predictive (= Bayesian with weak priors). prior_lauc is on the natural log-AUC scale, identical
-# for train and test, so there is no extrapolation.
-# NOTE: PROTECTION is dropped from the OUT-OF-SAMPLE predictor set. VE jumped pre->post COVID (dominant-
-# subtype VE 14-45% pre vs 52-58% test), so post-COVID protection lies outside the training range and does
-# not transfer (its within-country effect is ~0 anyway; whisker above). Predict from the transferable
-# predictors: dominant subtype + prior-season AUC (which carries each country's reporting scale).
-mf <- lm(lauc ~ dominant + prior_lauc, data=train)
-pr <- predict(mf, newdata=tst, interval="prediction", level=0.95)
-tst$pred_lauc <- pr[,"fit"]; tst$pi_lo <- pr[,"lwr"]; tst$pi_hi <- pr[,"upr"]
-cat("\npredictive model (log AUC ~ subtype + prior-AUC): coefficients\n"); print(round(coef(mf),3))
-tst$in_pi <- tst$lauc >= tst$pi_lo & tst$lauc <= tst$pi_hi
+# ---- |-hierarchical location-scale prediction models: COUNTRY-SPECIFIC residual variance ----
+# The season-to-season variability UNEXPLAINED by the predictors is country-specific: sigma_c^2 ~
+# InvGamma(a0, b0), the scale b0 estimated across countries (partial pooling), so a volatile country gets
+# a WIDER predictive band and a steady one a narrower band -- not a single pooled residual. Two Gibbs models:
+#   BASELINE = country intercept alpha_c + sigma_c (knows only the country);
+#   FULL     = pooled mean (dominant subtype + prior-season AUC, which carries the reporting scale) + sigma_c.
+# Each test season is predicted with ITS country's sigma_c. a0=2 sets moderate variance pooling.
+# (PROTECTION is excluded out of sample: VE jumped 14-45% pre-COVID to 52-58% test, so it does not transfer;
+#  prior-AUC is on the same log scale train/test, so no extrapolation.)
+gibbs_ls <- function(y, g, X=NULL, n_iter=9000, n_burn=4000, chains=3, a0=2){
+  n<-length(y); G<-max(g); ints<-is.null(X); p<-if (ints) 1L else ncol(X); A<-Sg<-B<-NULL
+  for (ch in 1:chains){
+    alpha<-rep(mean(y),G); mua<-mean(y); ta2<-var(y); s2<-rep(var(y),G); b0<-var(y); beta<-rep(0,p)
+    nb<-n_iter-n_burn; Ac<-matrix(NA,nb,G); Sc<-matrix(NA,nb,G); Bc<-matrix(NA,nb,p)
+    for (it in 1:n_iter){
+      if (ints){
+        for (gi in 1:G){ idx<-which(g==gi); vc<-1/(length(idx)/s2[gi]+1/ta2)
+          alpha[gi]<-rnorm(1, vc*(sum(y[idx])/s2[gi]+mua/ta2), sqrt(vc)) }
+        vmu<-1/(G/ta2+1/100); mua<-rnorm(1, vmu*sum(alpha)/ta2, sqrt(vmu))
+        ta2<-1/rgamma(1, 0.01+G/2, 0.01+sum((alpha-mua)^2)/2); r<-y-alpha[g]
+      } else {
+        w<-1/s2[g]; V<-chol2inv(chol(crossprod(X*sqrt(w))+diag(1/100,p))); m<-V%*%crossprod(X, w*y)
+        beta<-as.numeric(m+t(chol(V))%*%rnorm(p)); r<-y-as.numeric(X%*%beta)
+      }
+      for (gi in 1:G){ idx<-which(g==gi); s2[gi]<-1/rgamma(1, a0+length(idx)/2, b0+sum(r[idx]^2)/2) }
+      b0<-rgamma(1, 1+G*a0, 1+sum(1/s2))
+      if (it>n_burn){ k<-it-n_burn; Ac[k,]<-alpha; Sc[k,]<-sqrt(s2); Bc[k,]<-beta } }
+    A<-rbind(A,Ac); Sg<-rbind(Sg,Sc); B<-rbind(B,Bc) }
+  list(alpha=A, sigma=Sg, beta=B)
+}
+clev <- levels(factor(train$country)); g <- as.integer(factor(train$country, levels=clev))
+Xf <- cbind(1, model.matrix(~ dominant, train)[,-1,drop=FALSE], train$prior_lauc)   # [1, H3N2, B, prior_lauc]
+fitF <- gibbs_ls(train$lauc, g, X=Xf)          # FULL: pooled mean + country-specific sigma
+fit0 <- gibbs_ls(train$lauc, g)                # BASELINE: country intercept + country-specific sigma
+cat(sprintf("\nfull-model coefficients (intercept, H3N2, B, prior-AUC): %s\n", paste(round(colMeans(fitF$beta),3), collapse=", ")))
+cat(sprintf("country-specific baseline residual SD (season-to-season, log): %.2f - %.2f (median %.2f)\n",
+            min(colMeans(fit0$sigma)), max(colMeans(fit0$sigma)), median(colMeans(fit0$sigma))))
+gi_te <- match(tst$country, clev)
+Xte <- cbind(1, as.numeric(tst$dominant=="A(H3N2)"), as.numeric(tst$dominant=="B"), tst$prior_lauc)
+predict_ls <- function(mu, sig){ obs<-mu+rnorm(length(mu),0,sig); c(fit=mean(mu), lo=quantile(obs,.025), hi=quantile(obs,.975)) }
+ppF <- sapply(seq_len(nrow(tst)), function(i) predict_ls(as.numeric(Xte[i,]%*%t(fitF$beta)), fitF$sigma[,gi_te[i]]))
+tst$pred_lauc<-ppF[1,]; tst$pi_lo<-ppF[2,]; tst$pi_hi<-ppF[3,]
+pp0 <- sapply(seq_len(nrow(tst)), function(i) predict_ls(fit0$alpha[,gi_te[i]], fit0$sigma[,gi_te[i]]))
+tst$base_pred<-pp0[1,]; tst$base_lo<-pp0[2,]; tst$base_hi<-pp0[3,]
+tst$base_sd <- colMeans(fit0$sigma)[gi_te]
+tst$in_pi <- tst$lauc>=tst$pi_lo & tst$lauc<=tst$pi_hi
 rmse <- sqrt(mean((tst$lauc-tst$pred_lauc)^2)); r_all <- cor(tst$lauc, tst$pred_lauc)
-# within-country deviation cor (the hard part: did we get the season-to-season move right?)
+rmse0 <- sqrt(mean((tst$lauc-tst$base_pred)^2)); r0 <- cor(tst$lauc, tst$base_pred)
 tst <- tst %>% group_by(country) %>% mutate(rc=lauc-mean(lauc), pc=pred_lauc-mean(pred_lauc)) %>% ungroup()
 r_within <- if (sum(tst$rc!=0)>2) cor(tst$rc, tst$pc) else NA_real_
-cat(sprintf("\nCROSS-VAL (log AUC): RMSE=%.2f | cor(real,pred)=%.2f | within-country dev cor=%.2f | %.0f%% inside 95%% PI\n",
-            rmse, r_all, r_within, 100*mean(tst$in_pi)))
-print(tst %>% transmute(country, season, real_lauc=round(lauc,2), pred_lauc=round(pred_lauc,2),
-                        pi=sprintf("[%.2f, %.2f]",pi_lo,pi_hi), in_pi) %>% as.data.frame(), row.names=FALSE)
-write.csv(tst %>% select(country,season,lauc,pred_lauc,pi_lo,pi_hi,in_pi), "output/precovid_crossval.csv", row.names=FALSE)
+cat(sprintf("\nCROSS-VAL (log AUC): FULL RMSE=%.2f cor=%.2f (within-dev %.2f, %.0f%% in PI)  |  BASELINE RMSE=%.2f cor=%.2f\n",
+            rmse, r_all, r_within, 100*mean(tst$in_pi), rmse0, r0))
+print(tst %>% transmute(country, season, real=round(lauc,2), full=round(pred_lauc,2),
+                        full_pi=sprintf("[%.2f,%.2f]",pi_lo,pi_hi), base_sd=round(base_sd,2), in_pi) %>% as.data.frame(), row.names=FALSE)
+write.csv(tst %>% select(country,season,lauc,base_pred,base_lo,base_hi,base_sd,pred_lauc,pi_lo,pi_hi,in_pi), "output/precovid_crossval.csv", row.names=FALSE)
 
 lims <- range(c(tst$lauc, tst$pred_lauc))
 ggsave("output/precovid_crossval.png",
@@ -164,41 +195,30 @@ ggsave("output/precovid_crossval.png",
                           rmse, r_all, 100*mean(tst$in_pi)),
          x="predicted log(AUC)", y="observed log(AUC)")+theme_minimal(base_size=11), width=8, height=8, dpi=110)
 
-# ---- |-baseline (country-only) vs full model: per-country-season prediction comparison ----
-# Baseline knows ONLY the country -> predicts that country's mean log(AUC) (an intercept-only model;
-# lm(~country) here; Bayesian partial pooling is near-identical at ~4 training seasons/country). The full
-# model adds dominant subtype + prior-season AUC. The gap shows what those buy beyond the country scale.
-mf0 <- lm(lauc ~ country, data=train)
-pr0 <- predict(mf0, newdata=tst, interval="prediction", level=0.95)
-tst$base_pred <- pr0[,"fit"]; tst$base_lo <- pr0[,"lwr"]; tst$base_hi <- pr0[,"upr"]
-rmse0 <- sqrt(mean((tst$lauc-tst$base_pred)^2)); r0 <- cor(tst$lauc, tst$base_pred)
-cat(sprintf("\nBASELINE (country only): RMSE=%.2f cor=%.2f  vs  FULL (+subtype+prior-AUC): RMSE=%.2f cor=%.2f\n", rmse0, r0, rmse, r_all))
-
-# ---- |-relative view: express AUC vs each country's pre-COVID mean (removes the country scale) ----
-# Center each test season on its country's pre-COVID mean log(AUC) (= the baseline's own prediction). So the
-# baseline predicts 0 -- a "typical season" -- for every column (shown as a grey band), and the full-model
-# and observed DEVIATIONS are what the eye reads. y is on the log scale but tick-labelled as fold-change
-# (1x = the pre-COVID average; higher = a bigger season than usual). Countries with BOTH test seasons are
-# grouped first and joined by a line (the real season-to-season trajectory); single-season countries follow
-# after a dotted gap and stand alone (no line).
-pcm <- train %>% group_by(country) %>% summarise(cmean=mean(lauc), .groups="drop")
-Tc <- tst %>% left_join(pcm, by="country") %>%
-  mutate(obs_r=lauc-cmean, full_r=pred_lauc-cmean, full_lo=pi_lo-cmean, full_hi=pi_hi-cmean,
-         bl=base_lo-cmean, bh=base_hi-cmean, seas=ifelse(season=="2023/2024","'23/24","'24/25")) %>%
+# ---- |-relative view: AUC vs each country's pre-COVID mean, with COUNTRY-SPECIFIC baseline bands ----
+# Center each test season on its country's pre-COVID mean (= the baseline point). The baseline predicts 0
+# (a "typical season"); its blue 95% band width is now COUNTRY-SPECIFIC (each country's own residual SD),
+# so volatile countries get taller bands. The full-model and observed DEVIATIONS are what the eye reads.
+# y is on the log scale but tick-labelled as fold-change (1x = pre-COVID average; higher = a bigger season).
+# Countries with BOTH test seasons are grouped first and joined by a line; single-season countries follow
+# after a dotted gap and stand alone.
+Tc <- tst %>%
+  mutate(obs_r=lauc-base_pred, full_r=pred_lauc-base_pred, full_lo=pi_lo-base_pred, full_hi=pi_hi-base_pred,
+         seas=ifelse(season=="2023/2024","'23/24","'24/25")) %>%
   add_count(country, name="k") %>% mutate(paired=k==2)
 ordc <- Tc %>% distinct(country, paired) %>% arrange(desc(paired), country) %>% pull(country)   # pairs first, then singles
 Tc <- Tc %>% mutate(country=factor(country, levels=ordc)) %>% arrange(country, season) %>%
   mutate(pos = row_number() + ifelse(paired, 0, 0.8))                    # gap before the singles block
-band <- c(mean(Tc$bl), mean(Tc$bh))                                      # baseline 95% PI (constant in relative terms)
 gapx <- if (any(!Tc$paired)) min(Tc$pos[!Tc$paired]) - 0.4 else NA_real_
-bg <- Tc %>% group_by(country) %>% summarise(xmin=min(pos)-0.5, xmax=max(pos)+0.5, .groups="drop") %>%
+bg <- Tc %>% group_by(country) %>%                                       # per-country baseline band (its own SD)
+  summarise(xmin=min(pos)-0.5, xmax=max(pos)+0.5, blo=(base_lo-base_pred)[1], bhi=(base_hi-base_pred)[1], .groups="drop") %>%
   mutate(shade=rep(c("a","b"), length.out=n()))
 yb <- log(c(0.125,0.25,0.5,1,1.5))
-ylim <- c(min(Tc$obs_r, Tc$full_lo)-0.15, max(Tc$obs_r, Tc$full_hi, 0.15)+0.15)
+ylim <- c(min(Tc$obs_r, Tc$full_lo, bg$blo)-0.1, max(Tc$obs_r, Tc$full_hi, bg$bhi, 0.15)+0.1)
 p <- ggplot(Tc)+
   geom_rect(data=bg, aes(xmin=xmin,xmax=xmax,ymin=-Inf,ymax=Inf,fill=shade), alpha=0.6, inherit.aes=FALSE)+
-  scale_fill_manual(values=c(a="grey95", b="white"), guide="none")+
-  annotate("rect", xmin=-Inf, xmax=Inf, ymin=band[1], ymax=band[2], fill="#8da0cb", alpha=0.18)+   # baseline 95% PI (very wide)
+  scale_fill_manual(values=c(a="grey96", b="white"), guide="none")+
+  geom_rect(data=bg, aes(xmin=xmin,xmax=xmax,ymin=blo,ymax=bhi), fill="#8da0cb", alpha=0.32, inherit.aes=FALSE)+  # country-specific baseline 95% PI
   geom_hline(yintercept=0, color="grey55", linewidth=0.4)+                            # baseline point prediction = 'typical season'
   geom_line(aes(pos, obs_r, group=country), color="grey45", linewidth=0.5)+          # joins a country's 2 seasons
   geom_linerange(aes(pos, ymin=full_lo, ymax=full_hi), color="#d95f02", linewidth=0.8)+
@@ -208,7 +228,7 @@ p <- ggplot(Tc)+
   scale_y_continuous(breaks=yb, labels=c("0.12x","0.25x","0.5x","1x","1.5x"))+
   coord_cartesian(ylim=ylim)+
   labs(title="Post-COVID burden relative to each country's pre-COVID average (country scale removed)",
-       subtitle=sprintf("diamond = observed | orange = full model (95%% PI) | blue band = baseline 95%% PI (its prediction = the 1x line)\ngrey line joins a country's two seasons; single-season countries after the gap. Within-country RMSE %.2f -> %.2f (baseline -> full).", rmse0, rmse),
+       subtitle=sprintf("diamond = observed | orange = full model (95%% PI) | blue band = baseline 95%% PI, COUNTRY-SPECIFIC width (its prediction = the 1x line)\ngrey line joins a country's two seasons; single-season countries after the gap. Within-country RMSE %.2f -> %.2f (baseline -> full).", rmse0, rmse),
        x=NULL, y="AUC relative to the country's pre-COVID mean (fold-change)")+
   theme_minimal(base_size=11)+
   theme(axis.text.x=element_text(angle=45,hjust=1), panel.grid.minor=element_blank(), panel.grid.major.x=element_blank(),

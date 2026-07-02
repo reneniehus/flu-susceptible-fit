@@ -236,8 +236,11 @@ last-season AUC add a **~35% RMSE improvement** on top — a real but modest sea
 `output/precovid_crossval_compare.png` visualises this with the country scale *removed*: each season as a
 **fold-change vs that country's pre-COVID normal** (so the baseline collapses to the 1x line and the
 deviations are what the eye reads). It shows all four two-season countries rising from 2023/24 to 2024/25,
-IE 2023/24 as an extreme low (0.16x, below even the baseline's wide interval), and the full model's tighter
-intervals sitting closer to the observed diamonds than the flat baseline.
+IE 2023/24 as an extreme low (below even the baseline's interval), and the full model's tighter intervals
+sitting closer to the observed diamonds than the flat baseline. Both models use a **hierarchical
+location-scale form** so the residual (season-to-season) variance is **country-specific** (partial-pooled,
+sigma_c 0.35-1.05 on the log scale) -- volatile countries (e.g. PL) get visibly wider baseline bands than
+steady ones (e.g. FR), rather than a single pooled interval.
 
 **Two findings worth keeping:**
 1. **The prior-AUC duality.** Between countries, burden is strongly persistent (pooled prior-AUC slope 0.94 —
