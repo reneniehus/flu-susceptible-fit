@@ -232,8 +232,12 @@ the season-to-season *move* only modestly.
 **Against a country-only baseline** (an intercept-only model that predicts each country's mean log-AUC —
 it knows *only* the country), the full model cuts RMSE from **0.71 → 0.46** (cor 0.93 → 0.95). So the
 country scale alone already carries most of the predictability (baseline cor 0.93), and subtype +
-last-season AUC add a **~35% RMSE improvement** on top — a real but modest season-specific refinement
-(`output/precovid_crossval_compare.png`).
+last-season AUC add a **~35% RMSE improvement** on top — a real but modest season-specific refinement.
+`output/precovid_crossval_compare.png` visualises this with the country scale *removed*: each season as a
+**fold-change vs that country's pre-COVID normal** (so the baseline collapses to the 1x line and the
+deviations are what the eye reads). It shows all four two-season countries rising from 2023/24 to 2024/25,
+IE 2023/24 as an extreme low (0.16x, below even the baseline's wide interval), and the full model's tighter
+intervals sitting closer to the observed diamonds than the flat baseline.
 
 **Two findings worth keeping:**
 1. **The prior-AUC duality.** Between countries, burden is strongly persistent (pooled prior-AUC slope 0.94 —

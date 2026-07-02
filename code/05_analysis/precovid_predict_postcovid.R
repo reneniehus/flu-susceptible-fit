@@ -174,21 +174,46 @@ tst$base_pred <- pr0[,"fit"]; tst$base_lo <- pr0[,"lwr"]; tst$base_hi <- pr0[,"u
 rmse0 <- sqrt(mean((tst$lauc-tst$base_pred)^2)); r0 <- cor(tst$lauc, tst$base_pred)
 cat(sprintf("\nBASELINE (country only): RMSE=%.2f cor=%.2f  vs  FULL (+subtype+prior-AUC): RMSE=%.2f cor=%.2f\n", rmse0, r0, rmse, r_all))
 
-ord <- tst %>% mutate(cs=paste(country, season)) %>% arrange(lauc) %>% pull(cs)
-cmp <- bind_rows(
-  tst %>% transmute(cs=paste(country,season), model="baseline (country only)",       pred=base_pred, lo=base_lo, hi=base_hi),
-  tst %>% transmute(cs=paste(country,season), model="full (+ subtype + prior-AUC)",  pred=pred_lauc, lo=pi_lo,   hi=pi_hi)) %>%
-  mutate(cs=factor(cs, levels=ord))
-obs_df <- tst %>% transmute(cs=factor(paste(country,season), levels=ord), obs=lauc)
-ggsave("output/precovid_crossval_compare.png",
-  ggplot(cmp, aes(pred, cs))+
-    geom_linerange(aes(xmin=lo, xmax=hi, color=model), position=position_dodge(0.55), linewidth=0.7, alpha=0.55)+
-    geom_point(aes(color=model), position=position_dodge(0.55), size=2.3)+
-    geom_point(data=obs_df, aes(x=obs, y=cs), shape=18, size=3.2, color="black", inherit.aes=FALSE)+
-    scale_color_manual(values=c("baseline (country only)"="grey60","full (+ subtype + prior-AUC)"="#d95f02"))+
-    labs(title="Post-COVID burden: country-only baseline vs full model",
-         subtitle=sprintf("Diamond = observed; bars = 95%% predictive interval. RMSE %.2f (country only) -> %.2f (full: + subtype + prior-AUC).", rmse0, rmse),
-         x="predicted log(AUC)   (diamond = observed)", y=NULL, color=NULL)+
-    theme_minimal(base_size=11)+theme(legend.position="top", panel.grid.minor=element_blank()), width=9.5, height=5.5, dpi=110)
-write.csv(tst %>% select(country,season,lauc,base_pred,base_lo,base_hi,pred_lauc,pi_lo,pi_hi), "output/precovid_crossval_compare.csv", row.names=FALSE)
+# ---- |-relative view: express AUC vs each country's pre-COVID mean (removes the country scale) ----
+# Center each test season on its country's pre-COVID mean log(AUC) (= the baseline's own prediction). So the
+# baseline predicts 0 -- a "typical season" -- for every column (shown as a grey band), and the full-model
+# and observed DEVIATIONS are what the eye reads. y is on the log scale but tick-labelled as fold-change
+# (1x = the pre-COVID average; higher = a bigger season than usual). Countries with BOTH test seasons are
+# grouped first and joined by a line (the real season-to-season trajectory); single-season countries follow
+# after a dotted gap and stand alone (no line).
+pcm <- train %>% group_by(country) %>% summarise(cmean=mean(lauc), .groups="drop")
+Tc <- tst %>% left_join(pcm, by="country") %>%
+  mutate(obs_r=lauc-cmean, full_r=pred_lauc-cmean, full_lo=pi_lo-cmean, full_hi=pi_hi-cmean,
+         bl=base_lo-cmean, bh=base_hi-cmean, seas=ifelse(season=="2023/2024","'23/24","'24/25")) %>%
+  add_count(country, name="k") %>% mutate(paired=k==2)
+ordc <- Tc %>% distinct(country, paired) %>% arrange(desc(paired), country) %>% pull(country)   # pairs first, then singles
+Tc <- Tc %>% mutate(country=factor(country, levels=ordc)) %>% arrange(country, season) %>%
+  mutate(pos = row_number() + ifelse(paired, 0, 0.8))                    # gap before the singles block
+band <- c(mean(Tc$bl), mean(Tc$bh))                                      # baseline 95% PI (constant in relative terms)
+gapx <- if (any(!Tc$paired)) min(Tc$pos[!Tc$paired]) - 0.4 else NA_real_
+bg <- Tc %>% group_by(country) %>% summarise(xmin=min(pos)-0.5, xmax=max(pos)+0.5, .groups="drop") %>%
+  mutate(shade=rep(c("a","b"), length.out=n()))
+yb <- log(c(0.125,0.25,0.5,1,1.5))
+ylim <- c(min(Tc$obs_r, Tc$full_lo)-0.15, max(Tc$obs_r, Tc$full_hi, 0.15)+0.15)
+p <- ggplot(Tc)+
+  geom_rect(data=bg, aes(xmin=xmin,xmax=xmax,ymin=-Inf,ymax=Inf,fill=shade), alpha=0.6, inherit.aes=FALSE)+
+  scale_fill_manual(values=c(a="grey95", b="white"), guide="none")+
+  annotate("rect", xmin=-Inf, xmax=Inf, ymin=band[1], ymax=band[2], fill="#8da0cb", alpha=0.18)+   # baseline 95% PI (very wide)
+  geom_hline(yintercept=0, color="grey55", linewidth=0.4)+                            # baseline point prediction = 'typical season'
+  geom_line(aes(pos, obs_r, group=country), color="grey45", linewidth=0.5)+          # joins a country's 2 seasons
+  geom_linerange(aes(pos, ymin=full_lo, ymax=full_hi), color="#d95f02", linewidth=0.8)+
+  geom_point(aes(pos, full_r), color="#d95f02", size=2.4)+
+  geom_point(aes(pos, obs_r), shape=18, size=3.4, color="black")+
+  scale_x_continuous(breaks=Tc$pos, labels=paste0(Tc$country," ",Tc$seas))+
+  scale_y_continuous(breaks=yb, labels=c("0.12x","0.25x","0.5x","1x","1.5x"))+
+  coord_cartesian(ylim=ylim)+
+  labs(title="Post-COVID burden relative to each country's pre-COVID average (country scale removed)",
+       subtitle=sprintf("diamond = observed | orange = full model (95%% PI) | blue band = baseline 95%% PI (its prediction = the 1x line)\ngrey line joins a country's two seasons; single-season countries after the gap. Within-country RMSE %.2f -> %.2f (baseline -> full).", rmse0, rmse),
+       x=NULL, y="AUC relative to the country's pre-COVID mean (fold-change)")+
+  theme_minimal(base_size=11)+
+  theme(axis.text.x=element_text(angle=45,hjust=1), panel.grid.minor=element_blank(), panel.grid.major.x=element_blank(),
+        plot.subtitle=element_text(size=9))
+if (!is.na(gapx)) p <- p + geom_vline(xintercept=gapx, color="grey70", linetype="dotted")
+ggsave("output/precovid_crossval_compare.png", p, width=11, height=6, dpi=110)
+write.csv(Tc %>% select(country,season,obs_rel=obs_r,full_pred_rel=full_r,full_lo,full_hi), "output/precovid_crossval_compare.csv", row.names=FALSE)
 cat("\nfigures -> output/precovid3_whisker.png ; output/precovid_crossval.png ; output/precovid_crossval_compare.png\n")
