@@ -163,4 +163,32 @@ ggsave("output/precovid_crossval.png",
          subtitle=sprintf("Predict 2023/24 from 2022/23 prior, 2024/25 from 2023/24 prior. RMSE=%.2f, cor=%.2f, %.0f%% in 95%% PI. Bars = 95%% predictive interval.",
                           rmse, r_all, 100*mean(tst$in_pi)),
          x="predicted log(AUC)", y="observed log(AUC)")+theme_minimal(base_size=11), width=8, height=8, dpi=110)
-cat("\nfigures -> output/precovid3_whisker.png ; output/precovid_crossval.png\n")
+
+# ---- |-baseline (country-only) vs full model: per-country-season prediction comparison ----
+# Baseline knows ONLY the country -> predicts that country's mean log(AUC) (an intercept-only model;
+# lm(~country) here; Bayesian partial pooling is near-identical at ~4 training seasons/country). The full
+# model adds dominant subtype + prior-season AUC. The gap shows what those buy beyond the country scale.
+mf0 <- lm(lauc ~ country, data=train)
+pr0 <- predict(mf0, newdata=tst, interval="prediction", level=0.95)
+tst$base_pred <- pr0[,"fit"]; tst$base_lo <- pr0[,"lwr"]; tst$base_hi <- pr0[,"upr"]
+rmse0 <- sqrt(mean((tst$lauc-tst$base_pred)^2)); r0 <- cor(tst$lauc, tst$base_pred)
+cat(sprintf("\nBASELINE (country only): RMSE=%.2f cor=%.2f  vs  FULL (+subtype+prior-AUC): RMSE=%.2f cor=%.2f\n", rmse0, r0, rmse, r_all))
+
+ord <- tst %>% mutate(cs=paste(country, season)) %>% arrange(lauc) %>% pull(cs)
+cmp <- bind_rows(
+  tst %>% transmute(cs=paste(country,season), model="baseline (country only)",       pred=base_pred, lo=base_lo, hi=base_hi),
+  tst %>% transmute(cs=paste(country,season), model="full (+ subtype + prior-AUC)",  pred=pred_lauc, lo=pi_lo,   hi=pi_hi)) %>%
+  mutate(cs=factor(cs, levels=ord))
+obs_df <- tst %>% transmute(cs=factor(paste(country,season), levels=ord), obs=lauc)
+ggsave("output/precovid_crossval_compare.png",
+  ggplot(cmp, aes(pred, cs))+
+    geom_linerange(aes(xmin=lo, xmax=hi, color=model), position=position_dodge(0.55), linewidth=0.7, alpha=0.55)+
+    geom_point(aes(color=model), position=position_dodge(0.55), size=2.3)+
+    geom_point(data=obs_df, aes(x=obs, y=cs), shape=18, size=3.2, color="black", inherit.aes=FALSE)+
+    scale_color_manual(values=c("baseline (country only)"="grey60","full (+ subtype + prior-AUC)"="#d95f02"))+
+    labs(title="Post-COVID burden: country-only baseline vs full model",
+         subtitle=sprintf("Diamond = observed; bars = 95%% predictive interval. RMSE %.2f (country only) -> %.2f (full: + subtype + prior-AUC).", rmse0, rmse),
+         x="predicted log(AUC)   (diamond = observed)", y=NULL, color=NULL)+
+    theme_minimal(base_size=11)+theme(legend.position="top", panel.grid.minor=element_blank()), width=9.5, height=5.5, dpi=110)
+write.csv(tst %>% select(country,season,lauc,base_pred,base_lo,base_hi,pred_lauc,pi_lo,pi_hi), "output/precovid_crossval_compare.csv", row.names=FALSE)
+cat("\nfigures -> output/precovid3_whisker.png ; output/precovid_crossval.png ; output/precovid_crossval_compare.png\n")
