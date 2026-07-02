@@ -13,13 +13,15 @@
 #
 # Requires: sir_core.R and the method files to be sourced first.
 
-# ---- |-method registry: name -> (human label, fit function) ----
-# Built lazily so it only references fit functions that have been sourced.
+# ---- |-method registry: name -> (human label, fit-function name) ----
+# The fit is held by NAME, not as the function object, so the registry only *resolves* a method's
+# fit function when that method is actually run (run_method -> match.fun). This is what lets a script
+# source just the methods it needs -- e.g. ekf_overview.R sources only the EKF + deterministic files.
 sir_methods = function(){
   list(
-    deterministic = list(label = "Deterministic SIR (no process noise)", fit = fit_sir_deterministic),
-    ekf           = list(label = "EKF SIR (fitted process noise)",        fit = fit_sir_ekf),
-    descriptive   = list(label = "Descriptive (smoothed-curve features)", fit = fit_descriptive)
+    deterministic = list(label = "Deterministic SIR (no process noise)", fit = "fit_sir_deterministic"),
+    ekf           = list(label = "EKF SIR (fitted process noise)",        fit = "fit_sir_ekf"),
+    descriptive   = list(label = "Descriptive (smoothed-curve features)", fit = "fit_descriptive")
   )
 }
 
@@ -28,8 +30,9 @@ sir_methods = function(){
 run_method = function(method_name, panel, params, n_sub = 7, n_starts = 4, seed = 1){
   spec = sir_methods()[[method_name]]
   if (is.null(spec)) stop(sprintf("run_method: unknown method '%s'", method_name))
+  fit_fn = match.fun(spec$fit)   # resolve the fit function by name now (so only this method's file need be sourced)
   # pass a superset of method arguments; each method takes what it needs and ignores the rest (...)
-  fit = spec$fit(panel$ylist, R0 = params$susc_R0,
+  fit = fit_fn(panel$ylist, R0 = params$susc_R0,
                  infectious_period_days = params$susc_infectious_period_days,
                  seed_i0 = params$susc_seed_i0,
                  smooth_window = if (is.null(params$susc_smooth_window)) 4 else params$susc_smooth_window,
@@ -46,10 +49,10 @@ run_method = function(method_name, panel, params, n_sub = 7, n_starts = 4, seed 
 # Simple, timing-of-curve threshold read off the red curve (mu), robust to the baseline level.
 .onset_week = function(mu, season_week, b, onset_frac = 0.1){
   above = mu - b
-  pk = max(above, na.rm = TRUE)
-  if (!is.finite(pk) || pk <= 0) return(NA_integer_)
-  idx = which(above >= onset_frac * pk)[1]
-  if (is.na(idx)) NA_integer_ else season_week[idx]
+  peak_above = max(above, na.rm = TRUE)
+  if (!is.finite(peak_above) || peak_above <= 0) return(NA_integer_)
+  onset_idx = which(above >= onset_frac * peak_above)[1]
+  if (is.na(onset_idx)) NA_integer_ else season_week[onset_idx]
 }
 
 # ---- |-standard per-season summary statistics from a method fit (the cross-method schema) ----
@@ -90,9 +93,9 @@ run_all_methods = function(countries, params, methods = names(sir_methods()),
   for (cc in countries){
     panel = load_flu_iliplus_slim(cc)
     for (m in methods){
-      t = system.time(fit <- run_method(m, panel, params, n_starts = n_starts))[["elapsed"]]
+      elapsed = system.time(fit <- run_method(m, panel, params, n_starts = n_starts))[["elapsed"]]
       if (verbose) cat(sprintf("  %-4s %-14s %2d seasons  conv=%d  %4.0fs\n",
-                               cc, m, length(panel$seasons), fit$convergence, t))
+                               cc, m, length(panel$seasons), fit$convergence, elapsed))
       out[[paste(cc, m, sep = "_")]] = summarise_method_fit(fit)
     }
   }

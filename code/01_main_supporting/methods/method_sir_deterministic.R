@@ -51,8 +51,8 @@
     mu_list[[s]] = mu
     ok = !is.na(y)
     if (any(ok)){
-      v  = mu[ok] + mu[ok]^2 / p$phi                     # neg-binomial-like observation variance
-      ll = ll + sum(dnorm(y[ok], mean = mu[ok], sd = sqrt(v), log = TRUE))
+      obs_var = mu[ok] + mu[ok]^2 / p$phi                # neg-binomial-like observation variance
+      ll = ll + sum(dnorm(y[ok], mean = mu[ok], sd = sqrt(obs_var), log = TRUE))
     }
   }
 
@@ -75,7 +75,8 @@ fit_sir_deterministic = function(ylist, R0 = 1.5, infectious_period_days = 3, se
   bguess = max(vapply(pos, function(y) if (length(y)) as.numeric(quantile(y, 0.1)) else NA_real_, numeric(1)), na.rm = TRUE)
 
   # start in the GROWING regime (S0 high) so the optimiser finds the wave, not a decaying solution
-  base = c(rep(qlogis(0.8), K), rep(log(ymax / 0.02), K), log(max(bguess, 1e-3)), log(15))
+  peak_inc_guess = 0.02                                  # assumed peak weekly new-infection proportion, to seed the reporting fraction c from the observed peak
+  base = c(rep(qlogis(0.8), K), rep(log(ymax / peak_inc_guess), K), log(max(bguess, 1e-3)), log(15))
   names(base) = c(paste0("logit_S0_", seq_len(K)), paste0("log_c_", seq_len(K)), "log_b", "log_phi")
   jit_sd = c(rep(0.8, K), rep(0.5, K), 0.5, 0.5)        # wider spread on S0 to explore growth rates
   set.seed(seed)

@@ -17,9 +17,9 @@
 # is the immunity signal; timing/steepness outcomes are cleaner. Run from the repo root.
 suppressMessages({library(dplyr); library(lme4); library(ggplot2)}); set.seed(1)
 
-d <- read.csv("output/descriptors.csv", stringsAsFactors=FALSE) %>% mutate(syr=as.integer(substr(season,1,4)))
-prior <- d %>% transmute(country, syr_next=syr+1, prior_lauc=log(auc))
-d <- d %>% left_join(prior, by=c("country"="country","syr"="syr_next")) %>% filter(is.finite(prior_lauc))
+d <- read.csv("output/descriptors.csv", stringsAsFactors=FALSE) %>% mutate(season_year=as.integer(substr(season,1,4)))
+prior <- d %>% transmute(country, next_season_year=season_year+1, prior_lauc=log(auc))
+d <- d %>% left_join(prior, by=c("country"="country","season_year"="next_season_year")) %>% filter(is.finite(prior_lauc))
 cat(sprintf("valid lagged country-seasons: %d (%d countries); seasons: %s\n",
             nrow(d), n_distinct(d$country), paste(sort(unique(d$season)), collapse=" ")))
 
@@ -47,19 +47,19 @@ gibbs_rs <- function(y, x, g, n_iter=8000, n_burn=3000, chains=3){
 rhat1 <- function(chs,col=1){ L<-nrow(chs[[1]]); cm<-sapply(chs,function(M)mean(M[,col]))
   B<-L*var(cm); W<-mean(sapply(chs,function(M)var(M[,col]))); sqrt(((L-1)/L*W+B/L)/W) }
 
-g <- as.integer(factor(d$country)); xz <- as.numeric(scale(d$prior_lauc))
-d$xw <- xz - ave(xz, d$country)                                   # within-country prior burden (SD units)
-outs <- c(auc="current AUC (log)", peak_height="current peak height (log)", peak_week="current peak week",
+g <- as.integer(factor(d$country)); prior_z <- as.numeric(scale(d$prior_lauc))
+d$prior_within <- prior_z - ave(prior_z, d$country)                                   # within-country prior burden (SD units)
+outcome_labels <- c(auc="current AUC (log)", peak_height="current peak height (log)", peak_week="current peak week",
           onset_week="current onset week", steepness="current steepness")
 res <- list()
-for (o in names(outs)){
-  y <- as.numeric(scale(if (o %in% c("auc","peak_height")) log(d[[o]]) else d[[o]]))
-  ch <- gibbs_rs(y, d$xw, g); A <- do.call(rbind, ch)
-  q <- quantile(A[,1], c(.5,.025,.975))
-  res[[length(res)+1]] <- data.frame(outcome=outs[o], beta=round(q[1],2), lo=round(q[2],2), hi=round(q[3],2),
-    excl0=ifelse(q[2]>0|q[3]<0,"*",""), het_sd=round(median(A[,2]),2), rhat=round(rhat1(ch),3))
-  m <- suppressWarnings(lmer(y ~ xw + (xw|country), d, REML=TRUE))
-  cat(sprintf("  [%-12s] lme4 slope %.2f | gibbs mu_b %.2f\n", o, fixef(m)["xw"], mean(A[,1])))
+for (outcome_key in names(outcome_labels)){
+  y <- as.numeric(scale(if (outcome_key %in% c("auc","peak_height")) log(d[[outcome_key]]) else d[[outcome_key]]))
+  ch <- gibbs_rs(y, d$prior_within, g); draws <- do.call(rbind, ch)
+  q <- quantile(draws[,1], c(.5,.025,.975))
+  res[[length(res)+1]] <- data.frame(outcome=outcome_labels[outcome_key], beta=round(q[1],2), lo=round(q[2],2), hi=round(q[3],2),
+    excl0=ifelse(q[2]>0|q[3]<0,"*",""), het_sd=round(median(draws[,2]),2), rhat=round(rhat1(ch),3))
+  m <- suppressWarnings(lmer(y ~ prior_within + (prior_within|country), d, REML=TRUE))
+  cat(sprintf("  [%-12s] lme4 slope %.2f | gibbs mu_b %.2f\n", outcome_key, fixef(m)["prior_within"], mean(draws[,1])))
 }
 out <- do.call(rbind, res); rownames(out)<-NULL
 cat("\n=== prior-season burden -> current descriptor: within-country shared slope (SD units, 95% CrI) ===\n")

@@ -72,7 +72,8 @@ fit_sir_ekf = function(ylist, R0 = 1.5, infectious_period_days = 3, seed_i0 = 1e
   bguess = max(vapply(pos, function(y) if (length(y)) as.numeric(quantile(y, 0.1)) else NA_real_, numeric(1)), na.rm = TRUE)
 
   # start in the GROWING regime (S0 high) with a small process noise
-  base = c(rep(qlogis(0.8), K), rep(log(ymax / 0.02), K), log(max(bguess, 1e-3)), log(15), log(1e-4))
+  peak_inc_guess = 0.02                                  # assumed peak weekly new-infection proportion, to seed the reporting fraction c from the observed peak
+  base = c(rep(qlogis(0.8), K), rep(log(ymax / peak_inc_guess), K), log(max(bguess, 1e-3)), log(15), log(1e-4))
   names(base) = c(paste0("logit_S0_", seq_len(K)), paste0("log_c_", seq_len(K)),
                   "log_b", "log_phi", "log_qI")
   jit_sd = c(rep(0.8, K), rep(0.5, K), 0.5, 0.5, 0.8)    # wider spread on S0; some spread on q_I

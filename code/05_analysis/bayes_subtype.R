@@ -31,7 +31,7 @@ gibbs <- function(y, X, g, n_iter=6000, n_burn=2000, chains=3){
       V<-chol2inv(chol(XtX/s2 + diag(1/100,p))); m<-V%*%(crossprod(X,y-u[g])/s2)
       beta<-as.numeric(m + t(chol(V))%*%rnorm(p))
       e<-as.numeric(y - X%*%beta)
-      for (c in 1:G){ idx<-which(g==c); vc<-1/(length(idx)/s2 + 1/t2); u[c]<-rnorm(1, vc*sum(e[idx])/s2, sqrt(vc)) }
+      for (gi in 1:G){ idx<-which(g==gi); vc<-1/(length(idx)/s2 + 1/t2); u[gi]<-rnorm(1, vc*sum(e[idx])/s2, sqrt(vc)) }
       r<-as.numeric(y - X%*%beta - u[g]); s2<-1/rgamma(1,0.01+n/2,0.01+sum(r^2)/2)
       t2<-1/rgamma(1,0.01+G/2,0.01+sum(u^2)/2)
       if (it>n_burn) M[it-n_burn,]<-beta
@@ -45,24 +45,24 @@ rhat <- function(chs){ L<-nrow(chs[[1]]); m<-length(chs); cm<-sapply(chs,colMean
   sqrt(((L-1)/L*W + B/L)/W) }
 
 g <- as.integer(factor(d$country))
-outs <- c(auc="AUC (log)", peak_height="peak height (log)", peak_week="peak week",
+outcome_labels <- c(auc="AUC (log)", peak_height="peak height (log)", peak_week="peak week",
           onset_week="onset week", steepness="steepness")
 res <- list()
-for (o in names(outs)){
-  y <- as.numeric(scale(d[[o]])); X <- model.matrix(~ dominant, d)   # ref = A(H1N1)
-  ch <- gibbs(y, X, g); A <- do.call(rbind, ch); rh <- rhat(ch)
+for (outcome_key in names(outcome_labels)){
+  y <- as.numeric(scale(d[[outcome_key]])); X <- model.matrix(~ dominant, d)   # ref = A(H1N1)
+  ch <- gibbs(y, X, g); beta_draws <- do.call(rbind, ch); rh <- rhat(ch)
   # contrasts: cols 2=H3N2-H1N1, 3=B-H1N1 ; derive B-H3N2
-  draws <- cbind(`H3N2 - H1N1`=A[,2], `B - H1N1`=A[,3], `B - H3N2`=A[,3]-A[,2])
+  draws <- cbind(`H3N2 - H1N1`=beta_draws[,2], `B - H1N1`=beta_draws[,3], `B - H3N2`=beta_draws[,3]-beta_draws[,2])
   for (cn in colnames(draws)){
     q <- quantile(draws[,cn], c(.5,.025,.975))
-    res[[length(res)+1]] <- data.frame(outcome=outs[o], contrast=cn, est=round(q[1],2),
+    res[[length(res)+1]] <- data.frame(outcome=outcome_labels[outcome_key], contrast=cn, est=round(q[1],2),
       lo=round(q[2],2), hi=round(q[3],2), excl0=ifelse(q[2]>0|q[3]<0,"*",""),
       rhat=round(max(rh),3))
   }
   # lme4 cross-check
   m <- suppressWarnings(lmer(y ~ dominant + (1|country), d, REML=TRUE))
-  cat(sprintf("  [%s] lme4 fixef (H3N2-H1N1, B-H1N1): %.2f, %.2f | gibbs: %.2f, %.2f\n", o,
-      fixef(m)[2], fixef(m)[3], mean(A[,2]), mean(A[,3])))
+  cat(sprintf("  [%s] lme4 fixef (H3N2-H1N1, B-H1N1): %.2f, %.2f | gibbs: %.2f, %.2f\n", outcome_key,
+      fixef(m)[2], fixef(m)[3], mean(beta_draws[,2]), mean(beta_draws[,3])))
 }
 out <- do.call(rbind, res); rownames(out)<-NULL
 cat("\n=== Bayesian within-country subtype contrasts (SD units, 95% CrI) ===\n")
@@ -71,9 +71,9 @@ write.csv(out, "output/bayes_subtype_contrasts.csv", row.names=FALSE)
 
 # forest plot of the subtype contrasts
 suppressMessages(library(ggplot2))
-ff <- read.csv("output/bayes_subtype_contrasts.csv", stringsAsFactors=FALSE)
-ff$contrast <- factor(ff$contrast, levels=rev(c("H3N2 - H1N1","B - H1N1","B - H3N2")))
-p <- ggplot(ff, aes(est, contrast, color=excl0=="*")) + geom_vline(xintercept=0, color="grey60") +
+forest <- read.csv("output/bayes_subtype_contrasts.csv", stringsAsFactors=FALSE)
+forest$contrast <- factor(forest$contrast, levels=rev(c("H3N2 - H1N1","B - H1N1","B - H3N2")))
+p <- ggplot(forest, aes(est, contrast, color=excl0=="*")) + geom_vline(xintercept=0, color="grey60") +
   geom_pointrange(aes(xmin=lo, xmax=hi)) + facet_wrap(~outcome, nrow=1) +
   scale_color_manual(values=c("FALSE"="grey55","TRUE"="#d95f02"), guide="none") +
   labs(title="Bayesian within-country subtype contrasts (SD units, 95% credible intervals)",

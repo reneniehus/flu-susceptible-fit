@@ -52,22 +52,22 @@ rhat <- function(chs){ L<-nrow(chs[[1]]); cm<-sapply(chs,colMeans)
   B<-L*apply(cm,1,var); W<-rowMeans(sapply(chs,function(M) apply(M,2,var))); sqrt(((L-1)/L*W + B/L)/W) }
 
 g <- as.integer(factor(d$country))
-outs <- c(auc="AUC (log)", peak_height="peak height (log)", peak_week="peak week",
+outcome_labels <- c(auc="AUC (log)", peak_height="peak height (log)", peak_week="peak week",
           onset_week="onset week", steepness="steepness")
 res <- list()
-for (o in names(outs)){
-  y <- as.numeric(scale(d[[o]])); X <- model.matrix(~ dominant + era, d)   # ref = A(H1N1), era controls source shift
-  ch <- gibbs(y, X, g); A <- do.call(rbind, ch); rh <- rhat(ch)
-  ci <- grep("^dominant", colnames(X))           # columns 2 = H3N2-H1N1, 3 = B-H1N1
-  draws <- cbind(`H3N2 - H1N1`=A[,ci[1]], `B - H1N1`=A[,ci[2]], `B - H3N2`=A[,ci[2]]-A[,ci[1]])
+for (outcome_key in names(outcome_labels)){
+  y <- as.numeric(scale(d[[outcome_key]])); X <- model.matrix(~ dominant + era, d)   # ref = A(H1N1), era controls source shift
+  ch <- gibbs(y, X, g); beta_draws <- do.call(rbind, ch); rh <- rhat(ch)
+  dominant_cols <- grep("^dominant", colnames(X))           # columns 2 = H3N2-H1N1, 3 = B-H1N1
+  draws <- cbind(`H3N2 - H1N1`=beta_draws[,dominant_cols[1]], `B - H1N1`=beta_draws[,dominant_cols[2]], `B - H3N2`=beta_draws[,dominant_cols[2]]-beta_draws[,dominant_cols[1]])
   for (cn in colnames(draws)){
     q <- quantile(draws[,cn], c(.5,.025,.975))
-    res[[length(res)+1]] <- data.frame(outcome=outs[o], contrast=cn, est=round(q[1],2),
+    res[[length(res)+1]] <- data.frame(outcome=outcome_labels[outcome_key], contrast=cn, est=round(q[1],2),
       lo=round(q[2],2), hi=round(q[3],2), excl0=ifelse(q[2]>0|q[3]<0,"*",""), rhat=round(max(rh),3))
   }
   m <- suppressWarnings(lmer(y ~ dominant + era + (1|country), d, REML=TRUE))
   cat(sprintf("  [%-12s] lme4 (H3N2-H1N1, B-H1N1): %.2f, %.2f | gibbs: %.2f, %.2f\n",
-              o, fixef(m)[2], fixef(m)[3], mean(A[,ci[1]]), mean(A[,ci[2]])))
+              outcome_key, fixef(m)[2], fixef(m)[3], mean(beta_draws[,dominant_cols[1]]), mean(beta_draws[,dominant_cols[2]])))
 }
 out <- do.call(rbind, res); rownames(out)<-NULL
 cat("\n=== Within-country subtype contrasts across 8 seasons, net of era (SD units, 95% CrI) ===\n")

@@ -68,7 +68,7 @@
 #                initial condition (used by the susceptibility EKF, where S0 is the parameter of
 #                interest); large -> the filter lets early data move the state freely (tracking).
 .ekf_filter = function(y, S0, I0, c, b, phi, beta, gamma, n_sub, qI, p0_S = 0.3, p0_I = 1.0){
-  Tn = length(y)
+  n_weeks = length(y)
 
   # state x = (S, I, C); start with C = 0
   x = c(S0, I0, 0)
@@ -76,9 +76,9 @@
   Q = diag(c(0, qI^2, 0))                             # process noise (on I)
 
   ll = 0
-  mu_pred = rep(NA_real_, Tn); I_filt = rep(NA_real_, Tn); S_filt = rep(NA_real_, Tn)
+  mu_pred = rep(NA_real_, n_weeks); I_filt = rep(NA_real_, n_weeks); S_filt = rep(NA_real_, n_weeks)
 
-  for (t in seq_len(Tn)){
+  for (t in seq_len(n_weeks)){
     # reset within-week cumulative incidence (deterministically known = 0)
     x[3] = 0; P[3, ] = 0; P[, 3] = 0
 
@@ -96,12 +96,12 @@
     if (!is.na(y[t])){
       H   = matrix(c(0, 0, c), nrow = 1)
       Rt  = mu + mu^2 / phi                            # neg-binomial-like observation variance
-      Sinn = max(as.numeric(H %*% Ppr %*% t(H)) + Rt, 1e-12)  # innovation var (guard tiny/neg)
-      K   = (Ppr %*% t(H)) / Sinn
+      innov_var = max(as.numeric(H %*% Ppr %*% t(H)) + Rt, 1e-12)  # innovation var (guard tiny/neg)
+      K   = (Ppr %*% t(H)) / innov_var
       innov = y[t] - mu
       x = as.numeric(xpr + K * innov)
       P = (diag(3) - K %*% H) %*% Ppr
-      ll = ll + dnorm(y[t], mean = mu, sd = sqrt(Sinn), log = TRUE)
+      ll = ll + dnorm(y[t], mean = mu, sd = sqrt(innov_var), log = TRUE)
     } else {
       x = xpr; P = Ppr
     }
@@ -130,14 +130,14 @@
 # A regression over the whole rising limb (not a single-week jump), so it is robust to local noise
 # in the curve. (Phenomenological: it is NOT converted to an SIR S0 -- see method_descriptive.R.)
 .curve_steepness = function(mu, season_week, b, onset_frac = 0.1){
-  above = mu - b; pkv = max(above, na.rm = TRUE)
-  if (!is.finite(pkv) || pkv <= 0) return(NA_real_)
-  pk = which.max(mu); on = which(above >= onset_frac * pkv)[1]
-  if (is.na(on) || pk - on < 2) return(NA_real_)
-  idx = on:pk; z = log(pmax(above[idx], 1e-9)); x = season_week[idx]
-  ok = is.finite(z) & is.finite(x)
+  above = mu - b; peak_above = max(above, na.rm = TRUE)
+  if (!is.finite(peak_above) || peak_above <= 0) return(NA_real_)
+  peak_idx = which.max(mu); onset_idx = which(above >= onset_frac * peak_above)[1]
+  if (is.na(onset_idx) || peak_idx - onset_idx < 2) return(NA_real_)
+  rise = onset_idx:peak_idx; log_above = log(pmax(above[rise], 1e-9)); wk = season_week[rise]
+  ok = is.finite(log_above) & is.finite(wk)
   if (sum(ok) < 3) return(NA_real_)
-  unname(coef(lm(z[ok] ~ x[ok]))[2])
+  unname(coef(lm(log_above[ok] ~ wk[ok]))[2])
 }
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

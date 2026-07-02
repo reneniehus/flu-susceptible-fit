@@ -21,66 +21,68 @@ source("code/01_main_supporting/methods/method_descriptive.R")
 source("code/01_main_supporting/methods_registry.R")
 
 countries = params$susc_countries
-pal = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")[seq_along(countries)]
+country_cols = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")[seq_along(countries)]
 features = c("auc", "peak_height", "onset_week", "steepness")
-flab = c(auc = "AUC (burden, log)", peak_height = "peak height (log)",
+feature_labels = c(auc = "AUC (burden, log)", peak_height = "peak height (log)",
          onset_week = "onset week", steepness = "steepness (growth /wk)")
-flog = c(auc = "y", peak_height = "y", onset_week = "", steepness = "")   # log y for the scale features
+feature_log_axis = c(auc = "y", peak_height = "y", onset_week = "", steepness = "")   # log y for the scale features
 
 # ---- |-smooth every country's seasons and collect the feature table ----
 fits = lapply(countries, function(cc) run_method("descriptive", load_flu_iliplus_slim(cc), params))
 names(fits) = countries
-summ    = do.call(rbind, lapply(fits, summarise_method_fit))
-seasons = sort(unique(summ$season))
+fit_summary = do.call(rbind, lapply(fits, summarise_method_fit))
+seasons = sort(unique(fit_summary$season))
 
 # ---- |-side-by-side figure: feature-annotated curve grid (left) | feature trajectories (right) ----
 dir.create("output", showWarnings = FALSE)
-nc = length(countries)
+n_countries = length(countries)
 n_panels = 5                                       # season columns drawn per country (LEFT grid); later seasons are not shown
 png("output/descriptive_overview.png", width = 1800, height = 1000)
-layout(cbind(matrix(1:(nc*n_panels), nc, n_panels, byrow = TRUE), nc*n_panels + seq_len(nc)), widths = c(rep(1, n_panels), 1.7))
+grid_ids  <- matrix(1:(n_countries*n_panels), n_countries, n_panels, byrow = TRUE)
+right_ids <- n_countries*n_panels + seq_len(n_countries)          # descriptive_overview: one panel per country
+layout(cbind(grid_ids, right_ids), widths = c(rep(1, n_panels), 1.7))
 par(mar = c(3, 3, 2.2, 1), mgp = c(1.8, 0.6, 0))
 
 # LEFT: row per country, column per season -- smoothed curve with AUC shaded, peak dot, onset line
-for (i in seq_len(nc)){
+for (i in seq_len(n_countries)){
   fit = fits[[countries[i]]]
   for (j in 1:n_panels){
     if (j <= length(fit$seasons)){
       y  = fit$ylist[[j]]; wk = fit$season_week[[j]]; mu = fit$mu[[j]]
-      b  = .curve_baseline(mu); ok = is.finite(mu)
+      baseline = .curve_baseline(mu); finite = is.finite(mu)
       plot(wk, y, type = "n", xlab = "season week",
            ylab = if (j == 1) paste0(countries[i], "  ILI+") else "",
            main = sprintf("%s %s", countries[i], fit$seasons[j]), cex.main = 0.95,
-           ylim = range(c(y, mu, b), na.rm = TRUE))
-      polygon(c(wk[ok], rev(wk[ok])), c(pmax(mu[ok], b), rep(b, sum(ok))),   # AUC = area above baseline
-              col = adjustcolor(pal[i], 0.18), border = NA)
+           ylim = range(c(y, mu, baseline), na.rm = TRUE))
+      polygon(c(wk[finite], rev(wk[finite])), c(pmax(mu[finite], baseline), rep(baseline, sum(finite))),   # AUC = area above baseline
+              col = adjustcolor(country_cols[i], 0.18), border = NA)
       points(wk, y, pch = 19, cex = 0.4, col = "grey55")                     # raw observations
-      lines(wk, mu, col = pal[i], lwd = 2)                                   # smoothed curve
-      abline(h = b, col = "grey70", lty = 3)                                 # baseline
-      abline(v = .onset_week(mu, wk, b), col = "grey35", lty = 2)            # onset week
-      pk = which.max(mu); points(wk[pk], mu[pk], pch = 19, col = pal[i], cex = 1.2)  # peak
+      lines(wk, mu, col = country_cols[i], lwd = 2)                          # smoothed curve
+      abline(h = baseline, col = "grey70", lty = 3)                          # baseline
+      abline(v = .onset_week(mu, wk, baseline), col = "grey35", lty = 2)     # onset week
+      peak_i = which.max(mu); points(wk[peak_i], mu[peak_i], pch = 19, col = country_cols[i], cex = 1.2)  # peak
     } else plot.new()
   }
 }
 
 # RIGHT: one panel per feature, one line per country (log y for the scale-dependent features)
 par(mar = c(6, 4, 2.2, 1))
-for (k in seq_len(nc)){
+for (k in seq_len(n_countries)){
   if (k <= length(features)){
-    ft = features[k]
-    plot(NA, xlim = c(1, length(seasons)), ylim = range(summ[[ft]], na.rm = TRUE), log = flog[[ft]],
-         xaxt = "n", xlab = "", ylab = "", main = flab[[ft]], cex.main = 1.05)
+    feature = features[k]
+    plot(NA, xlim = c(1, length(seasons)), ylim = range(fit_summary[[feature]], na.rm = TRUE), log = feature_log_axis[[feature]],
+         xaxt = "n", xlab = "", ylab = "", main = feature_labels[[feature]], cex.main = 1.05)
     axis(1, at = seq_along(seasons), labels = seasons, las = 2, cex.axis = 0.8)
-    for (i in seq_len(nc)){
-      d = summ[summ$country == countries[i], ]
-      lines(match(d$season, seasons), d[[ft]], col = pal[i], lwd = 2, type = "b", pch = 19)
+    for (i in seq_len(n_countries)){
+      country_rows = fit_summary[fit_summary$country == countries[i], ]
+      lines(match(country_rows$season, seasons), country_rows[[feature]], col = country_cols[i], lwd = 2, type = "b", pch = 19)
     }
-    if (k == 1) legend("topright", countries, col = pal, lwd = 2, pch = 19, bty = "n", cex = 0.95)
+    if (k == 1) legend("topright", countries, col = country_cols, lwd = 2, pch = 19, bty = "n", cex = 0.95)
   } else plot.new()
 }
 dev.off()
 
 cat("figure written to output/descriptive_overview.png\n")
 cat("left-panel marks: shaded = AUC (area above baseline), dot = peak, dashed vertical = onset week\n")
-print(summ[, c("country", "season", "auc", "peak_height", "onset_week", "steepness")],
+print(fit_summary[, c("country", "season", "auc", "peak_height", "onset_week", "steepness")],
       row.names = FALSE, digits = 3)

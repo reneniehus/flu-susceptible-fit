@@ -65,21 +65,21 @@ q95 <- function(x) quantile(x, c(.5,.025,.975))
 # ---- |-fit subtype + one continuous predictor, report contrasts + slope per outcome ----
 fit_model <- function(dat, xvar, xlabel){
   dd <- dat[is.finite(dat[[xvar]]), ]; g <- as.integer(factor(dd$country))
-  outs <- c(lauc="AUC (log)", onset_week="onset week", lpk="peak height (log)")
+  outcome_labels <- c(lauc="AUC (log)", onset_week="onset week", lpk="peak height (log)")
   res <- list()
-  for (o in names(outs)){
-    y <- as.numeric(scale(dd[[o]])); xz <- as.numeric(scale(dd[[xvar]]))
+  for (outcome_key in names(outcome_labels)){
+    y <- as.numeric(scale(dd[[outcome_key]])); xz <- as.numeric(scale(dd[[xvar]]))
     X <- cbind(model.matrix(~ dominant, dd), xz)                    # [1, H3N2, B, predictor]
-    ch <- gibbs(y, X, g); A <- do.call(rbind, ch)
-    rows <- list(`H3N2 - H1N1`=A[,2], `B - H1N1`=A[,3], `B - H3N2`=A[,3]-A[,2], predictor=A[,4])
-    labs <- c(`H3N2 - H1N1`="subtype: H3N2-H1N1", `B - H1N1`="subtype: B-H1N1",
+    ch <- gibbs(y, X, g); beta_draws <- do.call(rbind, ch)
+    term_draws <- list(`H3N2 - H1N1`=beta_draws[,2], `B - H1N1`=beta_draws[,3], `B - H3N2`=beta_draws[,3]-beta_draws[,2], predictor=beta_draws[,4])
+    term_labels <- c(`H3N2 - H1N1`="subtype: H3N2-H1N1", `B - H1N1`="subtype: B-H1N1",
               `B - H3N2`="subtype: B-H3N2", predictor=paste0("slope: ", xlabel))
-    for (nm in names(rows)){ qq <- q95(rows[[nm]])
-      res[[length(res)+1]] <- data.frame(outcome=outs[o], term=labs[[nm]], est=round(qq[1],2),
+    for (nm in names(term_draws)){ qq <- q95(term_draws[[nm]])
+      res[[length(res)+1]] <- data.frame(outcome=outcome_labels[outcome_key], term=term_labels[[nm]], est=round(qq[1],2),
         lo=round(qq[2],2), hi=round(qq[3],2), excl0=ifelse(qq[2]>0|qq[3]<0,"*",""),
-        rhat=round(rhat1(ch, if(nm=="predictor") 4 else if(nm=="B - H3N2") 3 else which(names(rows)==nm)+1),3)) }
+        rhat=round(rhat1(ch, if(nm=="predictor") 4 else if(nm=="B - H3N2") 3 else which(names(term_draws)==nm)+1),3)) }
     m <- suppressWarnings(lmer(y ~ dominant + xz + (1|country), dd, REML=TRUE))
-    cat(sprintf("  [%-16s | %-14s] lme4 slope(%s)=%.2f | gibbs=%.2f\n", xlabel, outs[o], xvar, fixef(m)["xz"], mean(A[,4])))
+    cat(sprintf("  [%-16s | %-14s] lme4 slope(%s)=%.2f | gibbs=%.2f\n", xlabel, outcome_labels[outcome_key], xvar, fixef(m)["xz"], mean(beta_draws[,4])))
   }
   out <- do.call(rbind, res); rownames(out)<-NULL; out
 }
@@ -94,8 +94,8 @@ print(m2, row.names=FALSE); write.csv(m2, "output/precovid_ve_subtype_model2.csv
 
 # ---- |-mechanistic read-out: protection should hit burden (AUC/peak) but not timing (onset) ----
 cat("\nMechanistic check (Model 2 protection slope): expect NEGATIVE on AUC/peak, ~0 on onset\n")
-ps <- m2[grepl("slope:", m2$term), c("outcome","est","lo","hi","excl0")]
-print(ps, row.names=FALSE)
+protection_slopes <- m2[grepl("slope:", m2$term), c("outcome","est","lo","hi","excl0")]
+print(protection_slopes, row.names=FALSE)
 
 # ---- |-forest plot of both models ----
 suppressMessages(library(ggplot2))

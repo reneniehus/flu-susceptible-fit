@@ -22,8 +22,8 @@
 
 # ---- |-season label that a weekly date belongs to (Aug -> Jul window from params) ----
 season_of_date = function(date, params=NULL){
-  start_md    = if (!is.null(params$season_start_monthday)) params$season_start_monthday else "-08-01"
-  start_month = as.integer(substr(start_md, 2, 3))                  # "-08-01" -> 8
+  start_monthday   = if (!is.null(params$season_start_monthday)) params$season_start_monthday else "-08-01"
+  start_month = as.integer(substr(start_monthday, 2, 3))            # "-08-01" -> 8
   season_start_year = year(date) - (month(date) < start_month)      # before Aug -> previous season
   paste0(season_start_year, "/", season_start_year + 1)
 }
@@ -228,9 +228,9 @@ make_data_season_summary = function(data_timeseries_long, params=NULL){
   weeks_in_season = data_timeseries_long %>%
     distinct(season) %>%
     mutate(
-      .ssy   = season_start_year_from_label(season),
-      .start = ymd(paste0(.ssy,     params$season_start_monthday)),
-      .end   = ymd(paste0(.ssy + 1, params$season_end_monthday)),
+      .season_start_year   = season_start_year_from_label(season),
+      .start = ymd(paste0(.season_start_year,     params$season_start_monthday)),
+      .end   = ymd(paste0(.season_start_year + 1, params$season_end_monthday)),
       weeks_in_season = map2_int(.start, .end, ~ sum(weekdays(seq(.x, .y, by="day")) == "Wednesday"))
     ) %>%
     select(season, weeks_in_season)
@@ -275,22 +275,22 @@ make_data_season_summary = function(data_timeseries_long, params=NULL){
 gen_model_input = function( params=NULL , data=NULL ){
   t1 <- Sys.time()
 
-  df_out = list(
+  models_in = list(
     time_of_execution = now(),    # time-stamp
     duration = NULL               # execution duration
   )
 
   ## ---- |-Canonical long time-series (single source of truth) ----
-  df_out$data_timeseries_long = make_data_timeseries_long(data=data, params=params)
+  models_in$data_timeseries_long = make_data_timeseries_long(data=data, params=params)
   ## ---- |-Wide version (one column per indicator series) ----
-  df_out$data_timeseries_wide = make_data_timeseries_wide(df_out$data_timeseries_long)
+  models_in$data_timeseries_wide = make_data_timeseries_wide(models_in$data_timeseries_long)
   ## ---- |-Per-country-&-season summary / quality stats ----
-  df_out$data_season_summary  = make_data_season_summary(df_out$data_timeseries_long, params=params)
+  models_in$data_season_summary  = make_data_season_summary(models_in$data_timeseries_long, params=params)
   ## ---- |-Contacts ----
-  df_out$contacts = transform_contracts(data, params)   # transform the contact matrices for model requirements
+  models_in$contacts = transform_contracts(data, params)   # transform the contact matrices for model requirements
 
   #### output
   t2 <- Sys.time()
-  df_out$duration = get_in_hms(t2, t1)
-  return(df_out)
+  models_in$duration = get_in_hms(t2, t1)
+  return(models_in)
 }

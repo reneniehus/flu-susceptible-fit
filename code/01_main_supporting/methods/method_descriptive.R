@@ -35,8 +35,8 @@
   else                 { offs = -(window/2):(window/2);          wts = c(0.5, rep(1, window-1), 0.5) }
   vapply(seq_len(n), function(i){
     idx = i + offs; ok = idx >= 1 & idx <= n
-    iv = idx[ok]; wv = wts[ok]; keep = !is.na(y[iv])
-    if (any(keep)) sum(wv[keep] * y[iv][keep]) / sum(wv[keep]) else NA_real_
+    win_idx = idx[ok]; win_wts = wts[ok]; keep = !is.na(y[win_idx])
+    if (any(keep)) sum(win_wts[keep] * y[win_idx][keep]) / sum(win_wts[keep]) else NA_real_
   }, numeric(1))
 }
 
