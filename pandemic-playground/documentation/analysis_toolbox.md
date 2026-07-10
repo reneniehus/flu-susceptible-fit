@@ -1,0 +1,116 @@
+# The analysis tool box — phases, methods, truth, extension fronts
+
+The tool box is organised by the **phases of a response**. Each tool consumes the tidy `observed`
+schema (`as_analysis_input()`, or real data in the same shape), returns an estimate, and has a
+`score_*()` companion that grades it against the matching quantity in `truth`. Run
+`Rscript demo/run_playground.R` to see all ten scored at once.
+
+A recurring theme: several tools are **exactly correct on the latent truth** but **biased on the
+observed data** — and the bias is the lesson. The playground exists to show these, not to hide them.
+
+---
+
+## Phase 0 — before local introduction (the source X still dominates)
+
+### Is it spreading, and how fast? — `phase0_growth_R`
+Poisson-GLM growth rate `r` (doubling time `ln2/r`), converted to `R` through the generation interval
+by Euler–Lotka / Wallinga–Lipsitch, `R = 1 / Σ_a g(a) e^{−r a}`.
+**Scored against** the true early `R`. **Known bias:** on the *observed* case curve during scaling-up
+testing, `r` (and hence `R`) is inflated by the ascertainment ramp; the same tool is exact on the true
+infection curve. **Extension:** `EpiEstim` for R directly (the Cori tool below applies to the same
+early curve).
+
+### How big is the source really? — `phase0_catchment`
+Back-calculate the source's infectious prevalence from exported cases and travel fractions,
+`prevalence_X ≈ detected exports / Σ_c (travel-fraction_c · detection_c)`, anchored on well-surveilled
+destinations.
+**Scored against** the true source prevalence (and the true source under-ascertainment). **Extension:**
+a small Poisson model `detected ~ Poisson(volume · detection · prevalence)` in place of the arithmetic.
+
+### Who is under-detecting their imports? — `phase0_importation_risk`
+Regress detected imports on flight volume across the well-surveilled anchor countries (De Salazar),
+predict expected imports for all, flag those below the prediction interval.
+**Scored against** true surveillance quality (flagged countries should be the poorly surveilled ones).
+**Extension:** negative-binomial regression if the imports are overdispersed.
+
+---
+
+## Phase 1 — early local exponential growth
+
+### How deadly is it? — `phase1_cfr`
+Delay-adjusted (confirmed) CFR (Nishiura): `cCFR(t) = deaths(t) / Σ_o cases_o · F_death(t−o)`;
+`cfr_static` / `cfr_rolling`.
+**Scored against** the true confirmed CFR (eventual deaths ÷ eventual cases), and reported next to the
+true IFR. **Known bias:** the adjustment removes the *delay* bias but not case *under-ascertainment*, so
+the cCFR overstates the IFR by ~`death_detection / ascertainment` — the gap the playground displays.
+**Extension:** `{cfr}` (`cfr_static`/`cfr_rolling`); IFR from seroprevalence once available.
+
+### Growing or shrinking, right now? — `phase1_rt`
+Self-contained Cori/EpiEstim renewal Rt: conjugate `Gamma(a+ΣI, 1/b+ΣΛ)` over a sliding window.
+**Scored against** the realized instantaneous `Rt_effective`. **Known biases:** feeding onset-dated
+cases lags infection-time R by ~one incubation period; importation contaminates a country's early R
+(imports read as local); intervals under-cover a stepped truth near change points. Exact on the
+import-free source's true infections. **Extension:** `EpiNow2` (infers infections; delay- and
+truncation-aware).
+
+### How many recent cases, really? — `phase1_nowcast`
+Invert the reporting-delay truncation on the triangle, `nowcast_o = observed_o / F(as_of − o)`, with an
+assumed or empirically-estimated delay and a honesty guard that flags days too recent to nowcast.
+**Scored against** the eventual onset totals (vs just trusting the truncated data). **Extension:**
+`epinowcast` / `EpiNow2::estimate_truncation` for the full Bayesian version.
+
+---
+
+## Phase 2 — established transmission, growth to peak, healthcare demand
+
+### Will we breach capacity? — `phase2_forecast`
+Nowcast the recent case curve, estimate current R (Cori), project cases forward by a fixed-R renewal
+over an R-scenario set, map to admissions via a fitted case→admission ratio and the onset→admission
+delay, compare to capacity.
+**Scored against** the admissions that actually occurred (breach call and timing). **Known bias:** a
+fixed-R forecast cannot see a *new* change in transmission and overshoots at the turnover; the onset-R
+lag delays detection of the peak. Good in the clear growth and decline phases. **Extension:** `EpiNow2`
+forecast.
+
+### Are controls working? — `phase2_intervention`
+Interrupted time series: a segmented Poisson model with the growth rate breaking at the intervention
+date (aligned by the onset lag), converted to a before/after R.
+**Scored against** the realized R either side of the intervention. **Reported as association, not
+proof** — seasonality, behaviour and depletion can bend the curve simultaneously. **Extension:**
+`EpiNow2` breakpoints / `EpiEstim` windows.
+
+---
+
+## Phase 3 — sustained transmission, later waves, endemic-ish
+
+### Will a variant take over, and how fast? — `phase3_variant_selection`
+Binomial GLM of the sequenced counts, `logit P(variant) = a + s·day`; `s` is the selection coefficient,
+with the 50% crossover day.
+**Scored against** the realized logit-slope of the true variant frequency. **Known bias:** with large
+sequenced counts the CI is very tight and can under-cover, since the true `s` drifts as R changes.
+**Extension:** `nnet::multinom` for >2 co-circulating variants.
+
+### Next season, and does boosting help? — `phase3_scenarios`
+A parsimonious SIRS integrated with base-R RK4, run over a waning × transmissibility × booster-uptake
+factorial; outcomes (peak, timing, attack rate) reported relative to a reference and ensembled across
+the waning assumption; seed the initial immune fraction from where the current run left the population.
+**Validated** against the analytic SIR final-size relation. This is scenario *exploration*, not point
+estimation, so it is checked by the integrator's correctness rather than scored against a single truth.
+**Extension:** `deSolve` / `odin` SIRS, optionally age-structured; a Scenario-Hub target format.
+
+---
+
+## The extension fronts in one place
+
+| Front | Where | What drops in |
+|---|---|---|
+| Curated delay distributions | `epidist.R::as_epidist()` | a real `{epiparameter}` object |
+| R estimation | `phase1_rt`, `phase0_growth_R` | `EpiEstim`, then `EpiNow2` |
+| CFR | `phase1_cfr` | `{cfr}` |
+| Nowcasting | `phase1_nowcast` | `epinowcast`, `EpiNow2::estimate_truncation` |
+| Forecasting | `phase2_forecast` | `EpiNow2` (infer infections, propagate uncertainty) |
+| Variant models | `phase3_variant_selection` | `nnet::multinom` (already used), phylodynamics |
+| Scenario ODEs | `phase3_scenarios` | `deSolve` / `odin`; age structure |
+| Age-structured DGP | `renewal.R`, `draw_parameters.R` | age classes with a contact matrix |
+| Partial cross-immunity | `renewal.R` | strain-specific susceptible pools |
+| Real data | `analysis_common.R` | real surveillance frames in the schema (see `real_data.md`) |

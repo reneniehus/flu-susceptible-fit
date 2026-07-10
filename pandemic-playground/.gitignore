@@ -1,0 +1,9 @@
+# ---- R session ----
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# ---- generated outputs (figures, cached runs) ----
+output/*
+!output/.gitkeep
