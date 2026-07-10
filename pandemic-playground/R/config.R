@@ -175,6 +175,22 @@ default_config <- function() {
   )
 }
 
+# ---- |-restrict a config to a subset of countries (and optionally a shorter run) ----
+# Subsets every country-indexed field consistently (geography, per-country R, surveillance quality,
+# flight noise), so a smaller experiment -- or a fast test run -- stays internally valid. Editing
+# these by hand is the easy way to get a ragged config; this does it in one place.
+config_subset <- function(cfg, countries, n_days = NULL) {
+  miss <- setdiff(countries, cfg$countries)
+  if (length(miss)) stop("config_subset: unknown country/countries: ", paste(miss, collapse = ", "))
+  cfg$countries            <- countries
+  cfg$geography            <- cfg$geography[cfg$geography$country %in% countries, ]
+  cfg$rt_country           <- cfg$rt_country[countries]
+  cfg$surveillance_quality <- cfg$surveillance_quality[countries]
+  cfg$flights$country_noise <- cfg$flights$country_noise[countries]
+  if (!is.null(n_days)) cfg$n_days <- n_days
+  cfg
+}
+
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ### Validation ##########
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
