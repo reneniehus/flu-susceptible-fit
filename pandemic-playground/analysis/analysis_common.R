@@ -34,6 +34,7 @@ as_analysis_input <- function(sim) {
     cases_by_report    = ob$cases_by_report,      # location, day, date, cases (by report date; complete)
     reporting_triangle = ob$reporting_triangle,   # location, onset_day, report_day, cases (nowcast input)
     deaths             = ob$deaths,               # location, day, date, deaths_by_date, deaths_by_onset
+    admissions         = ob$admissions,           # location, day, date, admissions (well-ascertained)
     detected_imports   = ob$detected_imports,     # country, day, date, detected_imports, surveillance_quality
     variant_cases      = ob$variant_cases,        # location, day, date, sequenced, variant
     flight_volumes     = ob$flight_volumes,       # country, day, date, volume (observed, noisy)
@@ -106,6 +107,9 @@ truth_imports <- function(sim, country) loc_series(sim$truth$imports, country)
 
 # ---- |-true variant frequency for a location, by day ----
 truth_variant_freq <- function(sim, location) loc_series(sim$truth$variant_freq, location)
+
+# ---- |-healthcare capacity (admissions threshold) for a country ----
+truth_capacity <- function(sim, country) sim$truth$capacity$capacity[sim$truth$capacity$country == country]
 
 # ---- |-null-coalescing helper (mirrors the engine's; harmless if already defined) ----
 if (!exists("%||%")) `%||%` <- function(a, b) if (is.null(a)) b else a

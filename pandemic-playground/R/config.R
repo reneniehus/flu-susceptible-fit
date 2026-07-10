@@ -146,10 +146,12 @@ default_config <- function() {
     sequencing_prob = 0.08                             # fraction of reported cases sequenced (typed)
   )
 
-  # ---- |-healthcare capacity (per country, for the Phase 2 breach check) ----
-  # ICU/hospital beds available for this pathogen, per million population. The Phase 2 forecast maps
-  # infections -> admissions and compares to capacity_per_million x population.
-  capacity_per_million <- 30
+  # ---- |-hospital admissions + healthcare capacity (for the Phase 2 breach check) ----
+  # A fraction of infections is admitted (well-ascertained hospital data, dated by onset->admission).
+  # Capacity is the ICU/hospital beds available for this pathogen per million population; the Phase 2
+  # forecast projects admissions and compares them to capacity_per_million x country population.
+  admission_rate       <- 0.02                        # fraction of infections admitted
+  capacity_per_million <- 30                           # beds per million (breach threshold)
 
   list(
     seed         = 2025,                               # THE run seed -- set.seed(seed) inside simulate_pandemic()
@@ -167,6 +169,7 @@ default_config <- function() {
     flights      = flights,
     surveillance_quality = surveillance_quality,
     variant      = variant,
+    admission_rate = admission_rate,
     capacity_per_million = capacity_per_million,
     source_seed_infections = 10                        # initial wild-type infections planted at X on day 0
   )
