@@ -18,7 +18,8 @@
 # References
 #   Wallinga J, Lipsitch M. How generation intervals shape the relationship between growth rates and
 #     reproductive numbers. Proc R Soc B. 2007;274(1609):599-604.
-#   Wallinga J, Teunis P. Different epidemic curves for SARS... Am J Epidemiol. 2004;160(6):509-516.
+#   Wallinga J, Teunis P. Different epidemic curves for severe acute respiratory syndrome reveal
+#     similar impacts of control measures. Am J Epidemiol. 2004;160(6):509-516. (related-work context)
 #
 # Requires: analysis_common.R; R/epidist.R (discretise) for the generation interval.
 
@@ -28,9 +29,15 @@
 estimate_growth_rate <- function(counts, day, level = 0.95) {
   ok <- is.finite(counts) & is.finite(day) & counts >= 0
   if (sum(ok) < 3) stop("estimate_growth_rate: need >= 3 points with data in the window")
+  # too few events -> the Poisson GLM is unidentified and returns a meaningless r with an absurd CI;
+  # refuse rather than emit a number that looks like an estimate (a barely-seeded country, say)
+  if (sum(counts[ok]) < 5)
+    stop("estimate_growth_rate: fewer than 5 events in the window -- too little signal to estimate growth")
   fit <- stats::glm(counts[ok] ~ day[ok], family = stats::poisson())
   r   <- unname(stats::coef(fit)[2])
   se  <- unname(sqrt(diag(stats::vcov(fit))[2]))
+  if (!is.finite(se) || se > 5)                         # a near-degenerate fit: flag the huge CI honestly
+    warning("estimate_growth_rate: the growth-rate estimate is poorly identified (very wide CI)")
   z   <- stats::qnorm(1 - (1 - level) / 2)
   list(r = r, r_lower = r - z * se, r_upper = r + z * se, se = se,
        doubling_time = log(2) / r,
@@ -69,13 +76,17 @@ growth_analysis <- function(input, location = input$source_code, window = 0:30,
        R = R, R_ci = c(R_lower, R_upper))
 }
 
-# ---- |-score a growth analysis against the true early R at the source ----
-# The truth is the true (input) reproduction number over the fitting window -- averaged, since a
-# constant-growth fit targets the average R in that window.
-score_growth <- function(sim, ga) {
+# ---- |-score a growth analysis against the true REALIZED R over the fitting window ----
+# The Euler-Lotka r->R map recovers the R consistent with the observed growth rate -- i.e. the
+# realized/effective R (strain-mix- and depletion-weighted), NOT the nominal schedule. So we score
+# against `Rt_effective` by default (matching score_rt / score_intervention); the two coincide in the
+# early single-strain window where growth analysis is normally used, but diverge once a window spans
+# depletion or the variant. `which = "Rt"` scores against the nominal schedule instead.
+score_growth <- function(sim, ga, which = c("Rt_effective", "Rt")) {
+  which <- match.arg(which)
   rt   <- truth_rt(sim, ga$location)
   win  <- ga$window[1]:ga$window[2]
-  Rtru <- mean(rt$Rt[rt$day %in% win])
+  Rtru <- mean(rt[[which]][rt$day %in% win], na.rm = TRUE)
   list(estimate_R = ga$R, truth_R = Rtru, error = ga$R - Rtru,
        in_ci = Rtru >= ga$R_ci[1] && Rtru <= ga$R_ci[2])
 }

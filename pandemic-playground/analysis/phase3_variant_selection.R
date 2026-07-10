@@ -7,9 +7,10 @@
 # grow linearly in time -- the hallmark of selection. So fit a binomial GLM of the sequenced counts,
 #     logit( P(variant) )  =  a + s * day
 # and read off the SELECTION COEFFICIENT s (the per-day increase in log-odds) with its confidence
-# interval. The fitted line gives the frequency trajectory and the day the variant passes 50%. For
-# more than two co-circulating variants the same idea generalises to a multinomial GLM
-# (nnet::multinom) -- provided here as an optional path.
+# interval. The fitted line gives the frequency trajectory and the day the variant passes 50%. The
+# playground carries two strains, so a two-way binomial GLM is all that is needed here; for more than
+# two co-circulating variants the same idea generalises to a multinomial GLM (nnet::multinom) -- a
+# documented extension front, not implemented in this file.
 #
 # WHY LOG-ODDS. Two strains growing exponentially at rates r_variant and r_wild have a frequency ratio
 # that grows at exactly r_variant - r_wild; that difference IS the selection coefficient s, and it is
@@ -30,6 +31,11 @@ variant_selection <- function(input, location, window = NULL, level = 0.95) {
   if (!is.null(window)) vc <- vc[vc$day %in% window, ]
   vc <- vc[vc$sequenced > 0, ]                           # only days with typing data
   if (nrow(vc) < 5) stop("variant_selection: too few sequenced days to fit")
+  # no variation to explain (variant absent, or already fixed) -> a binomial GLM here is completely
+  # separated and returns a nonsense slope with an astronomical CI; refuse instead (e.g. a variant-OFF run)
+  if (all(vc$variant == 0) || all(vc$variant == vc$sequenced))
+    stop("variant_selection: the variant is absent (or fully fixed) over this window -- ",
+         "the selection coefficient is undetermined (is the variant enabled?)")
 
   fit <- stats::glm(cbind(variant, sequenced - variant) ~ day, family = stats::binomial(), data = vc)
   co  <- stats::coef(fit); se <- sqrt(diag(stats::vcov(fit))); z <- stats::qnorm(1 - (1 - level) / 2)

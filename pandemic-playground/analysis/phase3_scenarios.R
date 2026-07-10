@@ -31,34 +31,36 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # ---- |-integrate an SIRS model in proportions with RK4 ----
-# dS/dt = -beta S I + omega R ; dI/dt = beta S I - gamma I ; dR/dt = gamma I - omega R.
-# beta = R0 * gamma. State is (S, I, R), summing to 1. Returns day-indexed S, I, R trajectories.
+# dS/dt = -beta S I + omega R ; dI/dt = beta S I - gamma I ; dR/dt = gamma I - omega R ; and a
+# cumulative-incidence accumulator dC/dt = beta S I (the fraction ever infected -- a genuine attack
+# rate, which for a pure SIR equals the final size 1 - S_end). beta = R0 * gamma; S+I+R = 1.
+# Integrates with a fixed number of RK4 sub-steps PER DAY, so every integer day lands exactly and the
+# returned trajectory always spans day 0..days (no dropped final day for a non-divisor dt).
 sirs_integrate <- function(R0, gamma, omega, S0, I0, days, dt = 0.25) {
   beta <- R0 * gamma
   deriv <- function(y) {
-    S <- y[1]; I <- y[2]; R <- y[3]
-    c(-beta * S * I + omega * R,
-       beta * S * I - gamma * I,
-       gamma * I - omega * R)
+    S <- y[1]; I <- y[2]; R <- y[3]; inc <- beta * S * I
+    c(-inc + omega * R, inc - gamma * I, gamma * I - omega * R, inc)
   }
-  n_steps <- as.integer(days / dt)
-  y <- c(S0, I0, 1 - S0 - I0)
-  out <- matrix(NA_real_, nrow = days + 1, ncol = 3); out[1, ] <- y; keep <- 1
-  next_keep_t <- 1
-  for (k in seq_len(n_steps)) {
-    k1 <- deriv(y); k2 <- deriv(y + dt / 2 * k1)
-    k3 <- deriv(y + dt / 2 * k2); k4 <- deriv(y + dt * k3)
-    y  <- y + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-    y  <- pmax(y, 0)                                    # numerical guard
-    if ((k * dt) >= next_keep_t) { keep <- keep + 1; out[keep, ] <- y; next_keep_t <- next_keep_t + 1 }
+  steps_per_day <- max(1L, as.integer(round(1 / dt)))    # snap dt to an integer number of sub-steps/day
+  h <- 1 / steps_per_day
+  out <- matrix(NA_real_, nrow = days + 1, ncol = 4)
+  y <- c(S0, I0, 1 - S0 - I0, 0); out[1, ] <- y
+  for (d in seq_len(days)) {
+    for (s in seq_len(steps_per_day)) {
+      k1 <- deriv(y); k2 <- deriv(y + h / 2 * k1)
+      k3 <- deriv(y + h / 2 * k2); k4 <- deriv(y + h * k3)
+      y  <- pmax(y + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4), 0)   # step + numerical guard
+    }
+    out[d + 1, ] <- y
   }
-  data.frame(day = 0:(keep - 1), S = out[1:keep, 1], I = out[1:keep, 2], R = out[1:keep, 3])
+  data.frame(day = 0:days, S = out[, 1], I = out[, 2], R = out[, 3], C = out[, 4])
 }
 
 # ---- |-summary outcomes of one SIRS trajectory ----
 .sirs_outcomes <- function(traj) {
   list(peak_prevalence = max(traj$I), peak_day = traj$day[which.max(traj$I)],
-       attack_rate = sum(traj$I))                       # sum of I over days ~ cumulative infection-days (burden proxy)
+       attack_rate = utils::tail(traj$C, 1))            # cumulative incidence = fraction ever infected
 }
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

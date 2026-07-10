@@ -109,7 +109,7 @@ estimation, so it is checked by the integrator's correctness rather than scored 
 | CFR | `phase1_cfr` | `{cfr}` |
 | Nowcasting | `phase1_nowcast` | `epinowcast`, `EpiNow2::estimate_truncation` |
 | Forecasting | `phase2_forecast` | `EpiNow2` (infer infections, propagate uncertainty) |
-| Variant models | `phase3_variant_selection` | `nnet::multinom` (already used), phylodynamics |
+| Variant models | `phase3_variant_selection` | `nnet::multinom` for >2 variants (not implemented), phylodynamics |
 | Scenario ODEs | `phase3_scenarios` | `deSolve` / `odin`; age structure |
 | Age-structured DGP | `renewal.R`, `draw_parameters.R` | age classes with a contact matrix |
 | Partial cross-immunity | `renewal.R` | strain-specific susceptible pools |

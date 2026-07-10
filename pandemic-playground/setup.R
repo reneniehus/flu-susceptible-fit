@@ -5,9 +5,9 @@
 #   sim <- simulate_pandemic()   # a full synthetic pandemic (truth + observed)
 #
 # The engine (R/) has NO external dependencies -- base R only -- so it runs anywhere. The analysis
-# toolbox (analysis/) uses only base R + the tidyverse for tabulation; a couple of tools optionally
-# use {nnet}. Nothing needs the epidemiological packages the methods emulate ({epiparameter},
-# EpiEstim, cfr, EpiNow2, ...), which are documented extension fronts (see documentation/decisions.md).
+# toolbox (analysis/) uses only base R + the tidyverse for tabulation. Nothing needs the
+# epidemiological packages the methods emulate ({epiparameter}, EpiEstim, cfr, EpiNow2, deSolve,
+# nnet::multinom for >2 variants, ...), which are documented extension fronts (see decisions.md).
 
 .pp_root <- tryCatch(dirname(sys.frame(1)$ofile), error = function(e) NA)
 if (is.na(.pp_root) || !length(.pp_root)) .pp_root <- "."
@@ -29,4 +29,4 @@ for (f in .toolbox) {
   if (file.exists(path)) source(path)
 }
 
-rm(.engine, .toolbox, .pp_root)
+rm(list = intersect(c(".engine", ".toolbox", ".pp_root", "f", "path"), ls()))   # leave no loop-iterator crumbs

@@ -74,6 +74,9 @@ simulate_renewal <- function(n_days, N, gi_pmf, rt_list, seeding, stochastic = T
   # infectious prevalence = currently-infectious people, by convolving incidence with the survival
   # of the infectiousness profile (a lean proxy; a dedicated infectious-period epidist is an
   # extension front -- see documentation/decisions.md). Returned in COUNTS; divide by N for a fraction.
+  # [REFLECTION] using the GI survival as the "still infectious" kernel ties prevalence to exactly the
+  # profile that drives transmission -- neat, but it slightly overstates the infectious window (the GI
+  # includes the latent period). A separate infectious-period distribution would decouple the two.
   prev_by_strain <- vapply(seq_len(K), function(k) .prevalence(I[, k], surv), numeric(n_days))
   if (is.null(dim(prev_by_strain))) prev_by_strain <- matrix(prev_by_strain, ncol = K)
 

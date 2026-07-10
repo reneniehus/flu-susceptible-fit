@@ -34,7 +34,10 @@ intervention_its <- function(input, location, intervention_day, window = 21,
   series <- match.arg(series)
   gi_pmf <- discretise(gi %||% input$delays$generation_interval, boundary = "cori")
   if (is.null(onset_lag)) onset_lag <- round(epidist_mean(input$delays$incubation))
-  bp <- intervention_day + onset_lag                    # the breakpoint as seen in the onset curve
+  # the effect appears one incubation period later in onset-dated cases, and later STILL in
+  # report-dated cases -- so add the reporting delay too when fitting the report-date series
+  if (series == "cases_by_report") onset_lag <- onset_lag + round(epidist_mean(input$delays$onset_to_report))
+  bp <- intervention_day + onset_lag                    # the breakpoint as seen in the chosen curve
 
   d <- loc_series(input[[series]], location)
   d <- d[d$day >= (bp - window) & d$day <= (bp + window), ]

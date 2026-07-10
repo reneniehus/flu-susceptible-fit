@@ -167,6 +167,21 @@ the main alternative considered. Append new decisions as they are made.
   contact matrices — rejected (external data, egress-blocked here, and unnecessary for a testbed).
 
 - **No external data files, no epidemiological-package dependencies; tests simulate their own data.**
-  The engine is base R; the tool box adds only the tidyverse (+ `nnet` for the multinomial path). Tests
-  build their fixture by calling the simulator, so they run offline with nothing to download. Mirrors the
-  parent repo's offline, snapshot-driven testing, but here the "snapshot" is generated deterministically.
+  The engine is base R; the tool box adds only the tidyverse (the `nnet::multinom` >2-variant path is a
+  documented extension, not implemented). Tests build their fixture by calling the simulator, so they run
+  offline with nothing to download. Mirrors the parent repo's offline, snapshot-driven testing, but here
+  the "snapshot" is generated deterministically.
+
+- **Surveillance quality is exposed to the analyst as a KNOWN covariate, and the two importation tools
+  are "known-covariate" tools by design.** `observed$detected_imports` carries each country's exact
+  `surveillance_quality`. This is deliberate and standard: the De Salazar / Fraser catchment logic
+  *requires* the detection probability to be known at the well-surveilled anchor countries, and in a real
+  response this is the role played by an external surveillance-capacity index (e.g. IDVI) or a
+  seroprevalence-anchored ascertainment estimate — a covariate the analyst genuinely has. So
+  `catchment_backcalc` legitimately divides by it, and `score_importation_risk` is best read as a
+  *consistency check* (do the flagged countries line up with the known covariate?) rather than an
+  out-of-sample truth comparison. **Caveat, stated plainly:** because the covariate is exact rather than a
+  noisy proxy, these two tools' scores are flattering relative to the others (which recover a genuinely
+  hidden quantity). Degrading the covariate to a noisy proxy — and having the catchment tool *estimate*
+  detection — is a documented extension front. *Alternative:* keep detection fully latent — rejected,
+  because then the catchment method has no anchor and cannot be posed at all.

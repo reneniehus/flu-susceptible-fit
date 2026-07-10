@@ -14,7 +14,7 @@
 # truth and observed data every time. Change the seed for a fresh stochastic realisation; change a
 # config field for a different experiment. That is the entire contract.
 #
-# Requires all of R/ sourced first (see source_all.R).
+# Requires all of R/ sourced first (see setup.R).
 
 # ---- |-run the full playground: config -> list(truth, observed, config) ----
 simulate_pandemic <- function(cfg = default_config(), quiet = TRUE) {

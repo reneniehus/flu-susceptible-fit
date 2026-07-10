@@ -71,7 +71,7 @@ the same shape) and has a `score_*()` companion that grades it against `truth`.
 | **2** growth to peak | Will we breach capacity? | `phase2_forecast` | renewal forecast of cases → admissions vs capacity → *EpiNow2* |
 | **2** | Are controls working? | `phase2_intervention` | interrupted time series on the growth rate |
 | **3** sustained / later waves | Next season, does boosting help? | `phase3_scenarios` | SIRS factorial (RK4), relative + ensembled → *deSolve/odin* |
-| **3** | Is a variant taking over? | `phase3_variant_selection` | logistic selection coefficient → *glm / nnet::multinom* |
+| **3** | Is a variant taking over? | `phase3_variant_selection` | logistic selection coefficient (binomial `glm`; `nnet::multinom` for >2) |
 
 Run `Rscript demo/run_playground.R` to see all ten, each next to its truth.
 

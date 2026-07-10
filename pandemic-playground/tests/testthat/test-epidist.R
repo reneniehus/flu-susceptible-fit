@@ -30,3 +30,10 @@ test_that("epidist construction validates its parameters", {
   expect_error(epidist("bad", "gamma", list(shape = 2)))            # missing rate
   expect_error(epidist("bad", "nonsense", list()))                 # unknown family
 })
+
+test_that("convenience constructors reject non-positive mean/sd", {
+  expect_error(epidist_gamma("x", mean = 5, sd = 0))               # sd = 0 -> Inf params
+  expect_error(epidist_gamma("x", mean = -5, sd = 2))              # negative mean
+  expect_error(epidist_lognormal("x", mean = 5, sd = 0))
+  expect_error(epidist_weibull("x", shape = 0, scale = 2))
+})

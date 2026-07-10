@@ -19,7 +19,7 @@
 # peak (the demand already "baked in"), exactly as in reality. Holding R fixed still cannot predict a
 # NEW change in transmission -- that is what the scenario set is for, and it is stated as association.
 #
-# THE ONE LIMIT TO STATE PLAINLY. R here is estimated from ONSET-dated cases, so it lags the true
+# THE ONE LIMIT TO STATE PLAINLY. [REFLECTION] R here is estimated from ONSET-dated cases, so it lags the true
 # INFECTION-time R by about one incubation period: when transmission drops sharply (a lockdown), the
 # forecast keeps reading the old, higher R for several days and OVERSHOOTS right at the turnover. The
 # playground shows this by scoring a forecast made at the peak against what actually happened.

@@ -48,6 +48,10 @@ as_analysis_input <- function(sim) {
 # ---- |-a location's observed series as a plain day-ordered data frame ----
 # Convenience for the tools: pull one location's rows from a schema table, ordered by day.
 loc_series <- function(tbl, location) {
+  if (is.null(tbl) || !is.data.frame(tbl))
+    stop("loc_series: expected a data frame but got ", if (is.null(tbl)) "NULL" else class(tbl)[1],
+         " -- a schema table this tool needs is missing from the analysis input. ",
+         "See documentation/real_data.md for the required frames.")
   key <- if ("location" %in% names(tbl)) "location" else "country"
   tbl[tbl[[key]] == location, , drop = FALSE] |> (\(d) d[order(d$day), ])()
 }

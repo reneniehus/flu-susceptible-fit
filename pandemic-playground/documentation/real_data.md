@@ -47,12 +47,16 @@ real <- list(
 )
 
 growth_analysis(real, "MYCOUNTRY", window = 0:25)     # Phase 0 growth -> R
-cfr_static(real, "MYCOUNTRY", as_of = 60)             # Phase 1 delay-adjusted CFR
+cfr_static(real, "MYCOUNTRY", as_of = 60,             # Phase 1 delay-adjusted CFR
+           series = "cases_by_report")                # (this list has no by-onset frame, so use by-report)
 ```
 
-`test-real-data.R` checks exactly this: a tool gives the same answer whether fed the sim adapter or a
-hand-built schema list, and it recovers a planted growth rate / selection coefficient from purely
-hand-made data.
+Note the `series = "cases_by_report"` above: `cfr_static()` defaults to the by-onset series, so if you
+only supply `cases_by_report` you must say so (or add a `cases_by_onset` frame). This is the general
+rule — a tool errors clearly ("a schema table this tool needs is missing") if you omit a frame it
+needs. `test-real-data.R` exercises the same idea: a tool gives the same answer whether fed the sim
+adapter or a hand-built schema list, and `growth_analysis` / `variant_selection` recover a planted
+growth rate / selection coefficient from purely hand-made data.
 
 ## Substitution points, per data source
 

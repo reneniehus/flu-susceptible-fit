@@ -87,10 +87,14 @@ score_nowcast <- function(sim, nc, recent = 14) {
   loc <- nc$location[1]; as_of <- max(nc$onset_day)
   truth <- truth_cases_by_onset(sim, loc)
   Ntrue <- truth$cases[match(nc$onset_day, truth$day)]
-  win <- nc$onset_day > (as_of - recent)                 # the right-truncated recent window
+  # LIKE-FOR-LIKE: score the nowcast and the naive observed on the SAME days -- the recent onset days
+  # the nowcast actually produced an estimate for. The leading-edge days it flagged NA are excluded
+  # from BOTH (neither has anything to say there), so the improvement is not inflated by crediting the
+  # nowcast with the observed curve's error on days the nowcast declined to predict.
+  win <- nc$onset_day > (as_of - recent) & is.finite(nc$nowcast)
   s_nowcast  <- pp_score(nc$nowcast[win],  Ntrue[win], nc$nowcast_lower[win], nc$nowcast_upper[win])
-  s_observed <- pp_score(nc$observed[win], Ntrue[win])   # what you get by NOT nowcasting
-  list(location = loc, recent = recent,
+  s_observed <- pp_score(nc$observed[win], Ntrue[win])   # what you get by NOT nowcasting, SAME days
+  list(location = loc, recent = recent, n_scored = s_nowcast$n,
        nowcast = s_nowcast, observed_naive = s_observed,
        rmse_improvement = 1 - s_nowcast$rmse / s_observed$rmse)
 }

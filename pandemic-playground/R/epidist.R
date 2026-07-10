@@ -54,16 +54,19 @@ epidist <- function(name, family, params) {
 # The natural way to state a delay is "mean X days, sd Y days"; these convert to the family's native
 # parameters so the caller never has to do the moment-matching by hand.
 epidist_gamma <- function(name, mean, sd) {
+  if (!(mean > 0 && sd > 0)) stop(sprintf("epidist_gamma('%s'): mean and sd must be > 0", name))
   shape <- (mean / sd)^2; rate <- mean / sd^2
   epidist(name, "gamma", list(shape = shape, rate = rate))
 }
 epidist_lognormal <- function(name, mean, sd) {
+  if (!(mean > 0 && sd > 0)) stop(sprintf("epidist_lognormal('%s'): mean and sd must be > 0", name))
   # match the natural-scale mean & sd to meanlog / sdlog
   sdlog   <- sqrt(log1p((sd / mean)^2))
   meanlog <- log(mean) - sdlog^2 / 2
   epidist(name, "lognormal", list(meanlog = meanlog, sdlog = sdlog))
 }
 epidist_weibull <- function(name, shape, scale) {
+  if (!(shape > 0 && scale > 0)) stop(sprintf("epidist_weibull('%s'): shape and scale must be > 0", name))
   epidist(name, "weibull", list(shape = shape, scale = scale))
 }
 

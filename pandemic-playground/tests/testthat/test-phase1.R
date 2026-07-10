@@ -49,4 +49,6 @@ test_that("the nowcast beats the raw truncated counts on recent onset days", {
   expect_gt(sc$rmse_improvement, 0.3)                              # at least 30% better than not nowcasting
   # the leading-edge honesty guard flags the most recent (near-zero-completeness) day(s)
   expect_true(any(nc$flagged_too_recent))
+  # the improvement is a LIKE-FOR-LIKE comparison: both scored on the same day set
+  expect_equal(sc$nowcast$n, sc$observed_naive$n)
 })

@@ -6,7 +6,21 @@ test_that("the SIRS integrator reproduces the analytic SIR final-size relation",
     z_sim    <- 1 - tail(tr$S, 1)
     z_theory <- uniroot(function(z) 1 - exp(-R0 * z) - z, c(1e-6, 1 - 1e-9))$root
     expect_equal(z_sim, z_theory, tolerance = 1e-3)
+    # the cumulative-incidence attack rate equals the final size for a pure SIR (no waning)
+    expect_equal(tail(tr$C, 1), z_sim, tolerance = 1e-3)
   }
+})
+
+test_that("the integrator spans the full horizon even for a non-divisor dt", {
+  tr <- sirs_integrate(R0 = 1.5, gamma = 1 / 5, omega = 1 / 180, S0 = 0.8, I0 = 1e-4, days = 100, dt = 0.3)
+  expect_equal(nrow(tr), 101)                                       # days 0..100, none dropped
+  expect_equal(tail(tr$day, 1), 100)
+})
+
+test_that("variant_selection refuses degenerate typing data (variant off / fully fixed)", {
+  cfg <- test_cfg; cfg$variant$enabled <- FALSE
+  off <- as_analysis_input(simulate_pandemic(cfg))
+  expect_error(variant_selection(off, "IT", window = 40:150), "absent")
 })
 
 test_that("SIRS scenarios: a fitter variant raises the peak, and boosting lowers it", {

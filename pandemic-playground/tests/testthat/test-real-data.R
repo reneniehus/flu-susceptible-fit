@@ -33,6 +33,13 @@ test_that("the growth tool recovers a known rate from a purely hand-made dataset
   expect_equal(ga$r, r_true, tolerance = 0.03)                      # recovers the planted growth rate
 })
 
+test_that("a missing schema frame yields a clear, actionable error (not a cryptic base-R one)", {
+  # a real-data user who forgets a frame the tool needs should be told which, not get 'not a vector'
+  expect_error(loc_series(NULL, "X"), "schema table")
+  bare <- list(delays = list(generation_interval = epidist_gamma("gi", 5, 1.7)), source_code = "X")
+  expect_error(growth_analysis(bare, "X", window = 0:20), "schema table")
+})
+
 test_that("variant selection runs on a hand-built sequencing table", {
   day <- seq(0, 120, by = 3); s_true <- 0.06
   freq <- plogis(-4 + s_true * day)

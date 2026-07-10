@@ -74,6 +74,11 @@
   } else seq_variant <- integer(n)
 
   # ---- deaths: a fraction (IFR) of infections, dated by the infection->death delay, then detected ----
+  # [REFLECTION] deaths are thinned from INFECTIONS independently of case detection, so a death need not
+  # be a confirmed case. Consequence: the confirmed CFR (detected deaths / detected cases) equals
+  # IFR * death_rho / case_rho -- it overstates the IFR whenever ascertainment < death detection, which
+  # is exactly the early-pandemic bias the CFR tool then exposes. A line-list mode (deaths subset of
+  # cases) is the alternative and would change that interpretation. See documentation/decisions.md.
   expected_deaths <- ifr * shift_by_delay(infections_total, inf2death)
   deaths_by_date  <- stats::rpois(n, expected_deaths * death_rho)      # deaths registered on each day
   # deaths also attributed to the fatal case's ONSET day (for onset-based CFR): IFR of onsets, detected

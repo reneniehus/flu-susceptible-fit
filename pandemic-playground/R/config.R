@@ -38,7 +38,7 @@ eu_eea_countries <- function() {
 
 # ---- |-a change-point (step) schedule for a time-varying quantity ----
 # `t` are day indices (0-based, ascending, first MUST be 0); `value` is the level that holds from
-# each change-point until the next. `rt_schedule(list(t=c(0,40,70), value=c(2.4,1.2,0.9)))` reads as
+# each change-point until the next. `step_schedule(t = c(0,40,70), value = c(2.4,1.2,0.9))` reads as
 # "R = 2.4 from day 0, drops to 1.2 at day 40, to 0.9 at day 70". Evaluated by step_at() (R/utils.R).
 # Reproduction numbers, ascertainment and travel shocks all use this one representation.
 step_schedule <- function(t, value) {

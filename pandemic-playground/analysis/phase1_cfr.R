@@ -73,12 +73,16 @@ cfr_rolling <- function(input, location, cutoffs = NULL,
   do.call(rbind, rows)
 }
 
-# ---- |-Wilson-ish binomial confidence interval for a ratio deaths / known ----
+# ---- |-Wilson score confidence interval for a ratio deaths / known ----
+# The Wilson score interval, not the Wald p +/- z*se -- Wald under-covers and pins the lower bound at 0
+# in exactly the small-count / small-p regime the early-epidemic CFR lives in (Brown, Cai & DasGupta
+# 2001, Stat Sci 16:101-133).
 .binom_ci <- function(deaths, known, level = 0.95) {
   if (known <= 0) return(c(NA_real_, NA_real_))
-  p <- min(deaths / known, 1); z <- stats::qnorm(1 - (1 - level) / 2)
-  se <- sqrt(p * (1 - p) / known)
-  c(max(p - z * se, 0), min(p + z * se, 1))
+  p <- min(deaths / known, 1); n <- known; z <- stats::qnorm(1 - (1 - level) / 2)
+  centre <- (p + z^2 / (2 * n)) / (1 + z^2 / n)
+  half   <- z * sqrt(p * (1 - p) / n + z^2 / (4 * n^2)) / (1 + z^2 / n)
+  c(max(centre - half, 0), min(centre + half, 1))
 }
 
 # ---- |-score the CFR against the true confirmed CFR and the true IFR ----
