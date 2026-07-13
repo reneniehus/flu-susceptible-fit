@@ -30,13 +30,11 @@ simulate_local <- function(cfg, par, imports) {
 
     # per-strain R: the variant inherits the country's R trajectory scaled by (1 + fitness)
     rt_list <- list(cfg$rt_country[[country]])
-    if (K == 2L) {
-      vr <- cfg$rt_country[[country]]; vr$value <- vr$value * (1 + cfg$variant$fitness)
-      rt_list[[2]] <- vr
-    }
+    if (K == 2L) rt_list[[2]] <- scale_rt_for_variant(cfg$rt_country[[country]], cfg$variant$fitness)
 
     seeding <- matrix(imports[, j, ], nrow = n, ncol = K)          # daily imported infections by strain
-    sim <- simulate_renewal(n, N_c, gi, rt_list, seeding, stochastic = TRUE)
+    sim <- simulate_renewal(n, N_c, gi, rt_list, seeding, stochastic = TRUE,
+                            dispersion = cfg$dispersion_k %||% Inf)
 
     infections[, j, ] <- sim$incidence
     susceptible[, j]  <- sim$susceptible

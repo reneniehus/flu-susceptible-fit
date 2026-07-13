@@ -10,6 +10,8 @@
 # `step_at(list(t=c(0,40,70), value=c(2.4,1.2,0.9)), c(10, 50, 80))` -> c(2.4, 1.2, 0.9).
 step_at <- function(schedule, t) {
   idx <- findInterval(t, schedule$t)                 # which segment each t falls in (t[1] must be 0)
+  # findInterval returns 0 for a day before the first change-point; pmax clamps it to segment 1 so such
+  # a query returns the first level rather than NA (harmless here since schedules always start at day 0)
   schedule$value[pmax(idx, 1)]
 }
 

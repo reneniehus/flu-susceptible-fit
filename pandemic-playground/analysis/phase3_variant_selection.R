@@ -57,7 +57,9 @@ score_variant_selection <- function(sim, vs, window = NULL) {
   loc <- vs$location; vf <- truth_variant_freq(sim, loc)
   if (!is.null(window)) vf <- vf[vf$day %in% window, ]
   vf <- vf[is.finite(vf$variant_freq) & vf$variant_freq > 1e-4 & vf$variant_freq < 1 - 1e-4, ]
-  realized_s <- if (nrow(vf) > 3) unname(stats::coef(stats::lm(stats::qlogis(variant_freq) ~ day, data = vf))[2]) else NA_real_
+  # the realized selection coefficient IS the slope of logit(true variant frequency) against day
+  realized_s <- NA_real_
+  if (nrow(vf) > 3) realized_s <- unname(stats::coef(stats::lm(stats::qlogis(variant_freq) ~ day, data = vf))[2])
 
   list(location = loc, s_estimate = vs$s, s_realized = realized_s,
        error = vs$s - realized_s,

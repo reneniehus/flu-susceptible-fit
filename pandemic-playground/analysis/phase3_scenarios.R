@@ -9,7 +9,7 @@
 #   - waning rate omega   (how fast immunity is lost, 1/duration)
 #   - transmissibility R0 (a new, fitter variant raises it)
 #   - booster uptake      (a campaign that moves a fraction of susceptibles into the immune class)
-# We report each scenario's peak prevalence, peak timing and attack rate RELATIVE to a reference
+# We report each scenario's peak prevalence, peak timing and cumulative incidence RELATIVE to a reference
 # scenario -- differences, not fragile absolute levels -- and ENSEMBLE across the most uncertain axis
 # (waning) so a headline like "boosting cuts the peak by ~X%" carries its assumption spread with it.
 # This mirrors a scenario-modelling-hub target: a tidy table of scenarios and comparable outcomes.
@@ -32,8 +32,8 @@
 
 # ---- |-integrate an SIRS model in proportions with RK4 ----
 # dS/dt = -beta S I + omega R ; dI/dt = beta S I - gamma I ; dR/dt = gamma I - omega R ; and a
-# cumulative-incidence accumulator dC/dt = beta S I (the fraction ever infected -- a genuine attack
-# rate, which for a pure SIR equals the final size 1 - S_end). beta = R0 * gamma; S+I+R = 1.
+# cumulative-incidence accumulator dC/dt = beta S I (infection events per capita; equals the final
+# size 1 - S_end for a pure SIR, but can exceed 1 under waning). beta = R0 * gamma; S+I+R = 1.
 # Integrates with a fixed number of RK4 sub-steps PER DAY, so every integer day lands exactly and the
 # returned trajectory always spans day 0..days (no dropped final day for a non-divisor dt).
 sirs_integrate <- function(R0, gamma, omega, S0, I0, days, dt = 0.25) {
@@ -58,9 +58,12 @@ sirs_integrate <- function(R0, gamma, omega, S0, I0, days, dt = 0.25) {
 }
 
 # ---- |-summary outcomes of one SIRS trajectory ----
+# cumulative_incidence is infection EVENTS per capita over the horizon (the C accumulator). It equals
+# the final size 1 - S_end for a pure SIR, but CAN EXCEED 1 under waning immunity, because a person
+# can be reinfected within the season -- so it is a burden measure, not a "fraction ever infected".
 .sirs_outcomes <- function(traj) {
   list(peak_prevalence = max(traj$I), peak_day = traj$day[which.max(traj$I)],
-       attack_rate = utils::tail(traj$C, 1))            # cumulative incidence = fraction ever infected
+       cumulative_incidence = utils::tail(traj$C, 1))
 }
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -73,7 +76,9 @@ sirs_integrate <- function(R0, gamma, omega, S0, I0, days, dt = 0.25) {
 #        R0 = c(wildtype = 1.3, variant = 1.8),
 #        uptake = c(none = 0, campaign = 0.4))
 # immune0 : starting immune fraction (seed from a run's end-of-wave susceptibles: 1 - S_end).
-# gamma, I0, days : SIRS constants. reference : the scenario names to treat as the comparison baseline.
+# gamma sets the recovery rate and thus the WHOLE epidemic speed; pass 1/mean(generation interval) for
+# the pathogen (default 1/5 is COVID-like -- a fast flu wants ~1/3, measles ~1/12). I0, days : constants.
+# reference : the scenario names to treat as the comparison baseline.
 sirs_scenarios <- function(grid, immune0, gamma = 1 / 5, I0 = 1e-4, days = 365,
                            reference = c(waning = names(grid$waning)[1],
                                          R0 = names(grid$R0)[1], uptake = names(grid$uptake)[1])) {
@@ -87,14 +92,15 @@ sirs_scenarios <- function(grid, immune0, gamma = 1 / 5, I0 = 1e-4, days = 365,
                            S0 = S0, I0 = I0, days = days)
     o <- .sirs_outcomes(traj)
     data.frame(scenario = sprintf("%s | %s | %s", w, v, u), waning = w, R0 = v, uptake = u,
-               peak_prevalence = o$peak_prevalence, peak_day = o$peak_day, attack_rate = o$attack_rate)
+               peak_prevalence = o$peak_prevalence, peak_day = o$peak_day,
+               cumulative_incidence = o$cumulative_incidence)
   })
   res <- do.call(rbind, rows)
 
   ref_id <- sprintf("%s | %s | %s", reference["waning"], reference["R0"], reference["uptake"])
   ref <- res[res$scenario == ref_id, ]
-  res$rel_peak   <- res$peak_prevalence / ref$peak_prevalence      # vs the reference scenario
-  res$rel_attack <- res$attack_rate / ref$attack_rate
+  res$rel_peak       <- res$peak_prevalence / ref$peak_prevalence          # vs the reference scenario
+  res$rel_incidence  <- res$cumulative_incidence / ref$cumulative_incidence
   res
 }
 
@@ -102,22 +108,25 @@ sirs_scenarios <- function(grid, immune0, gamma = 1 / 5, I0 = 1e-4, days = 365,
 # Turns the factorial into an assumption-averaged headline with a spread, e.g. "the variant + no
 # booster raises the peak ~X% (range across waning) vs wildtype + booster".
 sirs_ensemble <- function(res) {
-  agg <- stats::aggregate(cbind(rel_peak, rel_attack) ~ R0 + uptake, data = res,
+  agg <- stats::aggregate(cbind(rel_peak, rel_incidence) ~ R0 + uptake, data = res,
                           FUN = function(x) c(mean = mean(x), min = min(x), max = max(x)))
+  # aggregate() with a vector-returning FUN makes agg$rel_peak a MATRIX (columns mean/min/max), so
+  # agg$rel_peak[, "mean"] below is a sub-column selection, not a typo
   data.frame(R0 = agg$R0, uptake = agg$uptake,
              rel_peak_mean = agg$rel_peak[, "mean"], rel_peak_min = agg$rel_peak[, "min"],
              rel_peak_max = agg$rel_peak[, "max"],
-             rel_attack_mean = agg$rel_attack[, "mean"])
+             rel_incidence_mean = agg$rel_incidence[, "mean"])
 }
 
 # ---- |-"does boosting help?" -- the campaign-vs-no-campaign effect for a given variant ----
-# Returns the relative peak/attack reduction from the booster campaign, ensembled across waning.
+# Returns the relative peak / cumulative-incidence reduction from the booster campaign, ensembled
+# across waning.
 boosting_effect <- function(res, variant_level, none = "none", campaign = NULL) {
   if (is.null(campaign)) campaign <- setdiff(unique(res$uptake), none)[1]
   a <- res[res$R0 == variant_level & res$uptake == campaign, ]
   b <- res[res$R0 == variant_level & res$uptake == none, ]
   m <- merge(a, b, by = "waning", suffixes = c("_boost", "_none"))
   list(variant = variant_level, campaign = campaign,
-       peak_reduction   = 1 - mean(m$peak_prevalence_boost / m$peak_prevalence_none),
-       attack_reduction = 1 - mean(m$attack_rate_boost / m$attack_rate_none))
+       peak_reduction      = 1 - mean(m$peak_prevalence_boost / m$peak_prevalence_none),
+       incidence_reduction = 1 - mean(m$cumulative_incidence_boost / m$cumulative_incidence_none))
 }

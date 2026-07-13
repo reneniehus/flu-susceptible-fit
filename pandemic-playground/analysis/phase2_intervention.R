@@ -51,11 +51,21 @@ intervention_its <- function(input, location, intervention_day, window = 21,
   r_before <- unname(co["t0"]); r_after <- unname(co["t0"] + co["hinge"])
   delta    <- unname(co["hinge"]); delta_se <- unname(se["hinge"])
 
+  # DEPLETION FLAG: if the epidemic had already peaked at/before the breakpoint, or growth was already
+  # negative going in, then any "slowing" is susceptible burnout, NOT the intervention -- a fast
+  # pathogen can peak before a control measure even takes effect. Flag it so a depletion-driven decline
+  # is not read as control working (the whole tool is association, not proof; this is the sharpest trap).
+  full  <- loc_series(input[[series]], location)
+  peak_day <- full$day[which.max(full$cases)]
+  depletion_suspected <- (peak_day <= bp) || (r_before < 0)
+
   list(location = location, intervention_day = intervention_day, breakpoint = bp,
        r_before = r_before, r_after = r_after,
        delta_r = delta, delta_ci = c(delta - z * delta_se, delta + z * delta_se),
        R_before = r_to_R(r_before, gi_pmf), R_after = r_to_R(r_after, gi_pmf),
-       slowed = delta < 0 && (delta + z * delta_se) < 0)     # growth significantly slowed
+       slowed = delta < 0 && (delta + z * delta_se) < 0,     # growth significantly slowed
+       depletion_suspected = depletion_suspected,            # slowing may be burnout, not control
+       peak_day = peak_day)
 }
 
 # ---- |-score the estimated before/after R against the true realized R either side of the break ----

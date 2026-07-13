@@ -36,11 +36,18 @@ known_outcome_fraction <- function(cases, day, o2d_cdf, as_of) {
   list(u = denom_known / max(total, 1), known = denom_known, total = total)
 }
 
-# ---- |-delay-adjusted (confirmed) CFR at a single cutoff, with a binomial CI ----
+# ---- |-delay-adjusted (confirmed) CFR at a single cutoff, with a ratio CI ----
 # input : as_analysis_input(sim). location : which location. as_of : the day to estimate at. series :
 # which case series to use ("cases_by_onset" recommended -- it pairs with the onset->death delay).
+# min_known : refuse (return NA) below this many known-outcome cases -- below it the estimate is
+# deaths/(tiny denominator) and meaningless, so we decline rather than emit a confident wrong number
+# (matching the growth / Rt / variant tools). NOTE the estimate is deaths-per-known-outcome-case and
+# CAN legitimately exceed 1 in this playground: deaths and cases are thinned from infections
+# independently, so the confirmed CFR = IFR * death_detection / case_ascertainment, which tops 1
+# whenever death detection beats case ascertainment (a real diagnostic, warned about below).
 cfr_static <- function(input, location, as_of = input$as_of,
-                       series = c("cases_by_onset", "cases_by_report"), o2d = NULL, level = 0.95) {
+                       series = c("cases_by_onset", "cases_by_report"), o2d = NULL,
+                       level = 0.95, min_known = 5) {
   series  <- match.arg(series)
   ca      <- loc_series(input[[series]], location)
   de      <- loc_series(input$deaths, location)
@@ -49,9 +56,17 @@ cfr_static <- function(input, location, as_of = input$as_of,
   deaths_cum <- sum(de$deaths_by_date[de$day <= as_of])
   ko <- known_outcome_fraction(ca$cases, ca$day, o2d_cdf, as_of)
 
-  naive <- deaths_cum / max(ko$total, 1)                  # cumulative deaths / cumulative cases
-  cfr   <- deaths_cum / max(ko$known, 1)                  # delay-adjusted
-  ci    <- .binom_ci(deaths_cum, ko$known, level)         # binomial CI on the adjusted ratio
+  if (ko$known < min_known)                              # too few resolved cases to estimate
+    return(list(location = location, as_of = as_of, deaths = deaths_cum, cases = ko$total,
+                known_outcome = ko$known, u = ko$u, cfr_naive = NA_real_, cfr_adjusted = NA_real_,
+                cfr_lower = NA_real_, cfr_upper = NA_real_,
+                note = sprintf("too few known-outcome cases (%.1f < %d) to estimate CFR", ko$known, min_known)))
+
+  naive <- deaths_cum / ko$total                          # cumulative deaths / cumulative cases
+  cfr   <- deaths_cum / ko$known                          # delay-adjusted (can exceed 1 -- see above)
+  ci    <- .ratio_ci(deaths_cum, ko$known, level)         # Poisson-count CI on the ratio (allows > 1)
+  if (is.finite(cfr) && cfr > 1)
+    warning(sprintf("cfr_static(%s): confirmed CFR = %.2f > 1 -- case ascertainment is below death detection", location, cfr))
   list(location = location, as_of = as_of, deaths = deaths_cum, cases = ko$total,
        known_outcome = ko$known, u = ko$u,
        cfr_naive = naive, cfr_adjusted = cfr, cfr_lower = ci[1], cfr_upper = ci[2])
@@ -73,16 +88,17 @@ cfr_rolling <- function(input, location, cutoffs = NULL,
   do.call(rbind, rows)
 }
 
-# ---- |-Wilson score confidence interval for a ratio deaths / known ----
-# The Wilson score interval, not the Wald p +/- z*se -- Wald under-covers and pins the lower bound at 0
-# in exactly the small-count / small-p regime the early-epidemic CFR lives in (Brown, Cai & DasGupta
-# 2001, Stat Sci 16:101-133).
-.binom_ci <- function(deaths, known, level = 0.95) {
+# ---- |-confidence interval for a ratio deaths / known that can exceed 1 ----
+# The confirmed CFR here is deaths (a count) over a fixed known-outcome denominator, and can exceed 1,
+# so a proportion interval (Wilson/Wald) clamped to [0,1] would be INCONSISTENT with the point estimate
+# (e.g. estimate 6.2 with a [1,1] CI). Instead put an exact Poisson-count interval on the death count
+# (Garwood) and divide by the denominator -- consistent with the point estimate, and free to exceed 1.
+.ratio_ci <- function(deaths, known, level = 0.95) {
   if (known <= 0) return(c(NA_real_, NA_real_))
-  p <- min(deaths / known, 1); n <- known; z <- stats::qnorm(1 - (1 - level) / 2)
-  centre <- (p + z^2 / (2 * n)) / (1 + z^2 / n)
-  half   <- z * sqrt(p * (1 - p) / n + z^2 / (4 * n^2)) / (1 + z^2 / n)
-  c(max(centre - half, 0), min(centre + half, 1))
+  lo <- (1 - level) / 2; hi <- 1 - lo
+  d_lower <- if (deaths == 0) 0 else stats::qgamma(lo, shape = deaths)        # exact Poisson lower
+  d_upper <- stats::qgamma(hi, shape = deaths + 1)                            # exact Poisson upper
+  c(d_lower / known, d_upper / known)
 }
 
 # ---- |-score the CFR against the true confirmed CFR and the true IFR ----

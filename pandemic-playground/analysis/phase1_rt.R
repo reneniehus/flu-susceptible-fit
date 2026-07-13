@@ -29,7 +29,7 @@
 # prior_mean/prior_sd : Gamma prior on R (Cori default mean 5, sd 5). Returns a per-day data frame of
 # the posterior mean and credible interval, attributed to the END of each window.
 estimate_rt_cori <- function(incidence, day, gi_pmf, window = 7,
-                             prior_mean = 5, prior_sd = 5, level = 0.95) {
+                             prior_mean = 5, prior_sd = 5, level = 0.95, min_signal = 5) {
   n <- length(incidence)
   # total infectiousness Lambda_t = sum_{s>=1} w_s I_{t-s}
   Lambda <- .total_infectiousness(incidence, gi_pmf)
@@ -39,16 +39,24 @@ estimate_rt_cori <- function(incidence, day, gi_pmf, window = 7,
   lo <- (1 - level) / 2; hi <- 1 - lo
   out <- lapply(seq_len(n), function(t) {
     if (t <= window) return(NULL)                        # need a full window of past infectiousness
-    idx <- (t - window + 1):t
+    idx  <- (t - window + 1):t
     sumI <- sum(incidence[idx]); sumL <- sum(Lambda[idx])
-    if (sumL <= 0) return(NULL)
+    # LOW-SIGNAL GUARD: with too few cases the Gamma posterior just returns the prior mean (~5 by
+    # default), which looks like a confident estimate but is not. Refuse instead -- matching the
+    # growth / variant tools, which stop() on too little signal. Critical for sub-critical / mild /
+    # burnt-out epidemics where the sparse tail would otherwise read R ~ prior_mean on ~zero cases.
+    if (sumL <= 0 || sumI < min_signal) return(NULL)
     shape <- a0 + sumI; rate <- 1 / b0 + sumL            # posterior Gamma(shape, rate)
     data.frame(day = day[t],
                Rt = shape / rate,
                Rt_lower = stats::qgamma(lo, shape, rate),
                Rt_upper = stats::qgamma(hi, shape, rate))
   })
-  do.call(rbind, out)
+  res <- do.call(rbind, out)
+  # always return a typed data frame (0-row if nothing was estimable), never a bare NULL, so callers
+  # and scoring fail cleanly rather than silently building a malformed object.
+  if (is.null(res)) data.frame(day = integer(0), Rt = numeric(0),
+                               Rt_lower = numeric(0), Rt_upper = numeric(0)) else res
 }
 
 # ---- |-total infectiousness Lambda_t = sum_{s>=1} w_s I_{t-s} ----
@@ -63,15 +71,20 @@ estimate_rt_cori <- function(incidence, day, gi_pmf, window = 7,
 # ---- |-Phase-1 Rt analysis for one location from the observed onset-date cases ----
 # input : as_analysis_input(sim). Uses cases by onset by default (the right series for a GI-based
 # renewal estimate). `truncate` drops the last few days, where right-truncation biases R down.
-rt_analysis <- function(input, location, window = 7, gi = NULL,
+# `window = NULL` DERIVES the sliding window from the generation interval (~1.5 x GI mean), so it is
+# ~8 days for COVID but ~4 for fast flu and ~18 for measles -- a fixed 7-day window is 2.7 generations
+# for flu (over-smoothed, lags the turnover) and 0.6 for measles (unstable). Pass a number to override.
+rt_analysis <- function(input, location, window = NULL, gi = NULL,
                         series = c("cases_by_onset", "cases_by_report"),
-                        prior_mean = 5, prior_sd = 5, truncate = 0) {
+                        prior_mean = 5, prior_sd = 5, truncate = 0, min_signal = 5) {
   series <- match.arg(series)
+  gi_dist <- gi %||% input$delays$generation_interval
+  gi_pmf  <- discretise(gi_dist, boundary = "cori")
+  if (is.null(window)) window <- max(3L, round(1.5 * epidist_mean(gi_dist)))   # GI-scaled default
   d  <- loc_series(input[[series]], location)
   if (truncate > 0) d <- d[d$day <= (max(d$day) - truncate), ]
-  gi_pmf <- discretise(gi %||% input$delays$generation_interval, boundary = "cori")
   est <- estimate_rt_cori(d$cases, d$day, gi_pmf, window = window,
-                          prior_mean = prior_mean, prior_sd = prior_sd)
+                          prior_mean = prior_mean, prior_sd = prior_sd, min_signal = min_signal)
   est$location <- location
   est
 }
@@ -83,6 +96,7 @@ rt_analysis <- function(input, location, window = 7, gi = NULL,
 # not sharp edges. `which = "Rt"` scores against the nominal schedule instead, if wanted.
 score_rt <- function(sim, rt_est, which = c("Rt_effective", "Rt")) {
   which <- match.arg(which)
+  if (!nrow(rt_est)) return(list(n = 0, note = "no Rt was estimable (too little signal)"))
   loc   <- rt_est$location[1]
   truth <- truth_rt(sim, loc)
   Rtrue <- truth[[which]][match(rt_est$day, truth$day)]

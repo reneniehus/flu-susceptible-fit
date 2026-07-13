@@ -21,11 +21,7 @@ simulate_source <- function(cfg, par) {
 
   # ---- per-strain reproduction numbers: the variant inherits X's R trajectory x (1 + fitness) ----
   rt_list <- list(cfg$rt_source)
-  if (K == 2L) {
-    variant_rt <- cfg$rt_source
-    variant_rt$value <- variant_rt$value * (1 + cfg$variant$fitness)
-    rt_list[[2]] <- variant_rt
-  }
+  if (K == 2L) rt_list[[2]] <- scale_rt_for_variant(cfg$rt_source, cfg$variant$fitness)
 
   # ---- seeding: wild-type index cases on day 0; the variant on its introduction day ----
   seeding <- matrix(0, nrow = n, ncol = K)
@@ -33,7 +29,8 @@ simulate_source <- function(cfg, par) {
   if (K == 2L && !is.na(par$variant_day))
     seeding[par$variant_day + 1, 2] <- cfg$variant$seed_infections
 
-  sim <- simulate_renewal(n, N, gi, rt_list, seeding, stochastic = TRUE)
+  sim <- simulate_renewal(n, N, gi, rt_list, seeding, stochastic = TRUE,
+                          dispersion = cfg$dispersion_k %||% Inf)
 
   total_inc  <- rowSums(sim$incidence)
   variant_freq <- if (K == 2L) {

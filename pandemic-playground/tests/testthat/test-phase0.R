@@ -14,6 +14,16 @@ test_that("r_to_R inverts the Euler-Lotka relation", {
   expect_equal(r_to_R(r_star, gi), 2.0, tolerance = 1e-3)
 })
 
+test_that("growth doubling-time CI is NA when the growth-rate CI straddles zero", {
+  set.seed(1); counts <- stats::rpois(30, 20)          # a ~flat series -> r near 0, CI includes 0
+  g <- estimate_growth_rate(counts, 0:29)
+  if (g$r_lower < 0 && g$r_upper > 0) {
+    expect_true(is.na(g$doubling_lower))               # a doubling time is undefined when r may be <= 0
+    expect_true(is.na(g$doubling_upper))
+  }
+  expect_true(g$char_kind %in% c("doubling", "halving"))
+})
+
 test_that("catchment back-calculation recovers the true source prevalence", {
   cb <- catchment_backcalc(test_input, 30:60, min_surveillance = 0.7,
                            source_pop = test_sim$config$source$population)

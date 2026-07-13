@@ -57,6 +57,33 @@ Nishiura adjustment. A line-list mode where deaths are a subset of cases would b
 data systems and is the obvious alternative to offer; it would change the CFR interpretation and is
 noted as a front.
 
+## 2026-07 — What a multi-pathogen stress test taught us
+
+We ran the playground as five pathogens quite unlike COVID and asked where the framework breaks. The
+DGP held up remarkably well — the daily renewal is an *exact* discrete recursion (not an Euler scheme),
+so it recovered R within ~1% down to a 2.6-day flu generation interval, stayed numerically sane at
+measles R0 = 15, and fizzled sensibly at sub-critical MERS R0 = 0.7. Two lessons stand out.
+
+**[REFLECTION] The pathogen axis we had genuinely omitted was heterogeneity of transmission, not of
+timescale.** We had parameterised *when* things happen (delays) and *how severe* (IFR) richly, but every
+infection transmitted with the same Poisson law. Yet the sharpest behavioural difference between
+respiratory pathogens is superspreading: SARS and MERS are defined by k ~ 0.16–0.25, where most cases
+infect no-one and the epidemic rides on rare clusters. That is not a tuning of an existing knob — it is a
+missing dimension, and until we added `dispersion_k` the framework could not express why SARS was
+containable (chains fizzle) while COVID was not. The fix (NB offspring with `size = k·Λ`) is the one
+change here that expands *what pathogens are representable at all*, rather than sharpening a tool.
+
+**[REFLECTION] The analysis tools were quietly calibrated to COVID's clock.** A 7-day Cori window, a
+0:30 growth window, a 28-day forecast horizon, a 1/5 recovery rate — each is reasonable for COVID and
+silently wrong for a pathogen twice as fast or three times as slow. This is a subtle failure mode: the
+code runs, returns numbers, and the numbers are biased in a way only visible when scored against truth.
+The remedy — derive timescales from the generation interval — is really a statement of principle: *a
+pandemic-response tool must not assume the pandemic it was written during.* The stress test was worth it
+precisely because these defaults never fail loudly; they just quietly mislead, which is the worst kind of
+bug in a decision-support tool. The corollary we adopted everywhere: when signal is too thin to support a
+method (few cases, a burnt-out tail, a straddle-zero growth rate), the tool should **refuse**, not lean
+on its prior and emit a confident wrong answer.
+
 ## 2026-07 — On single-population-per-country, and honest heterogeneity
 
 Each country is one well-mixed renewal epidemic. The parent flu project argues at length that national

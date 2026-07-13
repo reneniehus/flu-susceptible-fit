@@ -49,7 +49,10 @@ nowcast_truncation <- function(input, location, as_of = input$as_of,
 
   assumed_pmf <- discretise(o2r %||% input$delays$onset_to_report)
   max_delay   <- length(assumed_pmf) - 1
-  pmf <- if (delay_source == "empirical") empirical_delay_pmf(tri, as_of, max_delay) %||% assumed_pmf else assumed_pmf
+  # the delay CDF is either the assumed one, or estimated from the triangle's completed days (falling
+  # back to the assumed one if there is too little completed history to estimate)
+  pmf <- assumed_pmf
+  if (delay_source == "empirical") pmf <- empirical_delay_pmf(tri, as_of, max_delay) %||% assumed_pmf
   Fd  <- cumsum(pmf)
 
   # observed (truncated) cases by onset day, up to as_of
@@ -94,7 +97,11 @@ score_nowcast <- function(sim, nc, recent = 14) {
   win <- nc$onset_day > (as_of - recent) & is.finite(nc$nowcast)
   s_nowcast  <- pp_score(nc$nowcast[win],  Ntrue[win], nc$nowcast_lower[win], nc$nowcast_upper[win])
   s_observed <- pp_score(nc$observed[win], Ntrue[win])   # what you get by NOT nowcasting, SAME days
+  # guard the 0/0 case: on a fizzled epidemic the recent window can be all-zero, so the naive RMSE is 0
+  # and the ratio is undefined -- report NA rather than -Inf/NaN
+  improvement <- if (is.finite(s_observed$rmse) && s_observed$rmse > 0)
+    1 - s_nowcast$rmse / s_observed$rmse else NA_real_
   list(location = loc, recent = recent, n_scored = s_nowcast$n,
        nowcast = s_nowcast, observed_naive = s_observed,
-       rmse_improvement = 1 - s_nowcast$rmse / s_observed$rmse)
+       rmse_improvement = improvement)
 }

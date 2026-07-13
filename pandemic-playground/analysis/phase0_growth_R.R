@@ -38,10 +38,19 @@ estimate_growth_rate <- function(counts, day, level = 0.95) {
   se  <- unname(sqrt(diag(stats::vcov(fit))[2]))
   if (!is.finite(se) || se > 5)                         # a near-degenerate fit: flag the huge CI honestly
     warning("estimate_growth_rate: the growth-rate estimate is poorly identified (very wide CI)")
-  z   <- stats::qnorm(1 - (1 - level) / 2)
-  list(r = r, r_lower = r - z * se, r_upper = r + z * se, se = se,
+  z <- stats::qnorm(1 - (1 - level) / 2)
+  r_lower <- r - z * se; r_upper <- r + z * se
+  # doubling time = ln2/r is DECREASING in r (a faster rate halves the doubling time), so the CI bounds
+  # come from the OPPOSITE ends of the r CI. But if the r CI straddles 0 (near-critical / sub-critical),
+  # ln2/(r +/- z*se) is meaningless (it can pass through +/-Inf), so the doubling bound is undefined --
+  # report NA rather than a spurious finite number. `char_time` is a doubling time when r>0 and a
+  # halving time when r<0 (so a declining epidemic reports a sensible positive halving time).
+  crosses_zero <- r_lower < 0 & r_upper > 0
+  list(r = r, r_lower = r_lower, r_upper = r_upper, se = se,
        doubling_time = log(2) / r,
-       doubling_lower = log(2) / (r + z * se), doubling_upper = log(2) / (r - z * se))
+       char_time = log(2) / abs(r), char_kind = if (r >= 0) "doubling" else "halving",
+       doubling_lower = if (crosses_zero) NA_real_ else log(2) / r_upper,
+       doubling_upper = if (crosses_zero) NA_real_ else log(2) / r_lower)
 }
 
 # ---- |-convert a growth rate r to a reproduction number via the generation interval ----

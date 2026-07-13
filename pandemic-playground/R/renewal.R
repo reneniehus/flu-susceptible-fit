@@ -23,6 +23,8 @@
 #   Fraser C. Estimating individual and household reproduction numbers in an emerging epidemic.
 #     PLoS ONE. 2007;2(8):e758.  (the renewal / infectiousness-profile formulation)
 #   Cori A, et al. Am J Epidemiol. 2013;178(9):1505-1512.  (discretised renewal)
+#   Lloyd-Smith JO, Schreiber SJ, Kopp PE, Getz WM. Superspreading and the effect of individual variation
+#     on disease emergence. Nature. 2005;438:355-359.  (offspring dispersion k; NB(k) offspring)
 #
 # Requires: R/utils.R (step_at) sourced first.
 
@@ -37,10 +39,14 @@
 # rt_list  : list of per-strain step_schedule()s (length K = number of strains)
 # seeding  : n_days x K matrix of exogenous infections planted on each day (day-0 seeds, variant
 #            introduction, imported infections). Rows are days, columns strains.
-# stochastic: TRUE -> Poisson draws (ground truth is one stochastic realisation); FALSE -> expected
+# stochastic: TRUE -> stochastic draws (ground truth is one realisation); FALSE -> expected
 #            (deterministic) infections, useful for debugging and for a noise-free reference.
+# dispersion: offspring dispersion k for superspreading. Inf -> Poisson (variance = mean). A finite k
+#            draws negative-binomial offspring with `size = k * force`, so the DAILY total equals the
+#            exact sum of per-infector NB(k) offspring (Lloyd-Smith 2005): few infectious -> heavily
+#            overdispersed (imported chains often go extinct), many infectious -> back to Poisson.
 # Returns: list(incidence [n_days x K], susceptible [n_days], prevalence [n_days], prevalence_by_strain).
-simulate_renewal <- function(n_days, N, gi_pmf, rt_list, seeding, stochastic = TRUE) {
+simulate_renewal <- function(n_days, N, gi_pmf, rt_list, seeding, stochastic = TRUE, dispersion = Inf) {
   K   <- length(rt_list)
   if (is.null(dim(seeding))) seeding <- matrix(seeding, nrow = n_days, ncol = K)
   stopifnot(nrow(seeding) == n_days, ncol(seeding) == K)
@@ -55,12 +61,19 @@ simulate_renewal <- function(n_days, N, gi_pmf, rt_list, seeding, stochastic = T
   for (t in seq_len(n_days)) {
     new <- numeric(K)
     for (k in seq_len(K)) {
-      # infectious pressure: convolve the strain's recent incidence with the generation interval
+      # infectious pressure Lambda = sum_{s>=1} g(s) I_{t-s}: convolve this strain's recent incidence
+      # with the generation interval. gi_pmf is delay-0-indexed (gi_pmf[1] = P(0) = 0), so gi_pmf[2:.]
+      # is g(1..smax); it multiplies the incidence read BACKWARDS (I_{t-1}, I_{t-2}, ...) so the two
+      # vectors align as g(s) * I_{t-s}.
       force_k <- 0
-      smax <- min(gtail, t - 1)
-      if (smax >= 1) force_k <- sum(gi_pmf[2:(smax + 1)] * I[(t - 1):(t - smax), k])
+      smax    <- min(gtail, t - 1)
+      if (smax >= 1) {
+        gi_at_lag    <- gi_pmf[2:(smax + 1)]                # g(1), g(2), ..., g(smax)
+        incidence_back <- I[(t - 1):(t - smax), k]          # I_{t-1}, I_{t-2}, ..., I_{t-smax}
+        force_k      <- sum(gi_at_lag * incidence_back)
+      }
       mu   <- step_at(rt_list[[k]], t - 1) * (S_prev / N) * force_k     # expected endogenous infections
-      endo <- if (stochastic) stats::rpois(1, mu) else mu
+      endo <- .draw_offspring(mu, force_k, stochastic, dispersion)
       new[k] <- endo + seeding[t, k]                                    # + exogenous seeds / imports
     }
     # cannot infect more than the remaining susceptibles: scale down proportionally in the rare clash
@@ -82,6 +95,19 @@ simulate_renewal <- function(n_days, N, gi_pmf, rt_list, seeding, stochastic = T
 
   list(incidence = I, susceptible = S,
        prevalence = rowSums(prev_by_strain), prevalence_by_strain = prev_by_strain)
+}
+
+# ---- |-draw a day's endogenous new infections: Poisson, or negative-binomial for superspreading ----
+# mu : expected new infections. force : the day's total infectiousness Lambda (the effective number of
+# infectious individuals contributing). With finite dispersion k, each of those infectors has NB(k)
+# offspring, and the sum of `force`-worth of them is NB(mean = mu, size = k * force) -- so `size`
+# scales with how many are infectious. When few are infectious the draw is heavily overdispersed and
+# often 0 (chains fizzle); at the peak size is large and it collapses to Poisson.
+.draw_offspring <- function(mu, force, stochastic, dispersion) {
+  if (!stochastic) return(mu)                          # deterministic: the expected value
+  if (mu <= 0) return(0)                               # nothing infectious -> no offspring
+  if (!is.finite(dispersion)) return(stats::rpois(1, mu))          # Inf k -> Poisson (homogeneous)
+  stats::rnbinom(1, size = dispersion * force, mu = mu)            # finite k -> superspreading
 }
 
 # ---- |-survival of the infectiousness profile: P(still infectious s days after infection) ----

@@ -8,6 +8,12 @@ schema (`as_analysis_input()`, or real data in the same shape), returns an estim
 A recurring theme: several tools are **exactly correct on the latent truth** but **biased on the
 observed data** — and the bias is the lesson. The playground exists to show these, not to hide them.
 
+**Not just COVID.** Where a tool has a timescale (the Cori window, the growth window, the forecast
+horizon, the SIRS recovery rate), its default is *derived from the generation interval* rather than a
+fixed COVID-era calendar constant, so the tools track the pathogen — fast flu to slow measles. And where
+signal is too thin to support a method (few cases, a burnt-out tail, a growth-rate CI straddling zero),
+the tool **refuses** (NA / empty) rather than emit a prior-dominated confident-but-wrong number.
+
 ---
 
 ## Phase 0 — before local introduction (the source X still dominates)
@@ -92,7 +98,7 @@ sequenced counts the CI is very tight and can under-cover, since the true `s` dr
 
 ### Next season, and does boosting help? — `phase3_scenarios`
 A parsimonious SIRS integrated with base-R RK4, run over a waning × transmissibility × booster-uptake
-factorial; outcomes (peak, timing, attack rate) reported relative to a reference and ensembled across
+factorial; outcomes (peak, timing, cumulative incidence) reported relative to a reference and ensembled across
 the waning assumption; seed the initial immune fraction from where the current run left the population.
 **Validated** against the analytic SIR final-size relation. This is scenario *exploration*, not point
 estimation, so it is checked by the integrator's correctness rather than scored against a single truth.

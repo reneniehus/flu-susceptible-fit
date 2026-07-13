@@ -17,6 +17,31 @@ test_that("the capacity forecast calls a breach correctly in the clear growth ph
   expect_lt(abs(sc$forecast_breach_day - sc$true_breach_day), 10)   # timing within ~10 days
 })
 
+test_that("the capacity forecast stays physical (bounded by population) for a fast, high-R pathogen", {
+  # a fast pathogen where a naive fixed-R projection (no depletion) would explode past the population
+  cfg <- config_subset(default_config(), c("IT", "DE", "PL"), n_days = 120)
+  cfg$delays$generation_interval <- epidist_gamma("gi", 2.6, 1.3)
+  cfg$rt_source  <- step_schedule(c(0, 55), c(2.0, 0.9))
+  cfg$rt_country <- make_country_rt(cfg$countries, R_start = 2.0, R_post = 0.8, intervention_days = c(60, 65, 70))
+  sim <- simulate_pandemic(cfg); inp <- as_analysis_input(sim)
+  pop <- sim$par$country_pop[["IT"]]
+  fc  <- forecast_capacity(inp, "IT", as_of = 50, horizon = 28,
+                           capacity = truth_capacity(sim, "IT"), population = pop)
+  capped   <- max(fc$projection$admissions, na.rm = TRUE)
+  uncapped <- max(forecast_capacity(inp, "IT", as_of = 50, horizon = 28,
+                                    capacity = truth_capacity(sim, "IT"), population = NULL)$projection$admissions,
+                  na.rm = TRUE)
+  expect_true(is.finite(capped))
+  expect_lt(capped, pop)                               # cannot imply more admissions than the population
+  expect_lt(capped, uncapped)                          # depletion/cap really bit (the naive forecast is larger)
+})
+
+test_that("intervention_its exposes a depletion-suspected flag", {
+  iday <- test_sim$config$rt_country[["IT"]]$t[2]
+  it <- intervention_its(test_input, "IT", intervention_day = iday, window = 21)
+  expect_type(it$depletion_suspected, "logical")
+})
+
 test_that("the intervention ITS detects the imposed slowing of transmission", {
   for (cc in c("IT", "PL", "DE")) {
     iday <- test_sim$config$rt_country[[cc]]$t[2]

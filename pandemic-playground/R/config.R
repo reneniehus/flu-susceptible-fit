@@ -46,6 +46,15 @@ step_schedule <- function(t, value) {
   list(t = as.numeric(t), value = as.numeric(value))
 }
 
+# ---- |-scale a reproduction-number schedule for the variant (x (1 + fitness)) ----
+# The variant strain inherits a location's R trajectory times its transmissibility (fitness) advantage.
+# Kept in one place so the "+fitness" rule is defined once and reused wherever a variant is set up (the
+# source, the countries, and the realized-Rt truth).
+scale_rt_for_variant <- function(base_rt, fitness) {
+  base_rt$value <- base_rt$value * (1 + fitness)
+  base_rt
+}
+
 # ---- |-build a per-country R_t schedule from a shared template + a country intervention ----
 # Every country starts at `R_start`, then a control measure on `intervention_day` steps it to
 # `R_post`. Countries differ only in WHEN they intervene (staggered response) -- the leanest way to
@@ -102,6 +111,14 @@ default_config <- function() {
     case_rho  = step_schedule(t = c(0, 30, 60, 120), value = c(0.05, 0.15, 0.35, 0.5)),  # rho_case,t
     death_rho = 0.9                                                                       # higher, ~complete
   )
+
+  # ---- |-transmission overdispersion (superspreading): the offspring dispersion k ----
+  # Individual-level heterogeneity in onward transmission. `Inf` = a Poisson (homogeneous) process,
+  # variance = mean -- the COVID/flu default that keeps runs backward-compatible. A FINITE, small k
+  # gives superspreading: most infections transmit to no-one and rare clusters dominate (SARS k ~ 0.16,
+  # MERS ~ 0.25, COVID ~ 0.1-0.5). This governs how often an imported chain fizzles out stochastically,
+  # which is a defining difference between respiratory pathogens -- see documentation/decisions.md.
+  dispersion_k <- Inf                                  # Inf = Poisson; e.g. 0.16 = SARS-like superspreading
 
   # ---- |-infection fatality: a scalar by default; age structure is an optional refinement ----
   # The DGP is not age-stratified (an extension front), so an age-structured IFR is collapsed to an
@@ -163,6 +180,7 @@ default_config <- function() {
     delays       = delays,
     rt_source    = rt_source,
     rt_country   = rt_country,
+    dispersion_k = dispersion_k,
     ascertainment = ascertainment,
     ifr          = ifr,
     ifr_age      = ifr_age,
@@ -214,7 +232,7 @@ validate_config <- function(cfg) {
       stop(sprintf("validate_config: delay '%s' is not an <epidist> object", nm))
 
   cc <- cfg$countries
-  if (!all(cc %in% cfg$surveillance_quality |> names())) # every country needs a surveillance value
+  if (!all(cc %in% names(cfg$surveillance_quality)))   # every country needs a surveillance value
     stop("validate_config: surveillance_quality is missing some countries")
   if (!all(cc %in% names(cfg$rt_country)))
     stop("validate_config: rt_country is missing some countries")
@@ -224,6 +242,12 @@ validate_config <- function(cfg) {
   if (any(cfg$ascertainment$case_rho$value <= 0) || any(cfg$ascertainment$case_rho$value > 1))
     stop("validate_config: case_rho values must be in (0, 1]")
   if (cfg$ifr <= 0 || cfg$ifr >= 1) stop("validate_config: ifr must be in (0, 1)")
+
+  # transmission overdispersion k must be positive (Inf = Poisson); admission rate a probability
+  if (!is.null(cfg$dispersion_k) && cfg$dispersion_k <= 0)
+    stop("validate_config: dispersion_k must be > 0 (Inf for a Poisson / no-superspreading process)")
+  if (!is.null(cfg$admission_rate) && (cfg$admission_rate < 0 || cfg$admission_rate > 1))
+    stop("validate_config: admission_rate must be in [0, 1]")
 
   invisible(TRUE)
 }

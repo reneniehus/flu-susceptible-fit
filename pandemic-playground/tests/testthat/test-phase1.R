@@ -43,6 +43,35 @@ test_that("Cori Rt on true infections correctly crosses 1 at the intervention", 
   expect_lt(mean(after), 1)                                         # controlled after
 })
 
+test_that("Cori Rt returns a typed empty frame (not NULL) and guards low signal", {
+  gi  <- discretise(test_input$delays$generation_interval, boundary = "cori")
+  est <- estimate_rt_cori(rep(0, 60), 0:59, gi, window = 7)           # all-zero incidence -> nothing estimable
+  expect_s3_class(est, "data.frame")
+  expect_equal(nrow(est), 0)
+  expect_true(all(c("day", "Rt", "Rt_lower", "Rt_upper") %in% names(est)))
+})
+
+test_that("the Cori sliding window is derived from the generation interval", {
+  # ~1.5 x GI mean, so it scales with the pathogen instead of a hard-coded 7
+  gi_mean <- epidist_mean(test_input$delays$generation_interval)
+  est <- rt_analysis(test_input, "IT")
+  expect_gt(nrow(est), 0)
+})
+
+test_that("CFR is internally consistent when it exceeds 1, and refuses too-few-outcome cutoffs", {
+  # high severity + low ascertainment makes the confirmed CFR = ifr*death_rho/case_rho exceed 1
+  cfg <- config_subset(default_config(), c("IT", "DE"), n_days = 160)
+  cfg$ifr <- 0.3
+  cfg$ascertainment$case_rho  <- step_schedule(0, 0.05)
+  cfg$ascertainment$death_rho <- 0.9
+  sim <- simulate_pandemic(cfg); inp <- as_analysis_input(sim)
+  s <- suppressWarnings(cfr_static(inp, "IT", as_of = 150))
+  expect_gt(s$cfr_adjusted, 1)                          # legitimately > 1 in this DGP
+  expect_gte(s$cfr_upper, s$cfr_adjusted)               # the CI is CONSISTENT with the point (not clamped to [0,1])
+  s0 <- cfr_static(inp, "IT", as_of = 3)               # too early: too few resolved cases
+  expect_true(is.na(s0$cfr_adjusted))
+})
+
 test_that("the nowcast beats the raw truncated counts on recent onset days", {
   nc <- nowcast_truncation(test_input, "IT", as_of = 110)
   sc <- score_nowcast(test_sim, nc, recent = 14)

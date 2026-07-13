@@ -34,6 +34,8 @@
   # ---- onsets: infections shifted by the incubation period (expected onsets by onset day) ----
   onsets_total   <- shift_by_delay(infections_total, incub)
   onsets_strain  <- vapply(seq_len(K), function(k) shift_by_delay(infections[, k], incub), numeric(n))
+  # vapply drops to a bare vector when n == 1 (a 1-day run); force it back to an n x K matrix so the
+  # per-strain indexing below always works
   if (is.null(dim(onsets_strain))) onsets_strain <- matrix(onsets_strain, ncol = K)
 
   # ---- eventual reported cases by onset day: a Poisson draw thinned by time-varying ascertainment ----
@@ -201,8 +203,13 @@ observe <- function(cfg, par, source, flights, imports, local) {
   vf_source <- data.frame(location = cfg$source$code, day = day, date = date,
                           variant_freq = source$variant_freq, stringsAsFactors = FALSE)
   vf_country <- do.call(rbind, lapply(seq_along(cc), function(j) {
-    li <- local$infections; tot <- li[, j, 1] + (if (par$n_strains == 2L) li[, j, 2] else 0)
-    vf <- if (par$n_strains == 2L) ifelse(tot > 0, li[, j, 2] / tot, NA_real_) else rep(0, n)
+    if (par$n_strains == 2L) {
+      wild <- local$infections[, j, 1]; variant <- local$infections[, j, 2]
+      total <- wild + variant
+      vf <- ifelse(total > 0, variant / total, NA_real_)   # NA before any infections exist
+    } else {
+      vf <- rep(0, n)                                       # single strain -> no variant
+    }
     data.frame(location = cc[j], day = day, date = date, variant_freq = vf, stringsAsFactors = FALSE)
   }))
 
@@ -329,7 +336,7 @@ observe <- function(cfg, par, source, flights, imports, local) {
 # Rebuilds the same strain R list the renewal engine used, so the realized-Rt truth is exact.
 .strain_rt_list <- function(base_rt, cfg, par) {
   rl <- list(base_rt)
-  if (par$n_strains == 2L) { vr <- base_rt; vr$value <- vr$value * (1 + cfg$variant$fitness); rl[[2]] <- vr }
+  if (par$n_strains == 2L) rl[[2]] <- scale_rt_for_variant(base_rt, cfg$variant$fitness)
   rl
 }
 
@@ -345,9 +352,11 @@ observe <- function(cfg, par, source, flights, imports, local) {
     Sfrac <- if (t == 1) 1 else susceptible[t - 1] / N
     num <- 0; den <- 0
     for (k in seq_len(K)) {
-      Lk  <- sum(gi_pmf[2:(smax + 1)] * infections[(t - 1):(t - smax), k])
-      num <- num + step_at(rt_list[[k]], t - 1) * Sfrac * Lk
-      den <- den + Lk
+      # infectiousness Lambda_k = sum_s g(s) I_{k,t-s}: gi_pmf is delay-0-indexed so gi_pmf[2:.] = g(1..smax),
+      # paired with this strain's incidence read backwards (I_{t-1}, ..., I_{t-smax}) to align as g(s) I_{t-s}
+      Lambda_k <- sum(gi_pmf[2:(smax + 1)] * infections[(t - 1):(t - smax), k])
+      num <- num + step_at(rt_list[[k]], t - 1) * Sfrac * Lambda_k
+      den <- den + Lambda_k
     }
     if (den > 0) reff[t] <- num / den
   }

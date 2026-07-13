@@ -44,9 +44,11 @@ Rscript demo/run_playground.R
 `simulate_pandemic(config)` runs a pipeline —
 `draw_parameters → simulate_source → simulate_flights → simulate_importations → simulate_local →
 observe → assemble` — and returns `list(truth, observed, config, ...)`. A stochastic **renewal**
-process (`I_t ~ Poisson(R_t · S_t/N · Σ_s g(s) I_{t-s})`, one engine for the source **and** every
-country) generates infections; a fitter **variant** can be introduced at X and travels abroad with the
-passengers. **Flights** carry the source's infectious **prevalence** into each country as **imports**,
+process (`I_t ~ NegBin(R_t · S_t/N · Σ_s g(s) I_{t-s}, k)`, one engine for the source **and** every
+country) generates infections; the offspring dispersion `k` (`dispersion_k`) tunes **superspreading**,
+so the framework covers pathogens from homogeneous (Poisson, `k = Inf`) to SARS/MERS-like (`k ≈ 0.16`,
+where most chains fizzle) — not just COVID. A fitter **variant** can be introduced at X and travels
+abroad with the passengers. **Flights** carry the source's infectious **prevalence** into each country as **imports**,
 which seed the local renewal. The **observation model** then degrades the truth exactly as real
 surveillance does: infections → onsets (incubation) → a time-varying **ascertained** fraction of
 **cases**, scattered across report days into a **reporting triangle** (right-truncated); **deaths** via

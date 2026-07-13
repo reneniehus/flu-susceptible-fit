@@ -67,7 +67,7 @@ for (t in c(70, 100, 160)) {
 cat("   -> the adjusted CFR is stable early; the gap to the IFR is the (uncorrected) case under-ascertainment\n")
 
 cat("\nQ: Is transmission growing or shrinking right now?  (Cori Rt)\n")
-rt <- rt_analysis(input, country, window = 7)
+rt <- rt_analysis(input, country)                     # window derived from the generation interval
 sr <- score_rt(sim, rt)
 cat(sprintf("   Rt vs the realized truth: cor %.2f, MAE %.2f, %.0f%% CI coverage\n",
             sr$cor, sr$mae, 100 * sr$coverage))
@@ -85,7 +85,8 @@ rule(sprintf("PHASE 2  --  growth to peak, healthcare demand (%s)", country))
 cap <- truth_capacity(sim, country)
 
 cat("\nQ: Will we breach hospital capacity in the next few weeks?  (renewal forecast)\n")
-fc <- forecast_capacity(input, country, as_of = 95, horizon = 28, capacity = cap)
+pop_c <- sim$par$country_pop[[country]]
+fc <- forecast_capacity(input, country, as_of = 95, horizon = 28, capacity = cap, population = pop_c)
 sf <- score_forecast(sim, fc, input)
 cat(sprintf("   R_now %.2f, capacity %.0f/day. Forecast: breach = %s (day %s);  TRUTH: breach = %s (day %s)\n",
             fc$R_now, cap, sf$forecast_breach, sf$forecast_breach_day, sf$true_breach, sf$true_breach_day))
@@ -111,13 +112,30 @@ cat(sprintf("   selection coefficient s = %.3f/day [%.3f, %.3f]  (realized truth
 
 cat("\nQ: What might next season look like, and does boosting help?  (SIRS scenarios)\n")
 immune0 <- 1 - tail(sim$latent$local$susceptible[, country], 1) / sim$par$country_pop[[country]]
+gi_mean <- epidist_mean(sim$config$delays$generation_interval)           # match the SIRS speed to the pathogen
 grid <- list(waning = c(slow = 1/365, med = 1/200, fast = 1/120),
              R0 = c(wildtype = 1.3, variant = 1.8), uptake = c(none = 0, campaign = 0.4))
-res <- sirs_scenarios(grid, immune0 = immune0, days = 365)
+res <- sirs_scenarios(grid, immune0 = immune0, gamma = 1 / gi_mean, days = 365)
 be  <- boosting_effect(res, "variant")
 cat(sprintf("   seeding next season at %.0f%% immune. A fitter variant raises the peak ~%.1fx vs wild type (no booster).\n",
             100 * immune0, mean(res$rel_peak[res$R0 == "variant" & res$uptake == "none"])))
-cat(sprintf("   A 40%% booster campaign cuts the variant peak by ~%.0f%% and the attack rate by ~%.0f%% (ensembled over waning).\n",
-            100 * be$peak_reduction, 100 * be$attack_reduction))
+cat(sprintf("   A 40%% booster campaign cuts the variant peak by ~%.0f%% and the cumulative incidence by ~%.0f%% (ensembled over waning).\n",
+            100 * be$peak_reduction, 100 * be$incidence_reduction))
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+### Beyond COVID -- the framework represents other respiratory pathogens ##########
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+rule("BEYOND COVID  --  the same framework, a superspreading (SARS-like) pathogen")
+cat("\nSuperspreading: with the offspring dispersion k, most infections transmit to no-one and imported\n")
+cat("chains often fizzle -- the defining SARS/MERS behaviour a Poisson process cannot produce.\n")
+gi_pmf <- discretise(sim$config$delays$generation_interval, boundary = "cori")
+establish <- function(k, reps = 300) {
+  mean(vapply(seq_len(reps), function(i) {
+    set.seed(i); seed <- matrix(0, 120, 1); seed[1, 1] <- 1
+    sum(simulate_renewal(120, 1e7, gi_pmf, list(step_schedule(0, 2.4)), seed, dispersion = k)$incidence) > 50
+  }, logical(1)))
+}
+cat(sprintf("   establishment probability from one imported case (R0 = 2.4):  Poisson %.0f%%   vs   k=0.16 (SARS) %.0f%%\n",
+            100 * establish(Inf), 100 * establish(0.16)))
 
 rule("DONE  --  every answer above was scored against a truth the analyst never saw")

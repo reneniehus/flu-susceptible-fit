@@ -52,8 +52,9 @@ loc_series <- function(tbl, location) {
     stop("loc_series: expected a data frame but got ", if (is.null(tbl)) "NULL" else class(tbl)[1],
          " -- a schema table this tool needs is missing from the analysis input. ",
          "See documentation/real_data.md for the required frames.")
-  key <- if ("location" %in% names(tbl)) "location" else "country"
-  tbl[tbl[[key]] == location, , drop = FALSE] |> (\(d) d[order(d$day), ])()
+  key  <- if ("location" %in% names(tbl)) "location" else "country"
+  rows <- tbl[tbl[[key]] == location, , drop = FALSE]
+  rows[order(rows$day), ]                               # always day-ordered for the tools
 }
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -66,13 +67,16 @@ loc_series <- function(tbl, location) {
 pp_score <- function(estimate, truth, lower = NULL, upper = NULL) {
   ok <- is.finite(estimate) & is.finite(truth)
   e <- estimate[ok]; t <- truth[ok]
+  # correlation is only defined when BOTH series vary; on a flat (e.g. all-zero) window it is undefined,
+  # so return NA rather than trip R's "standard deviation is zero" warning
+  can_cor <- length(e) > 2 && stats::sd(e) > 0 && stats::sd(t) > 0
   out <- list(
     n       = length(e),
     bias    = mean(e - t),
     mae     = mean(abs(e - t)),
     rmse    = sqrt(mean((e - t)^2)),
     rel_bias = mean((e - t) / pmax(abs(t), .Machine$double.eps)),
-    cor     = if (length(e) > 2) stats::cor(e, t) else NA_real_
+    cor     = if (can_cor) stats::cor(e, t) else NA_real_
   )
   if (!is.null(lower) && !is.null(upper))
     out$coverage <- mean(truth[ok] >= lower[ok] & truth[ok] <= upper[ok])

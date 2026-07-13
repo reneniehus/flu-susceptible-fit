@@ -106,7 +106,17 @@ discretise <- function(d, max_days = epidist_support(d), boundary = c("interval"
   upper <- .epidist_cdf(d, days + 0.5)
   lower <- .epidist_cdf(d, pmax(days - 0.5, 0))
   w <- upper - lower
-  if (boundary == "cori") w[1] <- 0            # no same-day transmission for a generation interval
+  if (boundary == "cori") {
+    # advisory: zeroing day 0 and renormalising nudges the realised discrete mean UP. Negligible for a
+    # COVID-length GI, but for a very short GI (mean < ~2 d at daily resolution) the folded day-0 mass
+    # is large enough to matter when comparing to a literature GI or an externally-supplied R0.
+    day0_share <- w[1] / sum(w)                # share sitting on day 0 (before we zero it)
+    if (is.finite(day0_share) && day0_share > 0.05)
+      warning(sprintf("discretise('%s', 'cori'): %.0f%% of the mass sat on day 0 and was zeroed; the ",
+                      d$name, 100 * day0_share),
+              "realised discrete mean shifts up slightly -- fine for internal use, mind external comparisons.")
+    w[1] <- 0                                  # no same-day transmission for a generation interval
+  }
   s <- sum(w)
   if (s <= 0) stop(sprintf("discretise('%s'): PMF has zero mass -- check max_days / parameters", d$name))
   w / s                                        # renormalise (folds the > max_days tail back in)
@@ -143,6 +153,7 @@ as_epidist <- function(x, name = NULL) {
   par <- epiparameter::get_parameters(x)
   nm  <- name %||% tryCatch(as.character(x$epi_name), error = function(e) "delay")
   if (grepl("gamma", fam)) {
+    # {epiparameter} reports gamma as shape + scale; this class uses shape + rate, so rate = 1 / scale
     epidist(nm, "gamma", list(shape = unname(par["shape"]), rate = unname(1 / par["scale"])))
   } else if (grepl("lnorm|lognormal", fam)) {
     epidist(nm, "lognormal", list(meanlog = unname(par["meanlog"]), sdlog = unname(par["sdlog"])))

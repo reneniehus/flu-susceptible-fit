@@ -159,6 +159,72 @@ the main alternative considered. Append new decisions as they are made.
   Full age-structured transmission is an extension front. *Alternative:* age-stratify the renewal — a
   large addition the brief lists as optional.
 
+## Generalising beyond COVID (driven by a multi-pathogen stress test)
+
+A multi-agent stress test ran the playground as five very different respiratory pathogens (1918-severe
+flu, mild-iceberg flu, SARS-1 superspreader, sub-critical MERS, measles-like) and probed the structural
+limits. It confirmed the DGP itself is robust across pathogen speeds and severities, but surfaced one
+big missing capability and a family of COVID-tuned analysis defaults. The changes:
+
+- **Transmission overdispersion / superspreading (`dispersion_k`).** The single biggest generalisation.
+  The renewal draw was strictly Poisson (variance = mean), so k-type offspring heterogeneity — the
+  defining feature of SARS (k ~ 0.16), MERS and even COVID — was structurally unrepresentable, and every
+  imported chain established far too reliably (verified: one seed at R0 = 2.4 establishes 88% of the time
+  under Poisson vs ~20% under NB k = 0.16). We add one config scalar `dispersion_k` (Inf = Poisson,
+  backward-compatible) and draw endogenous infections as `rnbinom(size = k * force, mu = mu)`. Scaling
+  `size` with the day's infectiousness (the effective number of infectors) makes the daily total equal
+  the exact sum of per-infector NB(k) offspring (Lloyd-Smith et al. 2005): heavily overdispersed when few
+  are infectious (imported chains fizzle) and back to Poisson at the peak. *Alternative:* a fixed
+  `size = k` — rejected (wrong aggregate variance; would not collapse to Poisson at scale).
+
+- **Derive analysis-tool timescales from the generation interval, not the calendar.** Nearly every tool
+  default was a COVID-tuned constant that misbehaves on faster/slower pathogens: a 7-day Cori window is
+  2.7 generations for flu (over-smoothed) but 0.6 for measles (unstable); a 0:30 growth window spans a
+  fast epidemic's whole rise-and-fall. So the Cori/forecast/growth windows now default to `NULL` and
+  derive from the GI (`~1.5 x GI mean`), and the demo passes the SIRS `gamma` as `1/GI_mean`. The current
+  numbers remain available as explicit overrides. *Alternative:* keep fixed defaults — rejected (silently
+  wrong off the COVID timescale, the exact trap a "new pathogen" playground must avoid).
+
+- **Low-signal guards so tools refuse rather than emit prior-dominated nonsense.** With few cases the
+  Cori posterior collapses onto its prior mean (~5), giving a confident R ~ 5 on a sub-critical or
+  burnt-out epidemic. `estimate_rt_cori` now returns a typed empty frame (never a bare NULL) and skips
+  windows below a small incidence floor — matching the growth / variant tools, which already `stop()` on
+  too little signal. The growth doubling-time CI now returns NA (not a spurious finite number) when the
+  growth-rate CI straddles zero, and reports a halving time for a declining curve.
+
+- **The confirmed CFR may exceed 1, and its interval must stay consistent.** Because deaths and cases are
+  thinned from infections independently, the confirmed CFR = IFR·death_detection/ascertainment
+  legitimately tops 1 whenever death detection beats case ascertainment (any high-severity or early run).
+  The point estimate is no longer clamped, the interval is a Poisson-count ratio CI that can also exceed 1
+  (so we never show a 6.2 estimate beside a [1,1] interval), and the tool warns when the CFR > 1 (a real
+  diagnostic that ascertainment is below death detection) and returns NA below a minimum resolved-case
+  count. *Alternative:* clamp to [0,1] — rejected (hides the very ascertainment signal the playground
+  exists to expose).
+
+- **Susceptible depletion in the forecast projection.** A fixed-R renewal with no S/N term projects
+  unbounded exponential growth, so a fast/high-R pathogen forecast implied more admissions than the whole
+  population (measles: 42M admissions in 28 days). `renewal_project` now takes a susceptible pool
+  (population x an optional serology-based susceptible fraction), depletes the projected mean by the
+  remaining fraction, and caps cumulative projected incidence at the pool. The case->admission ratio is
+  fitted on an adaptive window (settled days that actually contain admissions), so a fast epidemic no
+  longer silently forecasts zero admissions. *Alternative:* forecast admissions directly with no cap —
+  rejected (physically impossible projections).
+
+- **Flag depletion-driven declines in the intervention analysis.** On a fast pathogen a control measure
+  can land after the epidemic has already peaked from susceptible exhaustion; `intervention_its` now flags
+  `depletion_suspected` when the intervention is at/after the observed peak or growth was already negative,
+  so burnout is not mis-read as the intervention working.
+
+- **`attack_rate` was a misnomer; renamed to `cumulative_incidence`.** The SIRS accumulator counts
+  infection *events* and, under the waning the scenarios explore, exceeds 1 through reinfection — so it is
+  a burden measure, not a fraction-ever-infected. Renamed and documented; it still equals the final size
+  for a pure SIR.
+
+**Not built (documented extension fronts).** A `symptomatic_fraction` to separate a true asymptomatic
+iceberg from surveillance under-detection; sub-daily integration (rejected — the daily engine is an exact
+discrete renewal, verified accurate down to GI mean ~2 d, not an Euler approximation); GI-uncertainty
+propagation into the r->R interval.
+
 ## Infrastructure
 
 - **EU/EEA populations are the only "real" geography; everything else is simulated.** Population drives

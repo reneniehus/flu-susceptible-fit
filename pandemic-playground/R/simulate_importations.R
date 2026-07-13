@@ -39,7 +39,7 @@ simulate_importations <- function(cfg, par, source, flights) {
     p_variant <- ifelse(source$prevalence > 0,
                         source$prevalence_by_strain[, 2] / source$prevalence, 0)   # length n
     for (t in seq_len(n)) {
-      if (imports_total[t, ] |> sum() == 0) next
+      if (sum(imports_total[t, ]) == 0) next                                     # no imports that day -> nothing to split
       n_var <- stats::rbinom(length(cc), imports_total[t, ], p_variant[t])          # variant arrivals
       imports[t, , 2] <- n_var
       imports[t, , 1] <- imports_total[t, ] - n_var

@@ -65,6 +65,7 @@ score_catchment <- function(sim, cb, input = as_analysis_input(sim)) {
   win  <- cb$window[1]:cb$window[2]
   prev <- sim$truth$prevalence
   vol  <- sim$latent$flights$true                          # true volumes (for the exact weighting)
+  # day indices are 0-based; +1 maps them to the 1-based rows of the volume / prevalence matrices
   w    <- rowSums(vol)[win + 1]                             # total outbound volume per day (weights)
   true_prev_frac <- stats::weighted.mean(prev$prevalence_frac[win + 1], w)
   true_prev      <- true_prev_frac * cb$source_pop
