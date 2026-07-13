@@ -1,0 +1,889 @@
+<title>Reading an Outbreak — A Staged Field Guide</title>
+<style>
+  /* ============================ tokens ============================ */
+  :root{
+    --ground:#eef2f0; --surface:#ffffff; --surface2:#e7edea; --inset:#f4f7f6;
+    --ink:#101a17; --muted:#586562; --faint:#8b9a95; --hairline:#d3dcd8; --grid:#e2e9e6;
+    --accent:#0a7a6e; --accent-ink:#0a6a60;
+    --c-observed:#0b9182; --c-estimate:#4c5fd5; --c-truth:#a8730c; --c-critical:#b4322a;
+    --shadow:0 1px 2px rgba(16,26,23,.04), 0 8px 24px -12px rgba(16,26,23,.14);
+    --f-display:"Helvetica Neue",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    --f-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --f-mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#0d1312; --surface:#151d1b; --surface2:#1c2624; --inset:#121917;
+      --ink:#e8efec; --muted:#9aa6a2; --faint:#6f7d78; --hairline:#27302d; --grid:#20292710;
+      --grid:#222b28;
+      --accent:#2bb6a6; --accent-ink:#43c2b3;
+      --c-observed:#12a091; --c-estimate:#6e7cea; --c-truth:#b98420; --c-critical:#d65c4e;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0d1312; --surface:#151d1b; --surface2:#1c2624; --inset:#121917;
+    --ink:#e8efec; --muted:#9aa6a2; --faint:#6f7d78; --hairline:#27302d; --grid:#222b28;
+    --accent:#2bb6a6; --accent-ink:#43c2b3;
+    --c-observed:#12a091; --c-estimate:#6e7cea; --c-truth:#b98420; --c-critical:#d65c4e;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+  :root[data-theme="light"]{
+    --ground:#eef2f0; --surface:#ffffff; --surface2:#e7edea; --inset:#f4f7f6;
+    --ink:#101a17; --muted:#586562; --faint:#8b9a95; --hairline:#d3dcd8; --grid:#e2e9e6;
+    --accent:#0a7a6e; --accent-ink:#0a6a60;
+    --c-observed:#0b9182; --c-estimate:#4c5fd5; --c-truth:#a8730c; --c-critical:#b4322a;
+    --shadow:0 1px 2px rgba(16,26,23,.04), 0 8px 24px -12px rgba(16,26,23,.14);
+    color-scheme:light;
+  }
+
+  /* ============================ base ============================ */
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--f-body);
+    line-height:1.6;-webkit-font-smoothing:antialiased;margin:0;
+    font-size:clamp(15px,.6vw + 13.5px,17px);overflow-x:hidden}
+  .wrap{max-width:74rem;margin:0 auto;padding:0 clamp(18px,4vw,44px)}
+  .col{max-width:44rem}
+  h1,h2,h3{font-family:var(--f-display);font-weight:800;letter-spacing:-.02em;
+    text-wrap:balance;margin:0;line-height:1.05}
+  p{margin:0 0 1em}
+  a{color:var(--accent-ink);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+  .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+  .eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent-ink);font-weight:600;display:inline-flex;align-items:center;gap:.55em}
+  .eyebrow::before{content:"";width:22px;height:2px;background:var(--accent);display:inline-block}
+  .lead{font-size:1.12rem;color:var(--ink)}
+  .muted{color:var(--muted)}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* ============================ cover ============================ */
+  .cover{padding:clamp(48px,9vw,120px) 0 clamp(28px,5vw,60px);position:relative}
+  .cover .ident{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);display:flex;flex-wrap:wrap;gap:.4em 1.4em;margin-bottom:clamp(24px,5vw,52px)}
+  .cover .ident b{color:var(--accent-ink);font-weight:600}
+  .cover h1{font-size:clamp(2.6rem,8vw,5.4rem);letter-spacing:-.035em;line-height:.92}
+  .cover h1 em{font-style:normal;color:var(--accent-ink)}
+  .cover .sub{font-size:clamp(1.05rem,1.6vw,1.35rem);color:var(--muted);max-width:38rem;margin-top:1.1rem}
+  .facts{display:flex;flex-wrap:wrap;gap:0;margin-top:clamp(28px,5vw,52px);
+    border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline)}
+  .fact{flex:1 1 130px;padding:16px 20px 16px 0;border-right:1px solid var(--hairline)}
+  .fact:last-child{border-right:0}
+  .fact .k{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .fact .v{font-family:var(--f-display);font-weight:800;font-size:1.5rem;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums}
+  .fact .v small{font-weight:600;font-size:.82rem;color:var(--muted);letter-spacing:0}
+
+  .premise{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:clamp(30px,5vw,54px) 0}
+  @media(max-width:640px){.premise{grid-template-columns:1fr}}
+  .pcard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:22px 24px;box-shadow:var(--shadow)}
+  .pcard h3{font-size:1.05rem}
+  .pcard .tag{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:.5rem;display:inline-block}
+  .pcard.truth .tag{color:var(--c-truth)} .pcard.obs .tag{color:var(--c-observed)}
+  .pcard p{margin:0;color:var(--muted);font-size:.95rem}
+
+  /* ============================ stage ============================ */
+  .stage{padding:clamp(40px,7vw,86px) 0;border-top:1px solid var(--hairline)}
+  .band{display:flex;align-items:baseline;gap:clamp(14px,3vw,30px);flex-wrap:wrap;margin-bottom:6px}
+  .band .no{font-family:var(--f-display);font-weight:800;font-size:clamp(2.4rem,7vw,4.6rem);
+    letter-spacing:-.04em;line-height:.8;color:color-mix(in srgb,var(--accent) 26%,var(--faint))}
+  .band .h{flex:1 1 320px}
+  .band .phase{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-ink);font-weight:600}
+  .band h2{font-size:clamp(1.7rem,3.6vw,2.6rem);margin-top:.15rem}
+  .band .when{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);white-space:nowrap;letter-spacing:.02em}
+  .look{max-width:44rem;margin:1.1rem 0 0;font-size:1.06rem;color:var(--ink)}
+  .signals{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px}
+  .signal{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.02em;padding:5px 11px;border-radius:999px;
+    background:var(--surface2);border:1px solid var(--hairline);color:var(--muted);display:inline-flex;gap:.5em;align-items:center}
+  .signal b{color:var(--ink);font-weight:600}
+  .signal::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+  /* questions */
+  .qs{margin:clamp(26px,4vw,40px) 0 8px}
+  .qs .qlabel{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+  .qgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .q{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;background:var(--surface);
+    border:1px solid var(--hairline);border-radius:12px}
+  .q .qi{font-family:var(--f-mono);font-size:.72rem;font-weight:700;color:var(--accent-ink);padding-top:1px}
+  .q p{margin:0;font-size:.94rem;line-height:1.45}
+
+  /* figures */
+  figure.chart{margin:clamp(22px,3.5vw,34px) 0 0;background:var(--surface);border:1px solid var(--hairline);
+    border-radius:16px;padding:clamp(16px,2.4vw,26px);box-shadow:var(--shadow)}
+  .chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:6px}
+  .chart-head .ct{font-family:var(--f-display);font-weight:700;font-size:1.08rem;letter-spacing:-.01em}
+  .chart-head .cs{font-family:var(--f-mono);font-size:.72rem;color:var(--faint);letter-spacing:.04em;text-transform:uppercase;margin-top:3px}
+  .btn{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+    background:var(--surface2);border:1px solid var(--hairline);border-radius:8px;padding:6px 10px;cursor:pointer}
+  .btn:hover{color:var(--ink);border-color:var(--faint)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .plot{position:relative;width:100%}
+  .plot svg{width:100%;height:auto;display:block;overflow:visible}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px}
+  .lg{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);font-family:var(--f-mono);letter-spacing:.01em}
+  .lg .sw{width:22px;height:0;border-top-width:3px;border-top-style:solid;border-radius:2px}
+  .lg .sw.dot{height:9px;width:9px;border-top:0;border-radius:50%}
+  .cap{margin-top:14px;font-size:.9rem;color:var(--muted);max-width:52rem}
+  .cap b{color:var(--ink);font-weight:600}
+
+  /* tooltip */
+  .tt{position:absolute;pointer-events:none;opacity:0;transition:opacity .08s;z-index:5;
+    background:var(--surface);border:1px solid var(--hairline);border-radius:10px;box-shadow:var(--shadow);
+    padding:9px 11px;font-family:var(--f-mono);font-size:.76rem;min-width:110px;font-variant-numeric:tabular-nums}
+  .tt .tx{color:var(--faint);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+  .tt .row{display:flex;justify-content:space-between;gap:14px;align-items:center;line-height:1.7}
+  .tt .row .nm{display:flex;align-items:center;gap:7px;color:var(--muted)}
+  .tt .row .nm i{width:9px;height:9px;border-radius:2px;display:inline-block}
+  .tt .row .vl{color:var(--ink);font-weight:600}
+
+  /* table view */
+  .tbl{display:none;margin-top:14px;max-height:280px;overflow:auto;border:1px solid var(--hairline);border-radius:10px}
+  .tbl.show{display:block}
+  table{border-collapse:collapse;width:100%;font-family:var(--f-mono);font-size:.78rem;font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:6px 12px;border-bottom:1px solid var(--hairline);white-space:nowrap}
+  th{position:sticky;top:0;background:var(--surface2);color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:.68rem}
+  td:first-child,th:first-child{text-align:left}
+
+  /* readout / verdict */
+  .readout{margin-top:clamp(22px,3.5vw,34px);border:1px solid var(--hairline);border-radius:16px;overflow:hidden;
+    background:linear-gradient(180deg,var(--surface),var(--surface))}
+  .readout .rh{padding:14px 20px;border-bottom:1px solid var(--hairline);display:flex;justify-content:space-between;
+    align-items:center;gap:12px;background:var(--inset)}
+  .readout .rh .rl{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-ink);font-weight:600}
+  .readout .rh .rt{font-family:var(--f-mono);font-size:.72rem;color:var(--faint)}
+  .verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .vc{padding:18px 20px;border-right:1px solid var(--hairline)}
+  .vc:last-child{border-right:0}
+  .vc .vk{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .vc .vv{font-family:var(--f-display);font-weight:800;font-size:1.9rem;letter-spacing:-.02em;margin-top:4px;
+    font-variant-numeric:tabular-nums;line-height:1}
+  .vc .vv small{font-size:.9rem;font-weight:600;color:var(--muted)}
+  .vc .vn{font-size:.82rem;color:var(--muted);margin-top:6px}
+  .vc.est .vv{color:var(--c-estimate)} .vc.tru .vv{color:var(--c-truth)}
+  .vc.crit .vv{color:var(--c-critical)} .vc.good .vv{color:var(--c-observed)}
+  .tools{margin-top:clamp(22px,3.5vw,34px);display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .tool{padding:18px 20px;border:1px solid var(--hairline);border-radius:13px;background:var(--surface)}
+  .tool .tn{font-family:var(--f-mono);font-size:.82rem;color:var(--accent-ink);font-weight:600;letter-spacing:.01em}
+  .tool h4{margin:.35rem 0 .4rem;font-family:var(--f-display);font-size:1.02rem;font-weight:700;letter-spacing:-.01em}
+  .tool p{margin:0;font-size:.9rem;color:var(--muted);line-height:1.5}
+
+  /* closing */
+  .close{padding:clamp(44px,7vw,90px) 0;border-top:1px solid var(--hairline)}
+  .close h2{font-size:clamp(1.6rem,3.2vw,2.3rem);max-width:22ch}
+  .colofon{margin-top:32px;padding-top:20px;border-top:1px solid var(--hairline);font-family:var(--f-mono);
+    font-size:.76rem;color:var(--faint);letter-spacing:.02em;display:flex;flex-wrap:wrap;gap:6px 24px}
+  .colofon b{color:var(--muted);font-weight:600}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+
+  <!-- ===================== COVER ===================== -->
+  <header class="cover">
+    <div class="ident">
+      <span>FIELD MANUAL · <b>PANDEMIC PLAYGROUND</b></span>
+      <span>SYNTHETIC OUTBREAK · <b>PATHOGEN Xa‑1</b></span>
+      <span>REV · <b>2026.07</b></span>
+    </div>
+    <h1>Reading an<br><em>Outbreak</em></h1>
+    <p class="sub">A staged field guide to the analytical toolkit — from the first signal abroad to
+      next season's scenarios. Every answer here is checked against a truth the analyst never sees.</p>
+
+    <div class="facts" id="facts"></div>
+  </header>
+
+  <!-- ===================== PREMISE ===================== -->
+  <section class="col" style="padding-bottom:8px">
+    <p class="eyebrow">The premise</p>
+    <h2 style="font-size:clamp(1.5rem,3vw,2.1rem);margin:.5rem 0 .8rem">One outbreak, kept in two records.</h2>
+    <p class="lead muted">This whole guide runs on <b style="color:var(--ink)">one simulated pandemic</b>: a novel
+      respiratory pathogen emerges in a non‑EU/EEA source region <span class="mono">X</span> and travels by air into
+      every EU/EEA country. The simulator keeps two parallel records — and the gap between them is the entire job of
+      the toolkit.</p>
+    <div class="premise">
+      <div class="pcard truth">
+        <span class="tag">The truth</span>
+        <h3 style="margin-bottom:.4rem">What actually happened</h3>
+        <p>Every infection, the real reproduction number, the true fatality rate, who imported what and when.
+          Complete and exact — and, in a real emergency, entirely invisible.</p>
+      </div>
+      <div class="pcard obs">
+        <span class="tag">The observed</span>
+        <h3 style="margin-bottom:.4rem">What surveillance sees</h3>
+        <p>A late, partial, noisy shadow: cases only once tested and reported, deaths that lag by weeks, imports
+          caught only where surveillance is sharp. This is all the analyst gets.</p>
+      </div>
+    </div>
+    <p class="muted" style="font-size:.95rem">Because the truth is known, each tool below is <b style="color:var(--ink)">scored</b> —
+      the estimate is placed next to the answer. That is what makes this a testbed and not a demo.</p>
+  </section>
+
+  <!-- ===================== STAGE 0 ===================== -->
+  <section class="stage" id="s0">
+    <div class="band">
+      <div class="no">00</div>
+      <div class="h">
+        <div class="phase">Phase 0 · before local introduction</div>
+        <h2>The signal is abroad</h2>
+      </div>
+      <div class="when">DAY 0–45 · SOURCE X</div>
+    </div>
+    <p class="look">The pathogen is still concentrated at the source. At home there is nothing yet — but the source's
+      own case count is climbing, and a trickle of infected travellers is already arriving. Everything you can learn
+      now comes from that curve abroad and from who imports it.</p>
+    <div class="signals" id="sig0"></div>
+
+    <figure class="chart" data-chart="p0curve">
+      <div class="chart-head">
+        <div><div class="ct">The source epidemic — reported vs. real</div>
+          <div class="cs">Source X · cases &amp; infections · log scale</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>It is spreading, fast.</b> On a log scale exponential growth is a straight line; the fitted slope
+        gives a growth rate of <span class="mono" id="p0r"></span>/day — a doubling time of <span class="mono" id="p0dt"></span> days.
+        The reported line sits far below the true infections: even at the source, most cases are never counted.</p>
+    </figure>
+
+    <div class="qs">
+      <div class="qlabel">What you can answer now</div>
+      <div class="qgrid">
+        <div class="q"><span class="qi">Q1</span><p>Is it spreading person‑to‑person, and how fast?</p></div>
+        <div class="q"><span class="qi">Q2</span><p>How much are we missing at source — how big is it really?</p></div>
+        <div class="q"><span class="qi">Q3</span><p>Which of our countries are already missing their imports?</p></div>
+      </div>
+    </div>
+
+    <figure class="chart" data-chart="p0imports">
+      <div class="chart-head">
+        <div><div class="ct">Who is under‑detecting their imports?</div>
+          <div class="cs">Detected imports vs. flight volume · log–log · per country</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>Fit the line on the well‑surveilled countries, then read the gaps.</b> Imports scale with flight
+        volume, so countries below the prediction band are catching fewer than their connectivity implies — the likely
+        under‑detectors. Their residual tracks true surveillance quality at correlation <span class="mono" id="p0cor"></span>.</p>
+    </figure>
+
+    <div class="readout">
+      <div class="rh"><span class="rl">Insight · scored vs. truth</span><span class="rt">Phase 0</span></div>
+      <div class="verdict" id="v0"></div>
+    </div>
+
+    <div class="tools">
+      <div class="tool"><div class="tn">phase0_growth_R</div><h4>Growth → R</h4>
+        <p>A Poisson‑GLM growth rate, converted to a reproduction number through the generation interval (Euler–Lotka).</p></div>
+      <div class="tool"><div class="tn">phase0_catchment</div><h4>Back‑calculate the source</h4>
+        <p>Exported cases ÷ travel fraction × detection recovers the true size at the source, independent of its own reporting.</p></div>
+      <div class="tool"><div class="tn">phase0_importation_risk</div><h4>Importation risk</h4>
+        <p>Regress detected imports on flight volume across well‑surveilled countries; flag those below the interval.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== STAGE 1 ===================== -->
+  <section class="stage" id="s1">
+    <div class="band">
+      <div class="no">01</div>
+      <div class="h">
+        <div class="phase">Phase 1 · early local growth</div>
+        <h2>It's here, and climbing</h2>
+      </div>
+      <div class="when">DAY 45–110 · COUNTRY IT</div>
+    </div>
+    <p class="look">Imported chains have caught. Local cases are doubling; the first deaths appear. Now the questions
+      turn inward — how fast is it growing <em>here</em>, how deadly is it, and how much of this week's curve is real
+      versus simply not reported yet.</p>
+    <div class="signals" id="sig1"></div>
+
+    <figure class="chart" data-chart="p1nowcast">
+      <div class="chart-head">
+        <div><div class="ct">Is the recent dip real, or just late reporting?</div>
+          <div class="cs">Cases by onset date · last 3 weeks · IT</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>The apparent downturn is an illusion of the calendar.</b> Recent onset days look low only because
+        their reports have not arrived yet. Inverting the reporting delay lifts them back up — the nowcast lands on the
+        eventual truth and cuts the recent‑week error by <span class="mono" id="p1nc"></span>%.</p>
+    </figure>
+
+    <div class="qs">
+      <div class="qlabel">What you can answer now</div>
+      <div class="qgrid">
+        <div class="q"><span class="qi">Q1</span><p>How many cases really occurred recently, before reports catch up?</p></div>
+        <div class="q"><span class="qi">Q2</span><p>Is transmission growing or shrinking right now?</p></div>
+        <div class="q"><span class="qi">Q3</span><p>How deadly is it?</p></div>
+      </div>
+    </div>
+
+    <figure class="chart" data-chart="p1rt">
+      <div class="chart-head">
+        <div><div class="ct">Growing or shrinking, right now?</div>
+          <div class="cs">Reproduction number R<sub>t</sub> · Cori renewal · IT</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>Above one and the epidemic grows; below one it recedes.</b> The renewal estimate tracks the true
+        instantaneous R (correlation <span class="mono" id="p1rtcor"></span>) and shows control biting as R<sub>t</sub>
+        crosses 1 — with the honest lag of a curve read off onset dates.</p>
+    </figure>
+
+    <figure class="chart" data-chart="p1cfr">
+      <div class="chart-head">
+        <div><div class="ct">How deadly is it?</div>
+          <div class="cs">Case fatality ratio · naïve vs. delay‑adjusted · IT</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>Naïve CFR reads far too low early, because today's deaths belong to earlier cases.</b> Adjusting
+        for the onset‑to‑death delay gives a stable estimate weeks sooner. It still sits well above the true infection
+        fatality ratio (<span class="mono" id="p1ifr"></span>) — the remaining gap is the cases never ascertained.</p>
+    </figure>
+
+    <div class="readout">
+      <div class="rh"><span class="rl">Insight · scored vs. truth</span><span class="rt">Phase 1</span></div>
+      <div class="verdict" id="v1"></div>
+    </div>
+
+    <div class="tools">
+      <div class="tool"><div class="tn">phase1_nowcast</div><h4>Nowcast</h4>
+        <p>Invert the reporting‑delay distribution on the onset × report triangle to correct the right‑truncated tail.</p></div>
+      <div class="tool"><div class="tn">phase1_rt</div><h4>Renewal R<sub>t</sub></h4>
+        <p>A self‑contained Cori estimator: a conjugate‑Gamma posterior over a sliding, GI‑scaled window.</p></div>
+      <div class="tool"><div class="tn">phase1_cfr</div><h4>Delay‑adjusted CFR</h4>
+        <p>Shrink the denominator to cases with a known outcome (Nishiura); corrects the delay, not the ascertainment.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== STAGE 2 ===================== -->
+  <section class="stage" id="s2">
+    <div class="band">
+      <div class="no">02</div>
+      <div class="h">
+        <div class="phase">Phase 2 · growth to peak</div>
+        <h2>Will the hospitals hold?</h2>
+      </div>
+      <div class="when">DAY 90–140 · COUNTRY IT</div>
+    </div>
+    <p class="look">Transmission is established and admissions are rising toward the peak. The questions become
+      operational: how close is the breach, and are the control measures actually bending the curve — or is the
+      decline just the epidemic running out of susceptibles?</p>
+    <div class="signals" id="sig2"></div>
+
+    <figure class="chart" data-chart="p2forecast">
+      <div class="chart-head">
+        <div><div class="ct">Will we breach hospital capacity?</div>
+          <div class="cs">Daily admissions · observed + 30‑day forecast · IT</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>The forecast crosses the line within the week.</b> Holding R fixed across a small scenario band and
+        mapping cases → admissions through the admission delay, the projection breaches capacity on
+        day <span class="mono" id="p2fd"></span> — the truth breached on day <span class="mono" id="p2td"></span>, one day out.
+        A fixed‑R forecast can only bracket the near term; it fans out fast and cannot foresee the control that actually
+        bent the truth back down — which is exactly the next question.</p>
+    </figure>
+
+    <div class="qs">
+      <div class="qlabel">What you can answer now</div>
+      <div class="qgrid">
+        <div class="q"><span class="qi">Q1</span><p>Will we breach hospital / ICU capacity in the next few weeks?</p></div>
+        <div class="q"><span class="qi">Q2</span><p>Are our control measures working?</p></div>
+      </div>
+    </div>
+
+    <figure class="chart" data-chart="p2its">
+      <div class="chart-head">
+        <div><div class="ct">Are the control measures working?</div>
+          <div class="cs">Cases around the intervention · segmented growth · log scale · IT</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>The growth rate breaks downward at the intervention.</b> An interrupted time series puts the implied
+        R at <span class="mono" id="p2rb"></span> before and <span class="mono" id="p2ra"></span> after — significant
+        slowing. Read as association, not proof: the tool also flags that susceptible depletion may be helping.</p>
+    </figure>
+
+    <div class="readout">
+      <div class="rh"><span class="rl">Insight · scored vs. truth</span><span class="rt">Phase 2</span></div>
+      <div class="verdict" id="v2"></div>
+    </div>
+
+    <div class="tools">
+      <div class="tool"><div class="tn">phase2_forecast</div><h4>Capacity forecast</h4>
+        <p>A depletion‑aware renewal forecast of cases, mapped to admissions and tested against capacity over a scenario band.</p></div>
+      <div class="tool"><div class="tn">phase2_intervention</div><h4>Interrupted time series</h4>
+        <p>A segmented growth‑rate model with a break at the intervention — association, with a depletion caveat built in.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== STAGE 3 ===================== -->
+  <section class="stage" id="s3">
+    <div class="band">
+      <div class="no">03</div>
+      <div class="h">
+        <div class="phase">Phase 3 · sustained transmission</div>
+        <h2>A new variant, and next season</h2>
+      </div>
+      <div class="when">DAY 110–300 · COUNTRY IT</div>
+    </div>
+    <p class="look">The first wave has crested, but a fitter variant introduced early is now spreading through the mix.
+      The horizon lengthens: is the variant taking over, how fast — and given waning immunity, what might next season
+      look like, and would a booster campaign help?</p>
+    <div class="signals" id="sig3"></div>
+
+    <figure class="chart" data-chart="p3variant">
+      <div class="chart-head">
+        <div><div class="ct">Is the variant taking over, and how fast?</div>
+          <div class="cs">Variant share of sequenced cases · logistic fit · IT</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>A clean logistic sweep.</b> The variant's share of sequenced cases follows an S‑curve; the slope of
+        its log‑odds is the selection coefficient, <span class="mono" id="p3s"></span> per day. It passes 50% around
+        day <span class="mono" id="p3x"></span> — recovering the true advantage almost exactly.</p>
+    </figure>
+
+    <div class="qs">
+      <div class="qlabel">What you can answer now</div>
+      <div class="qgrid">
+        <div class="q"><span class="qi">Q1</span><p>Is a new variant taking over, and how fast?</p></div>
+        <div class="q"><span class="qi">Q2</span><p>What might next season look like — and does boosting help?</p></div>
+      </div>
+    </div>
+
+    <figure class="chart" data-chart="p3scenarios">
+      <div class="chart-head">
+        <div><div class="ct">Next season — and does boosting help?</div>
+          <div class="cs">SIRS prevalence · three scenarios · seeded from where this season left off</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>The fitter variant drives a far higher peak; a booster campaign flattens it.</b> Seeding a
+        parsimonious SIRS from this season's remaining susceptibles, a 40% booster cuts the variant's peak by
+        ~<span class="mono" id="p3boost"></span>% — reported relative to a reference and ensembled over the waning
+        assumption, next‑season scenario‑hub style.</p>
+    </figure>
+
+    <div class="readout">
+      <div class="rh"><span class="rl">Insight · scored vs. truth</span><span class="rt">Phase 3</span></div>
+      <div class="verdict" id="v3"></div>
+    </div>
+
+    <div class="tools">
+      <div class="tool"><div class="tn">phase3_variant_selection</div><h4>Selection coefficient</h4>
+        <p>A binomial GLM of the sequenced counts; the log‑odds slope is the variant's per‑day transmissibility advantage.</p></div>
+      <div class="tool"><div class="tn">phase3_scenarios</div><h4>Next‑season SIRS</h4>
+        <p>A waning × transmissibility × uptake factorial, reported relative to a reference and ensembled over assumptions.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== CLOSE ===================== -->
+  <section class="close col">
+    <p class="eyebrow">The same manual, other pathogens</p>
+    <h2>One toolkit, calibrated against a truth it never sees.</h2>
+    <p class="lead muted" style="margin-top:1rem">Every estimate in this guide was scored against the answer, and the
+      recurring lesson is that a method can be exactly right in principle yet biased in practice — scaling‑up testing
+      inflates early growth, a variant contaminates R, a fixed‑R forecast overshoots the turnover. The playground
+      exists to make those biases visible before the next real emergency.</p>
+    <p class="muted">And the outbreak here is only one of many the framework can stage: dial the generation interval down
+      for a fast pandemic influenza, up for a measles‑like pathogen, or set the offspring dispersion low and watch a
+      SARS‑style superspreader where most imported chains simply fizzle out. The tools re‑scale to each.</p>
+    <div class="colofon">
+      <span><b>Source</b> pandemic‑playground · simulated data</span>
+      <span><b>Engine</b> stochastic renewal · base R</span>
+      <span><b>Every figure</b> generated from one seeded run</span>
+    </div>
+  </section>
+
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+const DATA = __DATA__;
+</script>
+<script>
+/* ================================ helpers ================================ */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs={},kids=[]){const e=document.createElementNS(NS,tag);
+  for(const k in attrs)e.setAttribute(k,attrs[k]); (Array.isArray(kids)?kids:[kids]).forEach(c=>c&&e.appendChild(c)); return e;}
+const fmtK=n=>{const a=Math.abs(n); if(a>=1e6)return(n/1e6).toFixed(a>=1e7?0:1)+"M";
+  if(a>=1e3)return(n/1e3).toFixed(a>=1e4?0:1)+"k"; if(a>=100)return Math.round(n).toString();
+  return (Math.round(n*10)/10).toString();};
+const fmtInt=n=>Math.round(n).toLocaleString("en-US");
+const fmtPct=n=>(n*100).toFixed(n<0.1?1:0)+"%";
+const fmt2=n=>n==null||!isFinite(n)?"—":(Math.round(n*100)/100).toFixed(2);
+const log10=x=>Math.log(x)/Math.LN10;
+
+/* ================================ chart engine ================================ */
+/* spec: {series:[{name,role,kind:'line'|'area'|'band'|'points',pts:[{x,y}|{x,lo,hi}],dash,width,r,fillOp,noHover}],
+   x:{type,dom?,fmt}, y:{type,dom?,fmt}, thresholds:[{y,color,label}], markers:[{x,y,label,role}],
+   labels:[{x,y,text,role,dy?}], hoverFmt } */
+let CHART_UID=0;
+function chart(fig, spec){
+  const plot=$(".plot",fig), legendEl=$(".legend",fig);
+  const W=760, H=fig.dataset.h?+fig.dataset.h:380, m={t:22,r:26,b:44,l:58};
+  const iw=W-m.l-m.r, ih=H-m.t-m.b;
+  plot.innerHTML="";
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,preserveAspectRatio:"xMidYMid meet",role:"img"});
+  plot.appendChild(svg);
+
+  // domains
+  const allX=[], allY=[];
+  spec.series.forEach(s=>s.pts.forEach(p=>{ allX.push(p.x);
+    if(p.y!=null)allY.push(p.y); if(p.lo!=null)allY.push(p.lo); if(p.hi!=null)allY.push(p.hi); }));
+  (spec.thresholds||[]).forEach(t=>allY.push(t.y));
+  (spec.markers||[]).forEach(t=>{allY.push(t.y);allX.push(t.x);});
+  let xd=spec.x.dom||[Math.min(...allX),Math.max(...allX)];
+  let yd=spec.y.dom||[Math.min(...allY),Math.max(...allY)];
+  const xlog=spec.x.type==="log", ylog=spec.y.type==="log";
+  if(ylog){ if(!spec.y.dom){ const pos=allY.filter(v=>v>0); yd=[Math.min(...pos), Math.max(...pos)]; } }
+  else if(!spec.y.dom){ const pad=(yd[1]-yd[0])*.08||1; yd=[Math.min(yd[0],yd[0]-pad*.2), yd[1]+pad]; if(yd[0]>0&&yd[0]<(yd[1]*.35))yd[0]=0; }
+  if(xlog && !spec.x.dom){ const posx=allX.filter(v=>v>0); xd=[Math.min(...posx), Math.max(...posx)]; }
+  const sx=v=> m.l + ( (xlog?log10(v)-log10(xd[0]):v-xd[0]) / ((xlog?log10(xd[1])-log10(xd[0]):xd[1]-xd[0])||1) )*iw;
+  const sy=v=> m.t + ih - ( (ylog?log10(v)-log10(yd[0]):v-yd[0]) / ((ylog?log10(yd[1])-log10(yd[0]):yd[1]-yd[0])||1) )*ih;
+
+  // ticks
+  function ticks(dom,log,n){ if(log){ const lo=Math.floor(log10(dom[0])), hi=Math.ceil(log10(dom[1]));
+    const mant = (log10(dom[1])-log10(dom[0]))<=2.2 ? [1,2,5] : [1];   // denser ticks over a narrow range
+    const t=[]; for(let e=lo;e<=hi;e++) for(const mm of mant) t.push(mm*Math.pow(10,e));
+    return t.filter(v=>v>=dom[0]*.92&&v<=dom[1]*1.08); }
+    const [a,b]=dom, raw=(b-a)/n, mag=Math.pow(10,Math.floor(log10(raw))), norm=raw/mag;
+    const step=(norm>=5?5:norm>=2?2:1)*mag, t=[]; for(let v=Math.ceil(a/step)*step;v<=b+1e-9;v+=step)t.push(+v.toFixed(6)); return t; }
+  const gridCol=cssv("--grid"), axisCol=cssv("--faint"), inkMut=cssv("--muted");
+  const xt=ticks(xd,xlog,6), yt=ticks(yd,ylog,5);
+  const g=el("g"); svg.appendChild(g);
+  yt.forEach(v=>{ g.appendChild(el("line",{x1:m.l,x2:m.l+iw,y1:sy(v),y2:sy(v),stroke:gridCol,"stroke-width":1}));
+    g.appendChild(el("text",{x:m.l-10,y:sy(v)+3.5,"text-anchor":"end",fill:axisCol,"font-size":11,"font-family":cssv("--f-mono")},
+      document.createTextNode(spec.y.fmt(v)))); });
+  xt.forEach(v=>{ g.appendChild(el("text",{x:sx(v),y:m.t+ih+22,"text-anchor":"middle",fill:axisCol,"font-size":11,"font-family":cssv("--f-mono")},
+      document.createTextNode(spec.x.fmt(v)))); });
+  // axis titles
+  if(spec.x.title) g.appendChild(el("text",{x:m.l+iw/2,y:H-4,"text-anchor":"middle",fill:inkMut,"font-size":11,"font-family":cssv("--f-mono"),"letter-spacing":"0.04em"},document.createTextNode(spec.x.title)));
+  if(spec.y.title) g.appendChild(el("text",{x:14,y:m.t+ih/2,"text-anchor":"middle",fill:inkMut,"font-size":11,"font-family":cssv("--f-mono"),"letter-spacing":"0.04em",transform:`rotate(-90 14 ${m.t+ih/2})`},document.createTextNode(spec.y.title)));
+
+  const colOf=r=>cssv("--c-"+r);
+  // thresholds
+  (spec.thresholds||[]).forEach(t=>{ const yy=sy(t.y);
+    g.appendChild(el("line",{x1:m.l,x2:m.l+iw,y1:yy,y2:yy,stroke:colOf(t.role||"critical"),"stroke-width":1.5,"stroke-dasharray":"2 4",opacity:.9}));
+    if(t.label)g.appendChild(el("text",{x:m.l+iw-4,y:yy-6,"text-anchor":"end",fill:colOf(t.role||"critical"),"font-size":11,"font-weight":600,"font-family":cssv("--f-mono")},document.createTextNode(t.label))); });
+
+  // clip data marks to the plot area so a runaway band/line can't overdraw the axes and labels
+  const clipId="clip"+(CHART_UID++);
+  const defs=el("defs"), cp=el("clipPath",{id:clipId});
+  cp.appendChild(el("rect",{x:m.l,y:m.t-3,width:iw,height:ih+6})); defs.appendChild(cp); svg.appendChild(defs);
+  const gS=el("g",{"clip-path":`url(#${clipId})`}); g.appendChild(gS);
+
+  // series: bands first, then areas, then lines, then points
+  const order={band:0,area:1,line:2,points:3};
+  [...spec.series].sort((a,b)=>order[a.kind]-order[b.kind]).forEach(s=>{
+    const c=colOf(s.role);
+    if(s.kind==="band"){ const pts=s.pts.filter(p=>p.lo!=null&&p.hi!=null);
+      const up=pts.map(p=>`${sx(p.x)},${sy(p.hi)}`), dn=pts.slice().reverse().map(p=>`${sx(p.x)},${sy(p.lo)}`);
+      gS.appendChild(el("polygon",{points:up.concat(dn).join(" "),fill:c,opacity:s.fillOp||.13,stroke:"none"})); }
+    else if(s.kind==="area"){ const pp=s.pts.filter(p=>p.y!=null&&(!ylog||p.y>0));
+      const line=pp.map(p=>`${sx(p.x)},${sy(p.y)}`).join(" ");
+      const base=sy(ylog?yd[0]:Math.max(yd[0],0));
+      gS.appendChild(el("polygon",{points:`${sx(pp[0].x)},${base} ${line} ${sx(pp[pp.length-1].x)},${base}`,fill:c,opacity:.10,stroke:"none"}));
+      gS.appendChild(el("polyline",{points:line,fill:"none",stroke:c,"stroke-width":s.width||2.4,"stroke-linejoin":"round","stroke-linecap":"round"})); }
+    else if(s.kind==="line"){ const pp=s.pts.filter(p=>p.y!=null&&(!ylog||p.y>0));
+      gS.appendChild(el("polyline",{points:pp.map(p=>`${sx(p.x)},${sy(p.y)}`).join(" "),fill:"none",stroke:c,
+        "stroke-width":s.width||2.4,"stroke-linejoin":"round","stroke-linecap":"round","stroke-dasharray":s.dash||"none"})); }
+    else if(s.kind==="points"){ s.pts.filter(p=>p.y!=null&&(!ylog||p.y>0)&&(!xlog||p.x>0)).forEach(p=>{
+      gS.appendChild(el("circle",{cx:sx(p.x),cy:sy(p.y),r:s.r||4.2,fill:p.role?colOf(p.role):c,
+        stroke:cssv("--surface"),"stroke-width":1.5,opacity:s.op||.95})); }); }
+  });
+
+  // point markers (e.g. 50% crossover, breach point)
+  (spec.markers||[]).forEach(mk=>{ const x=sx(mk.x), y=sy(mk.y), c=colOf(mk.role||"truth");
+    g.appendChild(el("line",{x1:x,x2:x,y1:m.t,y2:m.t+ih,stroke:c,"stroke-width":1.2,"stroke-dasharray":"3 3",opacity:.55}));
+    g.appendChild(el("circle",{cx:x,cy:y,r:5,fill:c,stroke:cssv("--surface"),"stroke-width":2}));
+    if(mk.label)g.appendChild(el("text",{x:x+ (mk.anchor==="end"?-8:8),y:m.t+12,"text-anchor":mk.anchor||"start",fill:c,"font-size":11,"font-weight":600,"font-family":cssv("--f-mono")},document.createTextNode(mk.label))); });
+
+  // direct end labels
+  (spec.labels||[]).forEach(l=>{ g.appendChild(el("text",{x:sx(l.x)+ (l.anchor==="end"?-6:6),y:sy(l.y)+(l.dy||0),
+    "text-anchor":l.anchor||"start",fill:colOf(l.role),"font-size":11.5,"font-weight":600,"font-family":cssv("--f-mono")},document.createTextNode(l.text))); });
+
+  // legend
+  legendEl.innerHTML="";
+  (spec.legend||[]).forEach(l=>{ const sp=document.createElement("span"); sp.className="lg";
+    const sw=document.createElement("span"); sw.className="sw"+(l.dot?" dot":"");
+    if(l.dot){sw.style.background=colOf(l.role);} else {sw.style.borderTopColor=colOf(l.role); if(l.dash)sw.style.borderTopStyle="dashed";}
+    sp.appendChild(sw); sp.appendChild(document.createTextNode(l.name)); legendEl.appendChild(sp); });
+
+  // ---- hover ----
+  const hoverLines=spec.series.filter(s=>(s.kind==="line"||s.kind==="area")&&!s.noHover);
+  const tt=$("#tt");
+  if(hoverLines.length){
+    const cross=el("line",{x1:0,x2:0,y1:m.t,y2:m.t+ih,stroke:cssv("--faint"),"stroke-width":1,opacity:0});
+    g.appendChild(cross);
+    const dots=hoverLines.map(s=>{const d=el("circle",{r:4.5,fill:colOf(s.role),stroke:cssv("--surface"),"stroke-width":2,opacity:0});g.appendChild(d);return d;});
+    const rect=el("rect",{x:m.l,y:m.t,width:iw,height:ih,fill:"transparent"}); g.appendChild(rect);
+    const xs=[...new Set(hoverLines.flatMap(s=>s.pts.map(p=>p.x)))].sort((a,b)=>a-b);
+    svg.addEventListener("pointermove",ev=>{
+      const pt=svg.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY;
+      const loc=pt.matrixTransform(svg.getScreenCTM().inverse());
+      if(loc.x<m.l-2||loc.x>m.l+iw+2){hide();return;}
+      // nearest data x
+      let best=xs[0]; for(const xv of xs) if(Math.abs(sx(xv)-loc.x)<Math.abs(sx(best)-loc.x)) best=xv;
+      cross.setAttribute("x1",sx(best)); cross.setAttribute("x2",sx(best)); cross.setAttribute("opacity",.5);
+      const rows=[];
+      hoverLines.forEach((s,i)=>{ const p=s.pts.find(p=>p.x===best);
+        if(p&&p.y!=null){ dots[i].setAttribute("cx",sx(p.x)); dots[i].setAttribute("cy",sy(p.y)); dots[i].setAttribute("opacity",1);
+          rows.push(`<div class="row"><span class="nm"><i style="background:${colOf(s.role)}"></i>${s.name}</span><span class="vl">${(spec.hoverFmt||spec.y.fmt)(p.y)}</span></div>`);}
+        else dots[i].setAttribute("opacity",0); });
+      tt.innerHTML=`<div class="tx">${spec.x.title||"x"} ${spec.x.fmt(best)}</div>`+rows.join("");
+      tt.style.opacity=1;
+      const pr=plot.getBoundingClientRect();
+      let lx=(sx(best)/W)*pr.width+pr.left+12, ly=ev.clientY-10;
+      const tw=tt.offsetWidth; if(lx+tw>window.innerWidth-8)lx=lx-tw-24;
+      tt.style.left=(lx+window.scrollX)+"px"; tt.style.top=(ly+window.scrollY)+"px";
+    });
+    svg.addEventListener("pointerleave",hide);
+    function hide(){cross.setAttribute("opacity",0);dots.forEach(d=>d.setAttribute("opacity",0));tt.style.opacity=0;}
+  } else if(spec.pointHover){ // scatter hover
+    const tt=$("#tt");
+    spec.series.filter(s=>s.kind==="points").forEach(s=>{
+      s.pts.forEach(p=>{ const c=el("circle",{cx:sx(p.x),cy:sy(p.y),r:(s.r||4.2)+7,fill:"transparent"}); g.appendChild(c);
+        c.addEventListener("pointerenter",ev=>{ tt.innerHTML=spec.pointHover(p); tt.style.opacity=1;
+          const pr=plot.getBoundingClientRect(); let lx=(sx(p.x)/W)*pr.width+pr.left+12;
+          const tw=200; if(lx+tw>window.innerWidth-8)lx=lx-tw-20;
+          tt.style.left=(lx+window.scrollX)+"px"; tt.style.top=(ev.clientY+window.scrollY-10)+"px"; });
+        c.addEventListener("pointerleave",()=>tt.style.opacity=0); }); });
+  }
+  return {svg};
+}
+
+/* ================================ table view ================================ */
+function buildTable(fig, rows, cols){
+  const t=$(".tbl",fig); if(!rows.length){return;}
+  let h="<table><thead><tr>"+cols.map(c=>`<th>${c.h}</th>`).join("")+"</tr></thead><tbody>";
+  h+=rows.map(r=>"<tr>"+cols.map(c=>`<td>${c.f?c.f(r[c.k]):(r[c.k]??"—")}</td>`).join("")+"</tr>").join("");
+  t.innerHTML=h+"</tbody></table>";
+}
+$$("[data-table]").forEach(b=>b.addEventListener("click",()=>{const t=$(".tbl",b.closest("figure"));
+  const on=t.classList.toggle("show"); b.textContent=on?"Chart":"Table";}));
+
+/* ================================ render all ================================ */
+const P=DATA, M=P.meta;
+let RENDER=[];
+function reg(fn){RENDER.push(fn);fn();}
+function renderAll(){RENDER.forEach(f=>f());}
+
+/* -- cover facts + inline stats -- */
+$("#facts").innerHTML=[
+  ["Source → EU/EEA", "X → 30", "countries"],
+  ["Horizon", M.n_days, "days"],
+  ["Generation interval", M.gen_interval, "days"],
+  ["Infection fatality", (M.ifr*100).toFixed(1)+"%", "true"],
+  ["True infections", fmtK(M.total_infections), "vs "+fmtK(M.total_cases)+" reported"],
+].map(([k,v,s])=>`<div class="fact"><div class="k">${k}</div><div class="v">${v} <small>${s}</small></div></div>`).join("");
+
+$("#p0r").textContent=P.phase0.growth.r; $("#p0dt").textContent=P.phase0.growth.doubling;
+$("#p0cor").textContent=P.phase0.importation_cor.toFixed(2);
+$("#p1nc").textContent=P.phase1.nowcast_improvement;
+$("#p1rtcor").textContent=P.phase1.rt_score.cor.toFixed(2);
+$("#p1ifr").textContent=(P.phase1.true_ifr*100).toFixed(1)+"%";
+$("#p2fd").textContent=P.phase2.breach.forecast_day; $("#p2td").textContent=P.phase2.breach.truth_day;
+$("#p2rb").textContent=P.phase2.its.R_before.toFixed(2); $("#p2ra").textContent=P.phase2.its.R_after.toFixed(2);
+$("#p3s").textContent=P.phase3.selection.s.toFixed(3); $("#p3x").textContent=P.phase3.selection.crossover;
+$("#p3boost").textContent=P.phase3.boosting.peak_reduction;
+
+/* -- signal chips -- */
+const sig=(id,arr)=>$(id).innerHTML=arr.map(([l,v])=>`<span class="signal"><b>${v}</b> ${l}</span>`).join("");
+sig("#sig0",[["source R (est)",P.phase0.growth.R.toFixed(2)],["doubling time",P.phase0.growth.doubling+" d"],
+  ["source under‑count",P.phase0.catchment.under_ascertainment+"×"],["countries flagged",P.phase0.importation_flagged]]);
+sig("#sig1",[["nowcast gain",P.phase1.nowcast_improvement+"%"],["R crosses 1","mid‑wave"],
+  ["adjusted CFR",(P.phase1.cfr[P.phase1.cfr.length-1].adjusted*100).toFixed(1)+"%"],["true IFR",(P.phase1.true_ifr*100).toFixed(1)+"%"]]);
+sig("#sig2",[["current R",P.phase2.R_now.toFixed(2)],["capacity",fmtK(P.phase2.capacity)+"/day"],
+  ["breach in","~"+(P.phase2.breach.forecast_day-P.phase2.as_of)+" d"],["R after control",P.phase2.its.R_after.toFixed(2)]]);
+sig("#sig3",[["selection coeff",P.phase3.selection.s.toFixed(3)+"/d"],["variant 50% by","day "+P.phase3.selection.crossover],
+  ["season starts",P.phase3.immune0+"% immune"],["booster cuts peak",P.phase3.boosting.peak_reduction+"%"]]);
+
+/* -- verdict readouts -- */
+function verdict(id, cards){ $(id).innerHTML=cards.map(c=>
+  `<div class="vc ${c.cls||''}"><div class="vk">${c.k}</div><div class="vv">${c.v}</div><div class="vn">${c.n||''}</div></div>`).join(""); }
+verdict("#v0",[
+  {k:"Source R — estimated",v:P.phase0.growth.R.toFixed(2),n:`95% CI ${P.phase0.growth.R_lower}–${P.phase0.growth.R_upper}`,cls:"est"},
+  {k:"Source R — truth",v:P.phase0.growth.truth_R.toFixed(2),n:"scaling‑up testing inflates the estimate",cls:"tru"},
+  {k:"True vs reported at source",v:P.phase0.catchment.under_ascertainment+"×",n:`${fmtInt(P.phase0.catchment.reported)} reported that window`,cls:"good"},
+  {k:"Under‑detecting countries",v:P.phase0.importation_flagged,n:"flagged below the imports line",cls:"crit"},
+]);
+verdict("#v1",[
+  {k:"Nowcast error cut",v:P.phase1.nowcast_improvement+"%",n:"vs. trusting raw recent counts",cls:"good"},
+  {k:"Rₜ tracking (corr.)",v:P.phase1.rt_score.cor.toFixed(2),n:`mean abs. error ${P.phase1.rt_score.mae.toFixed(2)}`,cls:"est"},
+  {k:"Delay‑adjusted CFR",v:(P.phase1.cfr[P.phase1.cfr.length-1].adjusted*100).toFixed(1)+"%",n:"stable weeks earlier than naïve",cls:"est"},
+  {k:"True infection fatality",v:(P.phase1.true_ifr*100).toFixed(1)+"%",n:"the gap is unascertained cases",cls:"tru"},
+]);
+verdict("#v2",[
+  {k:"Forecast breach day",v:P.phase2.breach.forecast_day,n:"holding R across a scenario band",cls:"est"},
+  {k:"True breach day",v:P.phase2.breach.truth_day,n:"one day out",cls:"tru"},
+  {k:"R before → after",v:P.phase2.its.R_before.toFixed(2)+"→"+P.phase2.its.R_after.toFixed(2),n:"significant slowing",cls:"est"},
+  {k:"True R before → after",v:P.phase2.its.true_R_before.toFixed(2)+"→"+P.phase2.its.true_R_after.toFixed(2),n:"association, not proof",cls:"tru"},
+]);
+verdict("#v3",[
+  {k:"Selection coeff — est.",v:P.phase3.selection.s.toFixed(3),n:`95% CI ${P.phase3.selection.lower}–${P.phase3.selection.upper}/day`,cls:"est"},
+  {k:"Selection coeff — truth",v:P.phase3.selection.realized.toFixed(3),n:"realized log‑odds slope",cls:"tru"},
+  {k:"Booster cuts peak",v:P.phase3.boosting.peak_reduction+"%",n:"variant scenario, ensembled",cls:"good"},
+  {k:"Booster cuts burden",v:P.phase3.boosting.incidence_reduction+"%",n:"cumulative incidence",cls:"good"},
+]);
+
+/* ============================ the charts ============================ */
+const figOf=name=>$(`figure[data-chart="${name}"]`);
+
+/* P0 — source curve (log) */
+reg(()=>{ const f=figOf("p0curve"), d=P.phase0;
+  const rep=d.curve.filter(r=>r.reported>0).map(r=>({x:r.day,y:r.reported}));
+  const inf=d.curve.filter(r=>r.infections>0).map(r=>({x:r.day,y:r.infections}));
+  const fit=d.growth_fit.map(r=>({x:r.day,y:r.fit}));
+  chart(f,{ x:{type:"linear",fmt:v=>"d"+v,title:"day"}, y:{type:"log",fmt:fmtK,title:"count/day"},
+    series:[ {name:"True infections",role:"truth",kind:"line",pts:inf,dash:"5 4",width:2},
+             {name:"Fitted growth",role:"estimate",kind:"line",pts:fit,width:2.6,noHover:true},
+             {name:"Reported cases",role:"observed",kind:"line",pts:rep,width:2.6} ],
+    legend:[{name:"Reported cases",role:"observed"},{name:"True infections",role:"truth",dash:1},{name:"Fitted growth (R="+d.growth.R.toFixed(2)+")",role:"estimate"}] });
+  buildTable(f,d.curve,[{h:"day",k:"day"},{h:"reported",k:"reported",f:fmtInt},{h:"infections",k:"infections",f:fmtInt}]);
+});
+
+/* P0 — importation scatter (log-log) */
+reg(()=>{ const f=figOf("p0imports"), d=P.phase0.importation;
+  const pts=d.map(r=>({x:r.volume,y:Math.max(r.detected_imports,0.8),role:r.under_detecting?"critical":"observed",raw:r}));
+  // fitted line + PI band across volume range
+  const sorted=[...d].sort((a,b)=>a.volume-b.volume);
+  const fit=sorted.map(r=>({x:r.volume,y:Math.max(r.expected,0.8)}));
+  const band=sorted.map(r=>({x:r.volume,lo:Math.max(r.pi_lower,0.8),hi:Math.max(r.pi_upper,0.8)}));
+  chart(f,{ x:{type:"log",fmt:fmtK,title:"flight volume (window)"}, y:{type:"log",fmt:fmtK,title:"detected imports"},
+    pointHover:p=>`<div class="tx">${p.raw.country}</div>
+      <div class="row"><span class="nm">detected</span><span class="vl">${fmtInt(p.raw.detected_imports)}</span></div>
+      <div class="row"><span class="nm">expected</span><span class="vl">${fmtInt(p.raw.expected)}</span></div>
+      <div class="row"><span class="nm">surveillance</span><span class="vl">${p.raw.surveillance_quality.toFixed(2)}</span></div>`,
+    series:[ {name:"PI",role:"estimate",kind:"band",pts:band,fillOp:.12},
+             {name:"fit",role:"estimate",kind:"line",pts:fit,width:2,noHover:true},
+             {name:"ok",role:"observed",kind:"points",pts:pts.filter(p=>p.role==="observed"),r:4.6},
+             {name:"under",role:"critical",kind:"points",pts:pts.filter(p=>p.role==="critical"),r:4.6} ],
+    legend:[{name:"Detecting their share",role:"observed",dot:1},{name:"Under‑detecting",role:"critical",dot:1},
+            {name:"Expected + 95% band",role:"estimate"}] });
+  buildTable(f,d,[{h:"country",k:"country"},{h:"volume",k:"volume",f:fmtInt},{h:"detected",k:"detected_imports",f:fmtInt},
+    {h:"expected",k:"expected",f:x=>fmtInt(x)},{h:"surv.",k:"surveillance_quality",f:x=>x.toFixed(2)},{h:"under?",k:"under_detecting",f:x=>x?"yes":"—"}]);
+});
+
+/* P1 — nowcast */
+reg(()=>{ const f=figOf("p1nowcast"), d=P.phase1.nowcast;
+  chart(f,{ x:{type:"linear",fmt:v=>"d"+v,title:"onset day"}, y:{type:"linear",fmt:fmtK,title:"cases",dom:[0,Math.max(...d.map(r=>Math.max(r.truth,r.nowcast_upper||0)))*1.05]},
+    series:[ {name:"Nowcast 95%",role:"estimate",kind:"band",pts:d.map(r=>({x:r.onset_day,lo:r.nowcast_lower,hi:r.nowcast_upper})),fillOp:.14},
+             {name:"Eventual truth",role:"truth",kind:"line",pts:d.map(r=>({x:r.onset_day,y:r.truth})),dash:"5 4",width:2},
+             {name:"Nowcast",role:"estimate",kind:"line",pts:d.map(r=>({x:r.onset_day,y:r.nowcast})),width:2.6},
+             {name:"Observed (reported so far)",role:"observed",kind:"line",pts:d.map(r=>({x:r.onset_day,y:r.observed})),width:2.6} ],
+    legend:[{name:"Observed so far",role:"observed"},{name:"Nowcast + 95%",role:"estimate"},{name:"Eventual truth",role:"truth",dash:1}] });
+  buildTable(f,d,[{h:"onset day",k:"onset_day"},{h:"observed",k:"observed",f:fmtInt},{h:"nowcast",k:"nowcast",f:x=>fmtInt(x)},
+    {h:"truth",k:"truth",f:fmtInt},{h:"complete",k:"completeness",f:x=>(x*100).toFixed(0)+"%"}]);
+});
+
+/* P1 — Rt */
+reg(()=>{ const f=figOf("p1rt"), all=P.phase1.rt.filter(r=>r.day>=30&&r.day<=175);
+  chart(f,{ x:{type:"linear",fmt:v=>"d"+v,title:"day"}, y:{type:"linear",fmt:fmt2,title:"Rₜ",dom:[0,Math.max(3,...all.map(r=>r.upper))*1.02]},
+    thresholds:[{y:1,role:"critical",label:"R = 1"}],
+    series:[ {name:"95% CrI",role:"estimate",kind:"band",pts:all.map(r=>({x:r.day,lo:r.lower,hi:r.upper})),fillOp:.13},
+             {name:"True Rₜ",role:"truth",kind:"line",pts:all.map(r=>({x:r.day,y:r.truth})),dash:"5 4",width:2},
+             {name:"Estimated Rₜ",role:"estimate",kind:"line",pts:all.map(r=>({x:r.day,y:r.Rt})),width:2.6} ],
+    legend:[{name:"Estimated Rₜ + 95% CrI",role:"estimate"},{name:"True (realized) Rₜ",role:"truth",dash:1},{name:"R = 1 threshold",role:"critical",dash:1}],
+    hoverFmt:fmt2 });
+  buildTable(f,all,[{h:"day",k:"day"},{h:"Rt",k:"Rt",f:fmt2},{h:"lower",k:"lower",f:fmt2},{h:"upper",k:"upper",f:fmt2},{h:"true",k:"truth",f:fmt2}]);
+});
+
+/* P1 — CFR */
+reg(()=>{ const f=figOf("p1cfr"), ifr=P.phase1.true_ifr;
+  const d=P.phase1.cfr.filter(r=>r.as_of>=60 && r.adjusted>0);   // drop the degenerate first cutoff (too few outcomes)
+  const pc=v=>(v*100).toFixed(v<0.1?1:0)+"%";
+  chart(f,{ x:{type:"linear",fmt:v=>"d"+v,title:"data cutoff (day)"}, y:{type:"log",fmt:pc,title:"fatality ratio (log)"},
+    thresholds:[{y:ifr,role:"truth",label:"true IFR "+pc(ifr)}],
+    series:[ {name:"adj band",role:"estimate",kind:"band",pts:d.map(r=>({x:r.as_of,lo:r.lower,hi:r.upper})),fillOp:.12},
+             {name:"True confirmed CFR",role:"truth",kind:"line",pts:d.map(r=>({x:r.as_of,y:r.truth})),dash:"5 4",width:2},
+             {name:"Delay‑adjusted CFR",role:"estimate",kind:"line",pts:d.map(r=>({x:r.as_of,y:r.adjusted})),width:2.6},
+             {name:"Naïve CFR",role:"observed",kind:"line",pts:d.map(r=>({x:r.as_of,y:r.naive})),width:2.6} ],
+    legend:[{name:"Naïve (deaths ÷ cases)",role:"observed"},{name:"Delay‑adjusted",role:"estimate"},{name:"True confirmed CFR",role:"truth",dash:1}],
+    hoverFmt:pc });
+  buildTable(f,d,[{h:"cutoff",k:"as_of"},{h:"naïve",k:"naive",f:pc},{h:"adjusted",k:"adjusted",f:pc},{h:"true",k:"truth",f:pc}]);
+});
+
+/* P2 — forecast fan */
+reg(()=>{ const f=figOf("p2forecast"), d=P.phase2;
+  const hist=d.admissions_history.map(r=>({x:r.day,y:r.admissions}));
+  const truth=d.admissions_truth.map(r=>({x:r.day,y:r.admissions}));
+  const fan=d.forecast;
+  const band=fan.map(r=>({x:r.day,lo:Math.min(r["R0.8"],r["R1.0"],r["R1.2"]),hi:Math.max(r["R0.8"],r["R1.0"],r["R1.2"])}));
+  const central=fan.map(r=>({x:r.day,y:r["R1.0"]}));
+  // stitch history end to forecast start
+  const j={x:d.as_of,y:hist[hist.length-1].y};
+  const truthMax=Math.max(...truth.map(r=>r.y));
+  chart(f,{ x:{type:"linear",fmt:v=>"d"+v,title:"day"}, y:{type:"linear",fmt:fmtK,title:"admissions/day",dom:[0,Math.max(d.capacity*2.6,truthMax*1.25)]},
+    thresholds:[{y:d.capacity,role:"critical",label:"capacity "+fmtK(d.capacity)}],
+    markers:[{x:d.breach.forecast_day,y:d.capacity,role:"estimate",label:"breach d"+d.breach.forecast_day,anchor:"end"}],
+    series:[ {name:"scenario band",role:"estimate",kind:"band",pts:[{x:j.x,lo:j.y,hi:j.y}].concat(band),fillOp:.14},
+             {name:"Truth (what happened)",role:"truth",kind:"line",pts:[j].concat(truth),dash:"5 4",width:2},
+             {name:"Forecast (R fixed)",role:"estimate",kind:"line",pts:[j].concat(central),width:2.6},
+             {name:"Observed admissions",role:"observed",kind:"area",pts:hist,width:2.6} ],
+    legend:[{name:"Observed admissions",role:"observed"},{name:"Forecast + scenario band",role:"estimate"},
+            {name:"What actually happened",role:"truth",dash:1},{name:"Capacity",role:"critical",dash:1}] });
+  buildTable(f,fan,[{h:"day",k:"day"},{h:"R×0.8",k:"R0.8",f:x=>fmtInt(x)},{h:"R×1.0",k:"R1.0",f:x=>fmtInt(x)},{h:"R×1.2",k:"R1.2",f:x=>fmtInt(x)}]);
+});
+
+/* P2 — intervention ITS (log) */
+reg(()=>{ const f=figOf("p2its"), d=P.phase2;
+  const cur=d.its_curve.filter(r=>r.cases>0).map(r=>({x:r.day,y:r.cases}));
+  chart(f,{ x:{type:"linear",fmt:v=>"d"+v,title:"day"}, y:{type:"log",fmt:fmtK,title:"cases/day"},
+    markers:[{x:d.its.breakpoint,y:cur.find(p=>p.x>=d.its.breakpoint)?.y||cur[cur.length-1].y,role:"critical",label:"break · R "+d.its.R_before.toFixed(2)+"→"+d.its.R_after.toFixed(2),anchor:"end"}],
+    series:[ {name:"Cases by onset",role:"observed",kind:"line",pts:cur,width:2.6} ],
+    legend:[{name:"Cases by onset date",role:"observed"},{name:"Intervention breakpoint",role:"critical",dash:1}] });
+  buildTable(f,d.its_curve,[{h:"day",k:"day"},{h:"cases",k:"cases",f:fmtInt}]);
+});
+
+/* P3 — variant logistic */
+reg(()=>{ const f=figOf("p3variant"), d=P.phase3.variant, sel=P.phase3.selection;
+  const pc=v=>(v*100).toFixed(0)+"%";
+  const obs=d.filter(r=>r.observed!=null).map(r=>({x:r.day,y:r.observed}));
+  chart(f,{ x:{type:"linear",fmt:v=>"d"+v,title:"day"}, y:{type:"linear",fmt:pc,title:"variant share",dom:[0,1]},
+    thresholds:[{y:0.5,role:"truth",label:"50%"}],
+    markers:[{x:sel.crossover,y:0.5,role:"estimate",label:"crosses 50% · d"+sel.crossover,anchor:"start"}],
+    series:[ {name:"True frequency",role:"truth",kind:"line",pts:d.map(r=>({x:r.day,y:r.truth})),dash:"5 4",width:2},
+             {name:"Logistic fit",role:"estimate",kind:"line",pts:d.map(r=>({x:r.day,y:r.fitted})),width:2.6},
+             {name:"Sequenced share",role:"observed",kind:"points",pts:obs,r:3.2,op:.6,noHover:true} ],
+    legend:[{name:"Sequenced share",role:"observed",dot:1},{name:"Logistic fit (s="+sel.s.toFixed(3)+"/d)",role:"estimate"},{name:"True frequency",role:"truth",dash:1}],
+    hoverFmt:pc });
+  buildTable(f,d,[{h:"day",k:"day"},{h:"observed",k:"observed",f:x=>x==null?"—":pc(x)},{h:"fitted",k:"fitted",f:pc},{h:"truth",k:"truth",f:pc}]);
+});
+
+/* P3 — scenarios */
+reg(()=>{ const f=figOf("p3scenarios"), t=P.phase3.traj, boost=P.phase3.boosting;
+  const toPts=a=>a.filter((_,i)=>i%2===0).map(r=>({x:r.day,y:r.I}));
+  const pc=v=>(v*100).toFixed(1)+"%";
+  chart(f,{ x:{type:"linear",fmt:v=>"d"+v,title:"day (next season)"}, y:{type:"linear",fmt:pc,title:"prevalence"},
+    series:[ {name:"Variant · no booster",role:"critical",kind:"line",pts:toPts(t.variant_none),width:2.6},
+             {name:"Variant · booster campaign",role:"estimate",kind:"line",pts:toPts(t.variant_campaign),width:2.6},
+             {name:"Wild type · no booster",role:"observed",kind:"line",pts:toPts(t.wildtype_none),width:2.4,dash:"1 0"} ],
+    legend:[{name:"Wild type (reference)",role:"observed"},{name:"Variant, no booster",role:"critical"},{name:"Variant + 40% booster",role:"estimate"}],
+    hoverFmt:pc });
+  buildTable(f,P.phase3.scenarios,[{h:"scenario",k:"scenario"},{h:"peak prev",k:"peak_prevalence",f:x=>(x*100).toFixed(2)+"%"},
+    {h:"cum. incidence",k:"cumulative_incidence",f:x=>x.toFixed(2)},{h:"rel. peak",k:"rel_peak",f:x=>x.toFixed(2)+"×"}]);
+});
+
+/* ============================ theme re-render ============================ */
+const mo=new MutationObserver(renderAll);
+mo.observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+window.matchMedia("(prefers-color-scheme:dark)").addEventListener("change",renderAll);
+let rt; window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(renderAll,150);});
+</script>
