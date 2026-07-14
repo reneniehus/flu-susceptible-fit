@@ -120,6 +120,26 @@ default_config <- function() {
   # which is a defining difference between respiratory pathogens -- see documentation/decisions.md.
   dispersion_k <- Inf                                  # Inf = Poisson; e.g. 0.16 = SARS-like superspreading
 
+  # ---- |-early transmission CLUSTERS (a separate data structure for branching-process inference) ----
+  # Before one sustained chain takes off, an emerging pathogen is seen as a HANDFUL OF STUTTERING
+  # CHAINS -- imported index cases each seeding a small, mostly self-limiting cluster (e.g. the "First
+  # Few Hundred" / exported-case clusters). This is a fundamentally different data structure from a
+  # growing incidence curve: it carries no useful timing, but the DISTRIBUTION of cluster sizes
+  # identifies BOTH the reproduction number R and the offspring dispersion k -- and cluster inference
+  # is the ONLY early method that yields k (Blumberg & Lloyd-Smith 2013; Endo et al. 2020). So this
+  # block simulates such clusters as an explicit Galton-Watson branching process. Its own R and k are
+  # kept separate from the main renewal engine (which stays Poisson by default) so a superspreading
+  # cluster analysis can be shown without changing the main epidemic. `R` is sub-critical here, the
+  # controlled / stuttering regime where every chain is finite and the size likelihood is exact.
+  clusters <- list(
+    enabled          = TRUE,
+    n_introductions  = 150,                            # independent index-case introductions observed
+    R                = 0.9,                             # per-generation reproduction number (< 1: stuttering)
+    dispersion_k     = 0.5,                             # offspring dispersion of the clusters (the k to recover)
+    detection_prob   = 0.8,                             # per-case detection (singletons are the easiest to miss)
+    max_size         = 1000                            # cap a chain's size (guards the R >= 1 case)
+  )
+
   # ---- |-infection fatality: a scalar by default; age structure is an optional refinement ----
   # The DGP is not age-stratified (an extension front), so an age-structured IFR is collapsed to an
   # effective IFR by the population age weights. Provide `ifr_age` (a data.frame age_group/ifr/weight)
@@ -181,6 +201,7 @@ default_config <- function() {
     rt_source    = rt_source,
     rt_country   = rt_country,
     dispersion_k = dispersion_k,
+    clusters     = clusters,
     ascertainment = ascertainment,
     ifr          = ifr,
     ifr_age      = ifr_age,
@@ -248,6 +269,14 @@ validate_config <- function(cfg) {
     stop("validate_config: dispersion_k must be > 0 (Inf for a Poisson / no-superspreading process)")
   if (!is.null(cfg$admission_rate) && (cfg$admission_rate < 0 || cfg$admission_rate > 1))
     stop("validate_config: admission_rate must be in [0, 1]")
+
+  if (isTRUE(cfg$clusters$enabled)) {
+    cl <- cfg$clusters
+    if (cl$R <= 0) stop("validate_config: clusters$R must be > 0")
+    if (cl$dispersion_k <= 0) stop("validate_config: clusters$dispersion_k must be > 0 (Inf for Poisson)")
+    if (cl$detection_prob <= 0 || cl$detection_prob > 1)
+      stop("validate_config: clusters$detection_prob must be in (0, 1]")
+  }
 
   invisible(TRUE)
 }

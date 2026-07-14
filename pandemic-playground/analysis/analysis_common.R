@@ -37,6 +37,7 @@ as_analysis_input <- function(sim) {
     admissions         = ob$admissions,           # location, day, date, admissions (well-ascertained)
     detected_imports   = ob$detected_imports,     # country, day, date, detected_imports, surveillance_quality
     variant_cases      = ob$variant_cases,        # location, day, date, sequenced, variant
+    clusters           = ob$clusters,             # list(sizes = observed cluster final sizes, ...)
     flight_volumes     = ob$flight_volumes,       # country, day, date, volume (observed, noisy)
     delays             = cfg$delays,              # the analyst's assumed (literature) delay distributions
     as_of              = ob$as_of,                # the data cutoff (day index)
@@ -118,6 +119,9 @@ truth_variant_freq <- function(sim, location) loc_series(sim$truth$variant_freq,
 
 # ---- |-healthcare capacity (admissions threshold) for a country ----
 truth_capacity <- function(sim, country) sim$truth$capacity$capacity[sim$truth$capacity$country == country]
+
+# ---- |-true early-cluster reproduction number and dispersion (what the cluster tool targets) ----
+truth_clusters <- function(sim) sim$truth$clusters
 
 # ---- |-null-coalescing helper (mirrors the engine's; harmless if already defined) ----
 if (!exists("%||%")) `%||%` <- function(a, b) if (is.null(a)) b else a

@@ -28,6 +28,15 @@ simulate_pandemic <- function(cfg = default_config(), quiet = TRUE) {
   local    <- simulate_local(cfg, par, imports$imports)
   obs      <- observe(cfg, par, source_x, flights, imports, local)
 
+  # early stuttering-chain clusters: a separate branching-process data structure for R + k inference
+  if (isTRUE(cfg$clusters$enabled)) {
+    cl <- simulate_clusters(cfg)
+    obs$truth$clusters    <- list(sizes = cl$true_sizes, generations = cl$generations,
+                                  R = cl$R, k = cl$k, n_introductions = cl$n_introductions)
+    obs$observed$clusters <- list(sizes = cl$observed_sizes, n_observed = cl$n_observed,
+                                  detection_prob = cl$detection_prob)
+  }
+
   sim <- structure(
     list(truth = obs$truth, observed = obs$observed, config = cfg, par = par,
          latent = list(source = source_x, flights = flights, imports = imports, local = local)),

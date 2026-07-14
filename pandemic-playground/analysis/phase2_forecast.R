@@ -25,6 +25,23 @@
 # playground shows this by scoring a forecast made at the peak against what actually happened.
 # Deconvolving to infection dates first (EpiNow2) removes most of the lag -- a documented extension.
 #
+# SCENARIO, NOT PREDICTION -- AND KNOW WHEN IT STOPS BEING WELL-POSED. A short-horizon renewal forecast
+# is well-posed while it stays inside the envelope the data support: current transmission, current
+# behaviour, some slack below capacity. Two things break that, and BOTH are un-modelled here on purpose:
+#   (1) There is no behavioural feedback. Real contact rates fall as an epidemic visibly worsens, but a
+#       fixed-R projection has no such term -- so it can send admissions straight THROUGH the capacity
+#       line and keep climbing. That is not a forecast, it is the model leaving its envelope: real
+#       hospitalisations do not shoot through a threshold, because people and policy react first. We make
+#       this legible with an `out_of_envelope` flag (peak > implausible_multiple x capacity): read a
+#       flagged scenario as "capacity is at serious risk", never as a literal admissions number.
+#   (2) There is no NEW change in transmission (a variant, a mandate) -- that is what the scenario set
+#       gestures at, and why every output is stated as association / conditional, not prediction.
+# The mechanical overshoot is exactly where a data-driven method (a time-series foundation model, method
+# of analogues) that has *seen* how curves actually bend near a peak would be more honest -- and,
+# symmetrically, where the foundation model is itself untrustworthy if the new pathogen is unlike anything
+# in its history. Neither is a blanket antidote; the real deliverable is knowing which regime you are in.
+# (See reflections.md: "which idealisations are well-posed" and the foundation-model landscape.)
+#
 # References
 #   Held L, Meyer S, Bracher J. Probabilistic forecasting in infectious disease epidemiology. Stat Med. 2017.
 #   EpiNow2 (Epiverse-TRACE) -- the fuller renewal forecast (infers infections; uncertainty end-to-end).
@@ -61,7 +78,8 @@ renewal_project <- function(history, R, gi_pmf, horizon, pool = Inf) {
 forecast_capacity <- function(input, location, as_of, horizon = 28, capacity,
                               rt = NULL, scenarios = c(0.8, 1.0, 1.2),
                               rt_window = NULL, nowcast = TRUE, gi = NULL,
-                              population = NULL, susceptible_fraction = 1) {
+                              population = NULL, susceptible_fraction = 1,
+                              implausible_multiple = 2) {
   gi_dist <- gi %||% input$delays$generation_interval
   gi_pmf  <- discretise(gi_dist, boundary = "cori")
   o2a     <- discretise(input$delays$onset_to_admission)
@@ -112,16 +130,25 @@ forecast_capacity <- function(input, location, as_of, horizon = 28, capacity,
   })
   proj <- do.call(rbind, proj)
 
-  # ---- (5) breach day per scenario ----
+  # ---- (5) breach day + an out-of-envelope flag per scenario ----
+  # A fixed-R projection has NO behavioural feedback: nothing makes people cut contact as admissions
+  # climb, so the curve can shoot straight THROUGH capacity and keep rising -- which real health systems
+  # essentially never do (people and policy react well before that). We flag any scenario whose projected
+  # peak overshoots capacity by more than `implausible_multiple` as OUT-OF-ENVELOPE: the honest reading is
+  # "capacity is at serious risk", never the literal admissions number. (See decisions.md / reflections.md:
+  # well-posed vs misleading forecasts, and why "hospitalisations can't shoot through a threshold".)
   breach <- do.call(rbind, lapply(split(proj, proj$scenario), function(d) {
-    hit <- which(d$admissions > capacity)
+    hit  <- which(d$admissions > capacity)
+    peak <- max(d$admissions)
     data.frame(scenario = d$scenario[1], R = d$R[1], breaches = length(hit) > 0,
                breach_day = if (length(hit)) d$day[hit[1]] else NA_integer_,
-               peak_admissions = max(d$admissions))
+               peak_admissions = peak,
+               out_of_envelope = peak > implausible_multiple * capacity)
   }))
 
   list(location = location, as_of = as_of, horizon = horizon, R_now = R_now, chr = chr,
-       capacity = capacity, projection = proj, breach = breach)
+       capacity = capacity, projection = proj, breach = breach,
+       out_of_envelope = any(breach$out_of_envelope))
 }
 
 # ---- |-score the central forecast against the admissions that actually occurred ----

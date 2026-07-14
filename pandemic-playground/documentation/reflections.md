@@ -84,6 +84,82 @@ bug in a decision-support tool. The corollary we adopted everywhere: when signal
 method (few cases, a burnt-out tail, a straddle-zero growth rate), the tool should **refuse**, not lean
 on its prior and emit a confident wrong answer.
 
+## 2026-07 — Dispersion is the containability question, and clusters are the only early witness
+
+Adding the cluster tool (`phase0_clusters`) was not just "another `R` estimator". **[REFLECTION]** The
+thing it recovers that nothing else early can — the dispersion `k` — is the parameter that decides whether
+a pathogen is *containable*, and it is almost orthogonal to `R`. Two pathogens with the same `R = 2` behave
+completely differently if one has `k = 2` (everyone transmits similarly; the epidemic is a smooth
+grind you cannot stop by chasing clusters) and the other `k = 0.1` (most infect no-one, a few seed
+explosive clusters; contact tracing and gathering bans have enormous leverage, and any given
+introduction usually fizzles). SARS was contained and COVID was not in large part *because* of this number.
+Yet `k` is invisible to a growth-rate or a Cori estimate — those see only the mean. It shows up only in the
+*variance* of outcomes, i.e. in the distribution of cluster sizes, which is exactly what the branching-process
+tool reads. That is the deeper reason the tool earns its place: it is the one Phase-0 method whose answer can
+flip a containment decision.
+
+Two honesty points the implementation forced us to confront. First, the **subcritical/supercritical
+ambiguity** (Nishiura 2012): the size distribution of *observed, finished* clusters from an `R = 0.8`
+process and an `R > 1` process can be nearly identical, because you are conditioning on chains that ended.
+The tool therefore reports the crude estimator and a supercritical flag rather than laundering the
+ambiguity into a false certainty. Second, and more subtly, **`k` governs its own identifiability**: a very
+overdispersed pathogen produces mostly singletons and rare giant clusters, so a handful of introductions
+carry very little information about `R` — the estimate is legitimately wide. We saw this directly (at 60
+introductions the point estimate wandered while staying inside its CI; it took ~150 to pin both). The
+right response was not to tighten the tolerance but to let the CI be honestly wide and *say why*. That is
+the whole ethos of the playground in miniature: the uncertainty is a finding, not a nuisance.
+
+## 2026-07 — Which idealisations are well-posed, and why "foundation models as antidote" is the wrong metaphor
+
+The most important thing a modelling toolbox can know about itself is **which of its questions are
+well-posed**. Working through the tools, a clean gradient appears, and it is worth stating because it cuts
+against the instinct to treat every output the same way.
+
+**[REFLECTION] At one end, genuinely well-posed problems.** The logistic variant-selection fit and the
+reporting-triangle nowcast recover a quantity that is *actually in the data*. A selection coefficient is
+identifiable from sequence counts and extrapolates cleanly for a few weeks because the mechanism (one strain
+outcompeting another at a roughly constant advantage) is stable over that horizon. A nowcast is a bounded
+deconvolution of a delay we can estimate. These deserve trust, scoring, and bias-correction — the ordinary
+business of the toolbox.
+
+**[REFLECTION] At the other end, questions that are ill-posed *as prediction* no matter how good the code
+is.** A medium-term hospital-bed forecast and a long-term booster-scenario projection are the examples. The
+tell is physical: a mechanistic forecast, holding `R` fixed with no behavioural-feedback term, will happily
+send admissions *shooting through* the capacity line and keep climbing. **We know that cannot happen** — real
+hospitalisations do not pierce a threshold and accelerate, because people change contact and policy changes
+rules long before that. The overshoot is not a tuning error; it is the model announcing it has left the
+envelope of anything it can represent. That is precisely why the tool now carries an `out_of_envelope` flag
+instead of quoting the impossible number, and why the season-ahead scenario tool is restricted to *relative*
+lever-ranking. The idealisation (a closed, well-mixed compartmental system with fixed parameters) is fine near
+the data and misleading far from it — and "far" arrives faster than modellers like to admit, because the
+missing ingredient is endogenous behaviour, which bends the curve exactly when the stakes are highest.
+
+**[REFLECTION] This is where foundation models enter — and where the popular framing goes wrong.** The
+appeal is real: a data-driven method (method of analogues, seasonal-MoA, time-series foundation models like
+TabPFN-TS, LLM-based systems like PandemicLLM, mechanistic-statistical hybrids) has *seen how real epidemic
+curves actually bend* near peaks and near capacity, so it does not commit the mechanistic model's cardinal
+error of extrapolating its own equations off a cliff. It is tempting to call it the **antidote** to
+mechanistic overconfidence. But antidote is the wrong metaphor, because the two methods fail in **opposite
+regimes**:
+
+- a mechanistic model is overconfident *outside* its envelope (it extrapolates structure it has no evidence
+  for);
+- a foundation model is overconfident *inside* its training distribution and blind *outside* it — when the
+  new pathogen is genuinely unlike anything in its history (a novel generation interval, an unprecedented
+  severity, a behavioural response with no analogue), it will still return a confident, well-calibrated-looking
+  number drawn from the wrong reference class.
+
+So swapping one for the other just moves the overconfidence around. **The real prize is not a better point
+forecast; it is honest out-of-distribution detection** — a system that can say *this situation is unlike what
+I was built on, treat my output with suspicion*. A mechanistic model that flags when it is extrapolating
+through a physical threshold, and a foundation model that flags when the input is far from its training
+manifold, are doing the *same* valuable thing from opposite directions. That is why the tempering in this
+toolbox takes the form of **explicit envelope flags** rather than a better forecasting algorithm: the
+contribution a truth-aware playground can most credibly make is not "here is the right number" but "here is
+when to stop believing the number". The natural next build is a small OOD check on the forecast/scenario
+inputs (is the current growth, delay structure, or susceptibility unlike the regime each method assumes?),
+scored — as everything here is — against a truth we control.
+
 ## 2026-07 — On single-population-per-country, and honest heterogeneity
 
 Each country is one well-mixed renewal epidemic. The parent flu project argues at length that national
@@ -108,3 +184,8 @@ the very effect the parent project treats as fundamental.
   seeds turns "the nowcast cut RMSE 40–85%" into a distribution with a confidence statement.
 - **Age structure** in the renewal (with a contact matrix) so the age-structured IFR and age-specific
   severity questions become answerable rather than collapsed.
+- **Out-of-distribution detection scored against truth:** turn the `out_of_envelope` flag into a proper
+  OOD check on each forecast/scenario input (is the current growth, delay structure or susceptibility
+  outside the regime the method assumes?), and — since we control the truth — measure how often the flag
+  fires exactly when the forecast is about to go wrong. This is the "know when to stop believing the
+  number" capability, made testable.

@@ -159,6 +159,47 @@ the main alternative considered. Append new decisions as they are made.
   Full age-structured transmission is an extension front. *Alternative:* age-stratify the renewal — a
   large addition the brief lists as optional.
 
+- **A branching-process cluster tool that recovers `R` AND the dispersion `k` jointly, from chain
+  sizes (`phase0_clusters`).** Every other early tool assumes Poisson-ish transmission and can only give
+  `R`; but the sharpest thing to learn early about a new respiratory pathogen is often *how
+  heterogeneous* it is — a subcritical, superspreading pathogen (SARS/MERS, `k≈0.16`) is containable in a
+  way an `R`-only view cannot see. Cluster/chain sizes are the one early data source that pins both. We
+  implement the exact chain-size likelihood for negative-binomial offspring via the Borel–Otter/Dwass
+  identity `P(N=n) = (1/n)·P(S_n = n−1)` with `S_n ~ NB(nk, ...)` (Blumberg & Lloyd-Smith 2013), a joint
+  `(R,k)` MLE with Hessian CIs, and the Poisson `k→∞` (Borel) limit; the sizes are drawn LAST in
+  `assemble()` so the main truth/observed streams stay byte-identical (reproducibility preserved).
+  *Two honest limits kept, not hidden:* (1) the subcritical/supercritical **conjugate ambiguity** (Nishiura
+  2012) — a size distribution can be matched by an `R<1` and an `R>1`, so the tool reports the crude
+  `1−1/mean` and a supercritical flag rather than pretending to resolve it; (2) `k` itself governs how
+  sharply the sizes determine `R`, so a heavy-tailed low-`k` set with few introductions leaves `R` genuinely
+  wide — which is *why* we set the demo default to enough introductions (150) to pin both, and verified CI
+  coverage empirically before committing. *Alternative:* a growth-rate-only view of the source — rejected
+  (structurally blind to the dimension that decides containability). `{epichains}` is the drop-in.
+
+- **The catchment tool outputs an explicit RANGE and carries the two real-world bias corrections
+  (`phase0_catchment`).** Grounding the method on where it actually worked — Wuhan (exported cases →
+  ~40× the reported count; Imperial, then Wu-Leung-Leung) and Mexico 2009 H1N1 (Fraser et al.) — the honest
+  output was always a *range*, because two corrections must be made explicit: **representativeness**
+  (short-stay visitors under-sample a growing source by `V = 1 − e^{−(r+γ)d}`; De Salazar 2020) and
+  **differential detection** (benchmark anchors against the best surveillance; Niehus 2020). Both sit in the
+  denominator, so both only ever push the estimate *up* — which fixes the ordering: `catchment_range()`
+  returns the uncorrected estimate as the **low** floor, strongest correction as **high**, a moderate
+  assumption as **central**. In THIS simulator travellers are representative and detection = surveillance
+  quality exactly, so the uncorrected point estimate is unbiased and the corrections are shown as a
+  sensitivity range (the real-data levers), not a bias fix. *Alternative:* a single point estimate — rejected
+  as falsely precise for a quantity whose whole value is "how much bigger than it looks, roughly".
+
+- **Forecast/scenario tools carry an explicit out-of-envelope flag rather than always presenting a
+  number.** A fixed-R capacity forecast has no behavioural-feedback term, so it can send admissions
+  straight *through* capacity — which real systems never do, because people and policy react first. Rather
+  than silently emit that impossible number, `forecast_capacity` flags any scenario whose peak exceeds
+  `implausible_multiple × capacity` as `out_of_envelope` (read: "capacity at serious risk", not a literal
+  count), and the SIRS scenario tool is documented as lever-ranking only. This encodes a principle: a
+  decision-support tool should know, and say, when a question has stopped being well-posed for it.
+  *Alternative:* present every projection identically — rejected (the misleading regime is exactly where a
+  confident number does the most damage). The interpretive argument (well-posed gradient, foundation models
+  as the opposite-failure counterpart, OOD detection as the real prize) is in `reflections.md`.
+
 ## Generalising beyond COVID (driven by a multi-pathogen stress test)
 
 A multi-agent stress test ran the playground as five very different respiratory pathogens (1918-severe

@@ -36,6 +36,18 @@ test_that("the capacity forecast stays physical (bounded by population) for a fa
   expect_lt(capped, uncapped)                          # depletion/cap really bit (the naive forecast is larger)
 })
 
+test_that("the forecast flags an out-of-envelope projection that shoots through capacity", {
+  fc   <- forecast_capacity(test_input, "IT", as_of = 90, horizon = 28, capacity = truth_capacity(test_sim, "IT"))
+  peak <- max(fc$breach$peak_admissions)
+  # a capacity far BELOW the projected peak: the curve blasts through it -> out of envelope (unphysical)
+  fc_low  <- forecast_capacity(test_input, "IT", as_of = 90, horizon = 28, capacity = peak / 10)
+  expect_true(fc_low$out_of_envelope)
+  expect_true(any(fc_low$breach$out_of_envelope))
+  # a capacity comfortably ABOVE the peak: never approached -> in envelope
+  fc_high <- forecast_capacity(test_input, "IT", as_of = 90, horizon = 28, capacity = peak * 2)
+  expect_false(fc_high$out_of_envelope)
+})
+
 test_that("intervention_its exposes a depletion-suspected flag", {
   iday <- test_sim$config$rt_country[["IT"]]$t[2]
   it <- intervention_its(test_input, "IT", intervention_day = iday, window = 21)

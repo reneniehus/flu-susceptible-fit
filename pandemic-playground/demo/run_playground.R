@@ -36,11 +36,25 @@ cat(sprintf("          fit the true infection curve instead and the same tool re
               gp <- discretise(input$delays$generation_interval, boundary = "cori")
               round(r_to_R(estimate_growth_rate(d$infections, d$day)$r, gp), 2) }))
 
+cat("\nQ: Is it spreading person-to-person -- and how HETEROGENEOUSLY? (R and k from cluster sizes)\n")
+cf  <- cluster_analysis(input)
+scl <- score_clusters(sim, cf)
+cat(sprintf("   from %d observed transmission chains:  R = %.2f [%.2f, %.2f],  dispersion k = %.2f [%.2f, %.2f]\n",
+            cf$n, cf$R, cf$R_ci[1], cf$R_ci[2], cf$k, cf$k_ci[1], cf$k_ci[2]))
+cat(sprintf("   TRUTH: R = %.2f, k = %.2f  (%s).  Low k => superspreading => most chains fizzle (extinction prob %.0f%%)\n",
+            scl$true_R, scl$true_k, if (scl$R_in_ci) "R inside CI" else "R outside CI", 100 * cf$extinction_prob))
+
 cat("\nQ: How much are we missing at source -- how big is it really?\n")
 cb <- catchment_backcalc(input, 30:60, min_surveillance = 0.75, source_pop = sim$config$source$population)
 sc <- score_catchment(sim, cb, input)
 cat(sprintf("   back-calculated source prevalence = %s infectious   (TRUTH %s; ratio %.2f)\n",
             format(round(cb$est_prevalence), big.mark = ","), format(round(sc$true_prevalence), big.mark = ","), sc$ratio))
+rg <- catchment_range(input, 30:60, source_pop = sim$config$source$population,
+                      growth_rate = ga$r, recovery_rate = 1 / epidist_mean(input$delays$generation_interval),
+                      min_surveillance = 0.75)
+cat(sprintf("   honest range across the traveller/detection corrections: %s -- %s infectious (central %s)\n",
+            format(round(rg$low), big.mark = ","), format(round(rg$high), big.mark = ","),
+            format(round(rg$central), big.mark = ",")))
 cat(sprintf("   meanwhile the source reported only %s cases in that window -- the true epidemic is %.0fx bigger\n",
             format(sc$reported_source_cases, big.mark = ","), sc$true_underascertainment))
 

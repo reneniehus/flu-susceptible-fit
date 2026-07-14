@@ -20,6 +20,18 @@
 # instead of hiding it. Seed the initial immune fraction from where the current epidemic actually
 # left the population (from a simulated -- or real -- run) to ground "next season" in reality.
 #
+# THIS IS THE LEAST WELL-POSED TOOL IN THE BOX -- BY CONSTRUCTION, NOT BY SLOPPINESS. A long-horizon SIRS
+# projection ("does boosting help next season?") sits furthest outside the envelope of anything we have
+# observed: over a season, behaviour, a new variant's properties, and waning are all things the model
+# ASSUMES rather than measures, and small differences in those assumptions swamp the mechanistic detail.
+# That is precisely why the output is engineered to be modest -- RELATIVE outcomes, ENSEMBLED over the
+# most uncertain axis -- and why an absolute "peak of X admissions in week W next winter" from this tool
+# should be treated as illustrative arithmetic, not a prediction. The compartmental model is confidently
+# wrong OUTSIDE its envelope for the same reason a data-driven / foundation model would be confidently
+# wrong here too (it has no analogous season to lean on). Use this to RANK levers ("boosting the elderly
+# beats a broad campaign under most waning assumptions"), never to quote a number. (See reflections.md:
+# "which idealisations are well-posed", and why honest out-of-envelope detection is the real prize.)
+#
 # References
 #   Keeling MJ, Rohani P. Modeling Infectious Diseases in Humans and Animals. Princeton; 2008. (SIRS)
 #   ECDC RespiCompass / US Scenario Modeling Hub -- the scenario-grid, relative-outcome format.

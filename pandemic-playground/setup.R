@@ -15,12 +15,12 @@ if (is.na(.pp_root) || !length(.pp_root)) .pp_root <- "."
 # ---- |-simulation engine (base R; order matters -- later files use earlier ones) ----
 .engine <- c("epidist", "config", "utils", "renewal", "draw_parameters",
              "simulate_source", "simulate_flights", "simulate_importations",
-             "simulate_local", "observe", "assemble")
+             "simulate_local", "simulate_clusters", "observe", "assemble")
 for (f in .engine) source(file.path(.pp_root, "R", paste0(f, ".R")))
 
 # ---- |-analysis toolbox (base R + tidyverse; the phase files + shared scoring) ----
 .toolbox <- c("analysis_common",
-              "phase0_growth_R", "phase0_catchment", "phase0_importation_risk",
+              "phase0_growth_R", "phase0_clusters", "phase0_catchment", "phase0_importation_risk",
               "phase1_cfr", "phase1_rt", "phase1_nowcast",
               "phase2_forecast", "phase2_intervention",
               "phase3_scenarios", "phase3_variant_selection")
