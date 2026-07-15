@@ -5,7 +5,7 @@
     --ground:#eef2f0; --surface:#ffffff; --surface2:#e7edea; --inset:#f4f7f6;
     --ink:#101a17; --muted:#586562; --faint:#8b9a95; --hairline:#d3dcd8; --grid:#e2e9e6;
     --accent:#0a7a6e; --accent-ink:#0a6a60;
-    --c-observed:#0b9182; --c-estimate:#4c5fd5; --c-truth:#a8730c; --c-critical:#b4322a;
+    --c-observed:#0b9182; --c-estimate:#4c5fd5; --c-truth:#a8730c; --c-critical:#bd2540;
     --shadow:0 1px 2px rgba(16,26,23,.04), 0 8px 24px -12px rgba(16,26,23,.14);
     --f-display:"Helvetica Neue",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
     --f-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -18,7 +18,7 @@
       --ink:#e8efec; --muted:#9aa6a2; --faint:#6f7d78; --hairline:#27302d; --grid:#20292710;
       --grid:#222b28;
       --accent:#2bb6a6; --accent-ink:#43c2b3;
-      --c-observed:#12a091; --c-estimate:#6e7cea; --c-truth:#b98420; --c-critical:#d65c4e;
+      --c-observed:#12a091; --c-estimate:#6e7cea; --c-truth:#b98420; --c-critical:#e0687a;
       --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
       color-scheme:dark;
     }
@@ -27,7 +27,7 @@
     --ground:#0d1312; --surface:#151d1b; --surface2:#1c2624; --inset:#121917;
     --ink:#e8efec; --muted:#9aa6a2; --faint:#6f7d78; --hairline:#27302d; --grid:#222b28;
     --accent:#2bb6a6; --accent-ink:#43c2b3;
-    --c-observed:#12a091; --c-estimate:#6e7cea; --c-truth:#b98420; --c-critical:#d65c4e;
+    --c-observed:#12a091; --c-estimate:#6e7cea; --c-truth:#b98420; --c-critical:#e0687a;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
     color-scheme:dark;
   }
@@ -35,7 +35,7 @@
     --ground:#eef2f0; --surface:#ffffff; --surface2:#e7edea; --inset:#f4f7f6;
     --ink:#101a17; --muted:#586562; --faint:#8b9a95; --hairline:#d3dcd8; --grid:#e2e9e6;
     --accent:#0a7a6e; --accent-ink:#0a6a60;
-    --c-observed:#0b9182; --c-estimate:#4c5fd5; --c-truth:#a8730c; --c-critical:#b4322a;
+    --c-observed:#0b9182; --c-estimate:#4c5fd5; --c-truth:#a8730c; --c-critical:#bd2540;
     --shadow:0 1px 2px rgba(16,26,23,.04), 0 8px 24px -12px rgba(16,26,23,.14);
     color-scheme:light;
   }
@@ -175,6 +175,20 @@
     font-size:.76rem;color:var(--faint);letter-spacing:.02em;display:flex;flex-wrap:wrap;gap:6px 24px}
   .colofon b{color:var(--muted);font-weight:600}
 
+  /* well-posedness spectrum */
+  .spectrum{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:clamp(26px,4vw,40px) 0}
+  @media(max-width:760px){.spectrum{grid-template-columns:1fr}}
+  .gcard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;
+    padding:20px 22px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:.55rem}
+  .pill{display:inline-flex;align-items:center;gap:.55em;font-family:var(--f-mono);font-size:.68rem;
+    font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);align-self:flex-start}
+  .pill::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--faint)}
+  .pill.ok::before{background:var(--c-observed)} .pill.warn::before{background:var(--c-truth)} .pill.bad::before{background:var(--c-critical)}
+  .gcard h4{font-family:var(--f-display);font-size:1.06rem;font-weight:700;letter-spacing:-.01em;margin:0}
+  .gcard .ex{font-family:var(--f-mono);font-size:.8rem;color:var(--accent-ink);margin:0}
+  .gcard .tell{font-size:.9rem;color:var(--muted);line-height:1.5;margin:.2rem 0 0;padding-top:.55rem;border-top:1px solid var(--hairline)}
+  .gcard .tell b{color:var(--ink);font-weight:600}
+
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -248,12 +262,30 @@
         The reported line sits far below the true infections: even at the source, most cases are never counted.</p>
     </figure>
 
+    <figure class="chart" data-chart="p0clusters">
+      <div class="chart-head">
+        <div><div class="ct">Superspreading — and the one number only clusters reveal</div>
+          <div class="cs">Chain sizes vs. fitted branching process · log–log · per introduction</div></div>
+        <button class="btn" data-table>Table</button>
+      </div>
+      <div class="plot"></div><div class="legend"></div>
+      <div class="tbl"></div>
+      <p class="cap"><b>Most chains fizzle; a rare few explode.</b> Of <span class="mono" id="p0cn"></span> seeded
+        introductions, <span class="mono" id="p0csing"></span> infected almost no‑one — yet one ran to
+        <span class="mono" id="p0cmax"></span> cases. That heavy tail <em>is</em> the signal: fitting the
+        negative‑binomial branching process to the sizes recovers the reproduction number
+        <span class="mono" id="p0cR"></span> <b>and</b> the dispersion <span class="mono" id="p0ck"></span> —
+        the containability parameter no growth‑rate or R‑only method can see. Both brackets straddle the truth
+        (R&nbsp;<span class="mono" id="p0ctR"></span>, k&nbsp;<span class="mono" id="p0ctk"></span>).</p>
+    </figure>
+
     <div class="qs">
       <div class="qlabel">What you can answer now</div>
       <div class="qgrid">
         <div class="q"><span class="qi">Q1</span><p>Is it spreading person‑to‑person, and how fast?</p></div>
-        <div class="q"><span class="qi">Q2</span><p>How much are we missing at source — how big is it really?</p></div>
-        <div class="q"><span class="qi">Q3</span><p>Which of our countries are already missing their imports?</p></div>
+        <div class="q"><span class="qi">Q2</span><p>How heterogeneously does it spread — is it containable?</p></div>
+        <div class="q"><span class="qi">Q3</span><p>How much are we missing at source — how big is it really?</p></div>
+        <div class="q"><span class="qi">Q4</span><p>Which of our countries are already missing their imports?</p></div>
       </div>
     </div>
 
@@ -278,8 +310,10 @@
     <div class="tools">
       <div class="tool"><div class="tn">phase0_growth_R</div><h4>Growth → R</h4>
         <p>A Poisson‑GLM growth rate, converted to a reproduction number through the generation interval (Euler–Lotka).</p></div>
+      <div class="tool"><div class="tn">phase0_clusters</div><h4>Chain sizes → R and k</h4>
+        <p>Fit the negative‑binomial branching process to transmission‑chain sizes — the one early tool that recovers the dispersion k, which decides whether contact‑tracing can contain it.</p></div>
       <div class="tool"><div class="tn">phase0_catchment</div><h4>Back‑calculate the source</h4>
-        <p>Exported cases ÷ travel fraction × detection recovers the true size at the source, independent of its own reporting.</p></div>
+        <p>Exported cases ÷ travel fraction × detection recovers the true size at the source, independent of its own reporting — reported as a range across two real‑world corrections.</p></div>
       <div class="tool"><div class="tn">phase0_importation_risk</div><h4>Importation risk</h4>
         <p>Regress detected imports on flight volume across well‑surveilled countries; flag those below the interval.</p></div>
     </div>
@@ -491,20 +525,59 @@
   </section>
 
   <!-- ===================== CLOSE ===================== -->
-  <section class="close col">
-    <p class="eyebrow">The same manual, other pathogens</p>
-    <h2>One toolkit, calibrated against a truth it never sees.</h2>
-    <p class="lead muted" style="margin-top:1rem">Every estimate in this guide was scored against the answer, and the
-      recurring lesson is that a method can be exactly right in principle yet biased in practice — scaling‑up testing
-      inflates early growth, a variant contaminates R, a fixed‑R forecast overshoots the turnover. The playground
-      exists to make those biases visible before the next real emergency.</p>
-    <p class="muted">And the outbreak here is only one of many the framework can stage: dial the generation interval down
-      for a fast pandemic influenza, up for a measles‑like pathogen, or set the offspring dispersion low and watch a
-      SARS‑style superspreader where most imported chains simply fizzle out. The tools re‑scale to each.</p>
-    <div class="colofon">
-      <span><b>Source</b> pandemic‑playground · simulated data</span>
-      <span><b>Engine</b> stochastic renewal · base R</span>
-      <span><b>Every figure</b> generated from one seeded run</span>
+  <section class="close">
+    <div class="col">
+      <p class="eyebrow">Knowing when to stop believing the number</p>
+      <h2>Not every question a model can be asked is one it can answer.</h2>
+      <p class="lead muted" style="margin-top:1rem">Every estimate here was scored against the answer, and the recurring
+        lesson is that a method can be exactly right in principle yet biased in practice — scaling‑up testing inflates
+        early growth, a variant contaminates R, a fixed‑R forecast overshoots the turnover. But there is a deeper
+        gradient underneath: the tools span a spectrum from questions that are genuinely <b style="color:var(--ink)">well‑posed</b>
+        to ones that are <b style="color:var(--ink)">ill‑posed as prediction</b> no matter how clean the code.</p>
+    </div>
+
+    <div class="spectrum">
+      <div class="gcard">
+        <span class="pill ok">Well‑posed · short horizon</span>
+        <h4>Recovers what is in the data</h4>
+        <p class="ex">variant selection · nowcasting · near‑term Rₜ</p>
+        <p class="tell">A selection coefficient is identifiable from sequence counts; a nowcast is a bounded
+          deconvolution of a delay we can estimate. <b>Trust it, score it, correct its biases.</b></p>
+      </div>
+      <div class="gcard">
+        <span class="pill warn">Fragile · medium horizon</span>
+        <h4>The capacity forecast</h4>
+        <p class="ex">phase2_forecast · 1–2 weeks</p>
+        <p class="tell">Sound in clear growth or decline — but with no behavioural feedback it can send admissions
+          straight <b>through</b> capacity, which real systems never do. <b>Past the envelope flag, read risk, not a number.</b></p>
+      </div>
+      <div class="gcard">
+        <span class="pill bad">Ill‑posed as prediction · long horizon</span>
+        <h4>Next season, with boosters</h4>
+        <p class="ex">phase3_scenarios · a season out</p>
+        <p class="tell">Behaviour, the next variant and waning are all assumed, not measured, and they swamp the
+          mechanism. <b>Legitimate only to rank levers — never to quote an absolute number.</b></p>
+      </div>
+    </div>
+
+    <div class="col">
+      <p class="muted">This is where <b style="color:var(--ink)">foundation models</b> enter — and where the popular
+        framing goes wrong. A mechanistic model is overconfident <em>outside</em> its envelope; a data‑driven model,
+        grounded in how real curves have actually bent, is more honest exactly there — but is itself overconfident
+        <em>inside</em> its training distribution and blind when the new pathogen is unlike anything it has seen.
+        "Antidote" is the wrong metaphor: the two fail in opposite regimes. The real prize is not a better point
+        forecast but <b style="color:var(--ink)">honest out‑of‑distribution detection</b> — a model that can say
+        <em>this is unlike what I was built on</em>. That is why the tools here carry explicit envelope flags rather
+        than pretending a projection is always a prediction.</p>
+      <p class="muted">And this outbreak is only one the framework can stage: dial the generation interval down for a
+        fast pandemic influenza, up for a measles‑like pathogen, or set the offspring dispersion low — as the cluster
+        panel showed — for a SARS‑style superspreader where most imported chains simply fizzle out. The tools re‑scale
+        to each.</p>
+      <div class="colofon">
+        <span><b>Source</b> pandemic‑playground · simulated data</span>
+        <span><b>Engine</b> stochastic renewal · base R</span>
+        <span><b>Every figure</b> one seeded run</span>
+      </div>
     </div>
   </section>
 
@@ -696,6 +769,13 @@ $("#facts").innerHTML=[
 
 $("#p0r").textContent=P.phase0.growth.r; $("#p0dt").textContent=P.phase0.growth.doubling;
 $("#p0cor").textContent=P.phase0.importation_cor.toFixed(2);
+{ const c=P.phase0.clusters;
+  $("#p0cn").textContent=fmtInt(c.n);
+  $("#p0csing").textContent=Math.round(c.singleton_frac*100)+"%";
+  $("#p0cmax").textContent=c.max_size;
+  $("#p0cR").textContent=`${c.R.toFixed(2)} [${c.R_lower.toFixed(2)}–${c.R_upper.toFixed(2)}]`;
+  $("#p0ck").textContent=`${c.k.toFixed(2)} [${c.k_lower.toFixed(2)}–${c.k_upper.toFixed(2)}]`;
+  $("#p0ctR").textContent=c.truth_R.toFixed(2); $("#p0ctk").textContent=c.truth_k.toFixed(2); }
 $("#p1nc").textContent=P.phase1.nowcast_improvement;
 $("#p1rtcor").textContent=P.phase1.rt_score.cor.toFixed(2);
 $("#p1ifr").textContent=(P.phase1.true_ifr*100).toFixed(1)+"%";
@@ -706,7 +786,7 @@ $("#p3boost").textContent=P.phase3.boosting.peak_reduction;
 
 /* -- signal chips -- */
 const sig=(id,arr)=>$(id).innerHTML=arr.map(([l,v])=>`<span class="signal"><b>${v}</b> ${l}</span>`).join("");
-sig("#sig0",[["source R (est)",P.phase0.growth.R.toFixed(2)],["doubling time",P.phase0.growth.doubling+" d"],
+sig("#sig0",[["source R (est)",P.phase0.growth.R.toFixed(2)],["dispersion k",P.phase0.clusters.k.toFixed(2)],
   ["source under‑count",P.phase0.catchment.under_ascertainment+"×"],["countries flagged",P.phase0.importation_flagged]]);
 sig("#sig1",[["nowcast gain",P.phase1.nowcast_improvement+"%"],["R crosses 1","mid‑wave"],
   ["adjusted CFR",(P.phase1.cfr[P.phase1.cfr.length-1].adjusted*100).toFixed(1)+"%"],["true IFR",(P.phase1.true_ifr*100).toFixed(1)+"%"]]);
@@ -721,7 +801,7 @@ function verdict(id, cards){ $(id).innerHTML=cards.map(c=>
 verdict("#v0",[
   {k:"Source R — estimated",v:P.phase0.growth.R.toFixed(2),n:`95% CI ${P.phase0.growth.R_lower}–${P.phase0.growth.R_upper}`,cls:"est"},
   {k:"Source R — truth",v:P.phase0.growth.truth_R.toFixed(2),n:"scaling‑up testing inflates the estimate",cls:"tru"},
-  {k:"True vs reported at source",v:P.phase0.catchment.under_ascertainment+"×",n:`${fmtInt(P.phase0.catchment.reported)} reported that window`,cls:"good"},
+  {k:"Source size — est. range",v:fmtK(P.phase0.catchment.low)+"–"+fmtK(P.phase0.catchment.high),n:`vs ${fmtInt(P.phase0.catchment.reported)} reported — ~${P.phase0.catchment.under_ascertainment}× bigger`,cls:"good"},
   {k:"Under‑detecting countries",v:P.phase0.importation_flagged,n:"flagged below the imports line",cls:"crit"},
 ]);
 verdict("#v1",[
@@ -757,6 +837,25 @@ reg(()=>{ const f=figOf("p0curve"), d=P.phase0;
              {name:"Reported cases",role:"observed",kind:"line",pts:rep,width:2.6} ],
     legend:[{name:"Reported cases",role:"observed"},{name:"True infections",role:"truth",dash:1},{name:"Fitted growth (R="+d.growth.R.toFixed(2)+")",role:"estimate"}] });
   buildTable(f,d.curve,[{h:"day",k:"day"},{h:"reported",k:"reported",f:fmtInt},{h:"infections",k:"infections",f:fmtInt}]);
+});
+
+/* P0 — cluster-size distribution (log-log): observed shares vs fitted branching process */
+reg(()=>{ const f=figOf("p0clusters"), d=P.phase0.clusters;
+  const obs=d.obs.map(r=>({x:r.size,y:r.share,raw:r}));
+  const fit=d.fit.map(r=>({x:r.size,y:r.pmf}));
+  // bound the y-axis to the observed shares so the fitted tail (vanishingly small for giant chains)
+  // clips gracefully instead of dragging the axis down to an empty "0%" floor
+  const shares=obs.map(o=>o.y), ymin=Math.min(...shares), ymax=Math.max(...shares);
+  const fmtShare=v=>{const p=v*100; return (p>=1?p.toFixed(0):p.toFixed(1))+"%";};
+  chart(f,{ x:{type:"log",fmt:v=>""+Math.round(v),title:"chain size (people infected)"},
+    y:{type:"log",fmt:fmtShare,title:"share of introductions",dom:[ymin*0.7,ymax*1.18]},
+    pointHover:p=>`<div class="tx">chain size ${p.raw.size}</div>
+      <div class="row"><span class="nm">observed share</span><span class="vl">${fmtPct(p.raw.share)}</span></div>`,
+    series:[ {name:"Fitted",role:"estimate",kind:"line",pts:fit,width:2.4,noHover:true},
+             {name:"Observed",role:"observed",kind:"points",pts:obs,r:4.6} ],
+    legend:[{name:"Observed chain sizes",role:"observed",dot:1},
+            {name:`Fitted branching process (R=${d.R.toFixed(2)}, k=${d.k.toFixed(2)})`,role:"estimate"}] });
+  buildTable(f,d.obs,[{h:"chain size",k:"size"},{h:"share of introductions",k:"share",f:v=>fmtPct(v)}]);
 });
 
 /* P0 — importation scatter (log-log) */

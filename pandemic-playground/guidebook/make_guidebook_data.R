@@ -40,9 +40,21 @@ sir <- score_importation_risk(ir)
 ir_out <- ir[, c("country","volume","surveillance_quality","detected_imports","expected",
                  "pi_lower","pi_upper","under_detecting")]
 
-# catchment back-calculation
-cb <- catchment_backcalc(input, 30:60, min_surveillance = 0.75, source_pop = cfg$source$population)
+# catchment back-calculation, reported as an honest range across the traveller/detection corrections
+gi_mean0 <- epidist_mean(cfg$delays$generation_interval)
+cb  <- catchment_backcalc(input, 30:60, min_surveillance = 0.75, source_pop = cfg$source$population)
 scb <- score_catchment(sim, cb, input)
+crg <- catchment_range(input, 30:60, source_pop = cfg$source$population,
+                       growth_rate = ga$r, recovery_rate = 1 / gi_mean0, min_surveillance = 0.75)
+
+# cluster / branching-process inference: recover R AND the dispersion k from transmission-chain sizes
+cf  <- cluster_analysis(input)
+scl <- score_clusters(sim, cf)
+csizes <- input$clusters$sizes
+ctab   <- table(csizes)
+cluster_obs <- data.frame(size = as.integer(names(ctab)), share = as.numeric(ctab) / length(csizes))
+cluster_fit <- data.frame(size = 1:max(csizes),
+                          pmf  = exp(vapply(1:max(csizes), function(n) .chain_logpmf(n, cf$R, cf$k), numeric(1))))
 
 phase0 <- list(
   curve = phase0_curve,
@@ -50,12 +62,21 @@ phase0 <- list(
   growth = list(r = round2(ga$r), doubling = round2(ga$doubling_time, 1),
                 R = round2(ga$R, 2), R_lower = round2(ga$R_ci[1], 2), R_upper = round2(ga$R_ci[2], 2),
                 truth_R = round2(sg$truth_R, 2), window = range(win0)),
+  clusters = list(
+    R = round2(cf$R, 2), R_lower = round2(cf$R_ci[1], 2), R_upper = round2(cf$R_ci[2], 2),
+    k = round2(cf$k, 2), k_lower = round2(cf$k_ci[1], 2), k_upper = round2(cf$k_ci[2], 2),
+    truth_R = round2(scl$true_R, 2), truth_k = round2(scl$true_k, 2),
+    R_in_ci = scl$R_in_ci, k_in_ci = scl$k_in_ci,
+    n = cf$n, singleton_frac = round2(mean(csizes == 1), 2),
+    extinction = round2(cf$extinction_prob, 2), max_size = max(csizes),
+    obs = cluster_obs, fit = cluster_fit),
   importation = ir_out,
   importation_flagged = sum(ir$under_detecting),
   importation_cor = round2(sir$cor_residual_surveillance, 2),
   catchment = list(est_prevalence = round(cb$est_prevalence), true_prevalence = round(scb$true_prevalence),
                    ratio = round2(scb$ratio, 2), under_ascertainment = round2(scb$true_underascertainment, 1),
-                   reported = scb$reported_source_cases)
+                   reported = scb$reported_source_cases,
+                   low = round(crg$low), central = round(crg$central), high = round(crg$high))
 )
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
