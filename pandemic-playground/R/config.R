@@ -75,6 +75,18 @@ make_country_rt <- function(countries, R_start = 1.8, R_post = 0.85,
 # a source epidemic at X that seeds staggered EU/EEA waves, with deaths, reporting delays, a travel
 # ban and an optional fitter variant. Edit a copy of this to design an experiment.
 default_config <- function() {
+  # A few layout values below (intervention days, per-country connectivity, surveillance) are drawn from
+  # FIXED internal seeds so the default config is byte-identical every time. Those set.seed() calls would
+  # otherwise leave the caller's global RNG reset as a side effect -- so save the caller's stream on entry
+  # and restore it on exit. Building a config never disturbs randomness; the run seed is applied once,
+  # separately, inside simulate_pandemic().
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    .caller_seed <- get(".Random.seed", envir = .GlobalEnv)
+    on.exit(assign(".Random.seed", .caller_seed, envir = .GlobalEnv))
+  } else {
+    on.exit(if (exists(".Random.seed", envir = .GlobalEnv)) rm(".Random.seed", envir = .GlobalEnv))
+  }
+
   geo   <- eu_eea_countries()
   ctry  <- geo$country
   n_c   <- length(ctry)

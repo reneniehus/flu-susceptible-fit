@@ -21,6 +21,14 @@ test_that("the run is reproducible: same config + seed -> identical data", {
   expect_false(isTRUE(all.equal(simulate_pandemic(cfg2)$observed$deaths, a$observed$deaths)))
 })
 
+test_that("default_config() is deterministic yet leaves the caller's RNG untouched", {
+  a <- default_config(); b <- default_config()
+  expect_identical(a, b)                                # the default config is byte-identical every call
+  set.seed(42); x <- stats::runif(1)
+  set.seed(42); invisible(default_config()); y <- stats::runif(1)
+  expect_identical(x, y)                                # building a config must not disturb the RNG stream
+})
+
 test_that("the source epidemic seeds the countries by importation", {
   imp <- test_sim$truth$imports
   seeded <- tapply(imp$imports, imp$country, sum)
