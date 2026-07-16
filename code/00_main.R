@@ -1,34 +1,43 @@
-# ---- |-Clear ----
-gc() # clear environment & memory
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+### 00_main.R -- build every analysis table + the artefact data, end to end ##########
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Run from the repo root:  Rscript code/00_main.R
+#
+# Two independent analyses, one shared session:
+#   A. the de-identified NFP survey  (code/02_survey/)  -> output/survey_*.csv
+#   B. the RespiCast forecast hubs   (code/03_hubs/)    -> output/hub_*.csv
+# Both are then folded into one artefact JSON (code/04_export/) that the HTML
+# dashboards embed. See README.md for the full picture and how to get the hub data.
+
+gc()
 
 # ---- |-Set up ----
-source("code/01_main_supporting/setup.R")
+source("code/01_support/setup.R")
+source("code/01_support/config.R"); params <- settings()
 
-# ---- |-load task specific settings ----
-source("code/02_settings/settings_version0.R"); params=settings() # settings_version_X.R script to be changed by high-level user
+# ---- |-Source the analysis modules ----
+source("code/02_survey/load_survey.R")      # read + tidy the survey
+source("code/02_survey/analyse_survey.R")   # survey summary tables
+source("code/03_hubs/load_forecasts.R")     # scan the hub submissions
+source("code/03_hubs/analyse_coverage.R")   # weeks x indicator x #models coverage
+source("code/04_export/build_artefact_data.R")
 
-# ---- |-sourcing support scripts ----
-source("code/01_main_supporting/flu_functions.R")
-source("code/01_main_supporting/validate.R")
-source("code/01_main_supporting/load_data.R")
-source("code/01_main_supporting/gen_model_input.R")
-source("code/01_main_supporting/eyeballing.R")
-source("code/01_main_supporting/sir_core.R")                          # shared SIR engine + data loaders
-source("code/01_main_supporting/methods/method_sir_deterministic.R")  # method: deterministic SIR fit
-source("code/01_main_supporting/methods/method_sir_ekf.R")            # method: EKF SIR (process noise)
-source("code/01_main_supporting/methods/method_descriptive.R")        # method: descriptive curve features
-source("code/01_main_supporting/methods_registry.R")                  # swappable-method registry + summaries
-source("code/01_main_supporting/send_report.R")
+# ---- |-A. Survey: modelling capacity & the value of ECDC forecasting ----
+survey     <- load_survey(params)
+survey_out <- run_survey_analysis(survey, params)
 
-# ---- |-load flu data ----
-data = load_data( params, regenerate = F, new_from_online = F) # loads the data # regenerate=T recreates the data lists, new_from_online=T uses the online versions for recreation
+# ---- |-B. Hubs: two seasons of forecast coverage ----
+submissions  <- load_hub_forecasts(params)
+coverage_out <- run_coverage_analysis(submissions, params)
 
-# ---- |-generate model inputs ----
-models_in = gen_model_input( params, data )
-saveRDS(models_in, "output/models_in.rds") # persist the model-ready inputs (gitignored cache); the panel build + analysis read this (code/04_modelling/build_slim_panel.R, code/05_analysis/)
+# ---- |-Assemble the artefact data (one JSON the dashboard embeds) ----
+# The qualitative theme synthesis is produced by the verification/coding workflow and
+# cached to output/themes.json; fold it in when present, otherwise build without it.
+themes_path <- file.path(params$output_dir, "themes.json")
+themes <- if (file.exists(themes_path)) jsonlite::read_json(themes_path, simplifyVector = FALSE) else NULL
+build_artefact_data(survey, survey_out, coverage_out, params, themes = themes)
 
-# ---- |-report ----
-# render the data-eyeballing report: rmarkdown::render("code/03_report/eyeballing_report.Rmd")
-
-# ---- |-The end
-eb = eyeballing(models_in, params, data) # build the quality + dynamics figure manifest for the report (see eyeballing.R)
+step("Done")
+say("survey tables + hub tables -> output/*.csv")
+say("artefact data            -> output/artefact_data.json")
+say("build the figures with:   Rscript code/05_figures/fig_survey.R  &  fig_coverage.R")

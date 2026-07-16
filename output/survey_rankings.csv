@@ -1,0 +1,11 @@
+channel,n,mean_rank,pct_first,pct_top2,mode
+Dedicated newsletter / mailing list,19,1.79,53,74,"Short-term forecasts (RespiCast, weekly)"
+Dedicated website,19,2,32,84,"Short-term forecasts (RespiCast, weekly)"
+Online meetings for data analysts and modellers,19,2.89,11,26,"Short-term forecasts (RespiCast, weekly)"
+Online meetings for policy decision-makers,19,3.32,5,16,"Short-term forecasts (RespiCast, weekly)"
+Other,19,5,0,0,"Short-term forecasts (RespiCast, weekly)"
+Dedicated website,19,2.16,16,79,"Scenario insights (RespiCompass, 1-2x/yr)"
+Dedicated newsletter / mailing list,19,2.32,42,53,"Scenario insights (RespiCompass, 1-2x/yr)"
+Online meetings for data analysts and modellers,19,2.53,32,42,"Scenario insights (RespiCompass, 1-2x/yr)"
+Online meetings for policy decision-makers,19,3,11,26,"Scenario insights (RespiCompass, 1-2x/yr)"
+Other,19,5,0,0,"Scenario insights (RespiCompass, 1-2x/yr)"

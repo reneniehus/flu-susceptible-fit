@@ -1,0 +1,4 @@
+indicator,first_round,last_round,n_rounds,n_seasons,peak_models,median_models,rounds_with_ens,distinct_models
+ARI incidence,2024-10-23,2026-07-15,91,2,14,7,89,18
+COVID-19 hospitalisations,2024-10-23,2026-06-24,88,2,11,8.5,87,17
+ILI incidence,2024-10-23,2026-07-15,91,2,20,14,89,25

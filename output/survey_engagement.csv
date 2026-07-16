@@ -1,0 +1,6 @@
+output,class,n,n_not_aware,pct_not_aware,mean_score,median_score,pct_high
+COVID-19 risk assessments,Guidance,19,1,5,3.89,4,68
+COVID-19 Forecast Hub,Short-term forecasting,18,3,17,2.72,3,33
+COVID-19 Scenario Hub,Scenario modelling,16,2,12,2.69,3,25
+RespiCast,Short-term forecasting,18,3,17,2.11,2,22
+RespiCompass,Scenario modelling,17,5,29,1.35,1,6

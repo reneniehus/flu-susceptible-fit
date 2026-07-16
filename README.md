@@ -1,140 +1,102 @@
-# flu-susceptible-fit
+# respicast-value — demand & delivery of ECDC respiratory-virus forecasting
 
-Reading a per-season sense of population **susceptibility** off **flu ILI+** waves with a
-susceptible-reconstruction **SIR model**, through a small **swappable-method framework** plus a
-reference Bayesian model:
+Two views of the same system, built from source and rendered into one interactive dashboard:
 
-- **Method framework (R)** — `code/01_main_supporting/sir_core.R` (shared SIR engine) +
-  `code/01_main_supporting/methods/` (one file per method) + `methods_registry.R` (registry +
-  common per-season summary schema). Every method fixes R0, the infectious period and the seed
-  `I0` (from settings) and fits, per season, the **susceptibility** `S0` and a **reporting
-  fraction** `c`, with a shared baseline `b` and overdispersion `phi`. Methods so far:
-  - `deterministic` — the season's wave *is* a single deterministic SIR; observations are
-    overdispersed noise around it. `S0` is identified by the wave's rise rate. Transparent; misfit
-    shows up as honest residuals.
-  - `ekf` — the same model with an Extended Kalman Filter, admitting **process noise** so the
-    epidemic can wander off the deterministic SIR (one shared `q_I` per country, fitted but
-    regularised small). The two methods agree on wave shape but the EKF draws more contrast between
-    seasons' `S0` — comparing them is exactly what the framework is for.
-  - `descriptive` — non-mechanistic: **smooths** each curve (centered moving average) and reads off
-    features (AUC, peak height, onset week, steepness) directly. It fits no SIR and reports no `S0` —
-    the observed-shape features are compared *within* a country, not mapped onto the SIR
-    susceptibility axis (that mechanistic-vs-phenomenological mapping is deliberately out of scope).
-- **Bayesian SIR (Stan)** — `stan/SIR_multiseason_age_vax_2.stan`: an age- and vaccination-
-  structured, multi-season SIR fit by HMC, with scenario projections (reference model).
+- **Demand** — a survey of **19 EU/EEA National Focal Points (NFPs)** for viral respiratory diseases,
+  on their in-house modelling capacity and the value they place on ECDC's short-term forecasts
+  (**RespiCast**) and seasonal scenarios (**RespiCompass**).
+- **Delivery** — two seasons of the **RespiCast forecasting hubs**, reconstructed submission-by-submission:
+  which indicators were forecast, in which weeks, by how many models and the ensemble.
 
-The repo also carries the full data layer: ECDC **ERVISS** + **RespiCompass** surveillance
-(ILI/ARI, typing/positivity), contact matrices, vaccination and demography, turned into tidy
-model-ready tables, with a data-quality / dynamics report.
+The brief was to focus on the **value (and potential value) of forecasting / nowcasting by ECDC for
+external stakeholders** such as national public health institutes — so the whole analysis circles one
+axis: national modelling **capacity**, because that is what decides whether an ECDC forecast is a
+convenience or the only forecast a country has.
+
+**Interactive dashboard:** https://claude.ai/code/artifact/83633670-7442-4950-b097-d6556709f5e9
+
+## Headline findings
+
+**Demand (survey).**
+- **13 of 19** focal points have **no in-house mathematical modeller at all**; only one institute has a
+  team of any size. For most countries "using a forecast" can only mean using someone else's.
+- Engagement with the newer flagship products is modest — RespiCast mean **2.11/5**, RespiCompass
+  **1.35/5** — but they have had far less time in market than the older COVID-era outputs (a recency
+  confound, not a value verdict).
+- When forced to choose, focal points prefer **RespiCast (forecasts) over RespiCompass (scenarios)
+  5:1**; a majority expect **both** to be useful (an *expectation* — many have not yet used them).
+- Engagement is **flat across capacity bands** — the institutes that would gain most engage no more
+  than better-resourced ones. The value is **potential, not yet realised**; the binding constraint is
+  demand-side (awareness, interpretation, a route into the decision), not supply.
+- Forecasting is expected to inform **surveillance** most (58% likely) and **healthcare-capacity
+  planning** — the canonical forecasting use — least (16%). Only **~half** report a clear mechanism to
+  integrate modelling into decisions.
+
+**Delivery (hubs).**
+- **91 weekly rounds** over two seasons, **3 indicators**: COVID-19 hospitalisations (its own hub),
+  ILI and ARI incidence (a second hub that has only ever carried these two). No "COVID cases" target
+  exists in either hub.
+- Coverage is uneven: **ILI** draws up to **20 models** across **30 countries**; **ARI**, from the very
+  same files, peaks at **14** across **25**; **COVID-19 hospitalisations** reaches only **15** countries.
+- The **ensemble** is published in ~**98%** of rounds — but its strength is only ever the number of
+  models behind it that week.
+
+> Every number above is regenerated from source by `code/00_main.R`. Key figures were independently
+> re-derived from the raw files by a verification pass (see `documentation/reflections.md`); the survey
+> counts, target lists, date ranges, round counts, country counts and per-week model counts all matched.
 
 ## Quick start
 
 ```r
-renv::restore()                       # install pinned dependencies (renv.lock)
-source("code/00_main.R")              # build the data and model inputs
+# 1. get the two hub repositories (they are NOT vendored here -- ~1.7 GB of submissions)
+#    clone them next to this repo, into ../hubs/  (or set RESPICAST_HUBS_DIR)
+#      git clone https://github.com/european-modelling-hubs/RespiCast-Covid19.git             ../hubs/RespiCast-Covid19
+#      git clone https://github.com/european-modelling-hubs/RespiCast-SyndromicIndicators.git ../hubs/RespiCast-SyndromicIndicators
+
+# 2. build every analysis table + the artefact data
+Rscript code/00_main.R
+
+# 3. (re)build the dashboard page and the static figures
+Rscript code/05_artefact/build_pages.R      # -> artefact/dashboard.html
+Rscript code/05_figures/fig_survey.R        # -> output/figures/survey.png
+Rscript code/05_figures/fig_coverage.R      # -> output/figures/coverage.png
 ```
 
-Fit per-season **susceptibility** across a country's seasons (base R; no pipeline needed — uses the
-committed slim panel `data/slim_flu_iliplus.csv`):
-
-```r
-source("code/02_settings/settings_version0.R"); params <- settings()
-source("code/01_main_supporting/sir_core.R")
-source("code/01_main_supporting/methods/method_sir_deterministic.R")
-source("code/01_main_supporting/methods_registry.R")
-
-sl  <- load_flu_iliplus_slim("DK")                  # one country's per-season weekly ILI+
-fit <- run_method("deterministic", sl, params)      # any registered method, same call
-summarise_method_fit(fit)                           # tidy: S0, R_eff, c, peak/onset week, cor, ...
-```
-
-`fit$params$S0` is the per-season susceptibility — **interpret the ranking/relative spacing across
-seasons**, not the absolute level (which is conditional on the fixed R0/seed).
-
-Run every registered method and save a figure per method:
-
-```sh
-Rscript code/04_modelling/fit_methods_demo.R        # -> output/fit_<method>.png
-```
-
-## The model in one paragraph
-
-A latent SIR in population proportions (`dS/dt = -beta S I`, `dI/dt = beta S I - gamma I`,
-`beta = R0·gamma`) drives weekly ILI+, taken proportional to weekly new infections
-(`E[y] = c · new infections + b`). Observation noise is neg-binomial-like (`Var = mu + mu²/phi`).
-With R0, the infectious period and the seed `I0` fixed, the wave's **rise rate**
-`r = gamma·(R0·S0 − 1)` identifies the per-season susceptibility `S0`; `c` carries the reporting
-scale and `b` the off-season baseline. The deterministic method trusts the SIR fully (residuals are
-noise); the EKF method adds process noise so the latent state can deviate from it. A single-season,
-single-strain SIR does not capture secondary-strain or strongly NPI-shaped seasons, by design.
-
-## Tests
-
-```r
-Rscript run_tests.R                   # offline, from the committed data/ snapshots
-```
-
-Checks the data contracts and canonical tables, that each method converges with plausible
-parameters and reproduces the observed waves (`tests/testthat/test-sir-deterministic.R`), and that
-every registered method honours the common summary schema (`tests/testthat/test-methods-registry.R`).
+The committed `output/*.csv` + `output/artefact_data.json` already hold the derived results, so the
+dashboard renders without re-cloning the hubs; step 1 is only needed to regenerate them from scratch.
 
 ## Layout
 
 ```
-code/00_main.R                 build data + model inputs, source the methods
-code/01_main_supporting/       setup, validate, load_data, gen_model_input, eyeballing,
-                               sir_core (shared SIR engine + loaders),
-                               methods/ (one file per fitting method),
-                               methods_registry (registry + per-season summary schema)
-code/02_settings/              settings_version0.R (params, incl. susc_* fixed values)
-code/03_report/                eyeballing_report.Rmd (data-quality / dynamics report),
-                               data_availability.R (coverage + exclusions heatmap)
-code/04_modelling/             build_slim_panel.R (assemble the slim panel), fit_methods_demo.R
-                               (run every method, plot + summarise), descriptive_overview.R, ekf_overview.R
-code/05_analysis/              the driver analysis: prepare_descriptors.R, analyse_patterns.R,
-                               hierarchical_models.R, dominant_subtype.R, bayes_subtype.R,
-                               bayes_prior_burden.R, plot_patterns.R, plot_vax_scatter.R
-stan/                          SIR_multiseason_age_vax_2.stan (Bayesian SIR)
-data/                          committed ERVISS / RespiCompass snapshots + slim_flu_iliplus.csv
-output/                        cached data lists + figures (gitignored, regenerated)
-tests/testthat/                contract + method tests
-documentation/                 quickstart, data_overview, decisions, analysis_strategy,
-                               findings_descriptors, documentation.Rmd (see table below)
+data/survey_deidentified.xlsx   the ONE committed input (de-identified NFP survey export)
+code/00_main.R                  orchestrator: survey + hubs -> output/ tables + artefact JSON
+code/01_support/                setup.R (libraries, palette), config.R (settings/params)
+code/02_survey/                 load_survey.R (tidy + codebook), analyse_survey.R (summary tables)
+code/03_hubs/                   load_forecasts.R (scan submissions), analyse_coverage.R (coverage)
+code/04_export/                 build_artefact_data.R (tables -> one JSON blob)
+code/05_artefact/               dashboard_template.html (+ build_pages.R injects the data)
+code/05_figures/                fig_survey.R, fig_coverage.R (PNG companions)
+output/                         derived tables (survey_*.csv, hub_*.csv), artefact_data.json, figures/
+artefact/dashboard.html         the self-contained interactive dashboard (published as an Artifact)
+documentation/                  data_overview, decisions, findings, reflections (see table below)
 ```
 
 ## Documentation
 
-Where each kind of information lives:
-
 | File | Holds |
 |---|---|
-| `README.md` | what the repo does, quick start, the method framework, layout |
-| `documentation/quickstart.md` | how to set up and run |
-| `documentation/data_overview.md` | what data is present (`data`, `models_in`, indicators) |
-| `documentation/documentation.Rmd` | the model maths / science (SIR, inference, contact matrix) |
-| `documentation/decisions.md` | **why** — rationale for key modelling / method / data decisions |
-| `documentation/analysis_strategy.md` | the driver analysis — strategy, principles, what we've learned, ranked next steps |
-| `documentation/findings_descriptors.md` | results of the descriptor / driver analyses |
-| `documentation/external_drivers.md` | externally-sourced drivers (subtype, vaccination, climate, VE) — provenance, values, caveats |
-| `documentation/reflections.md` | project-relevance thoughts / interpretations / pondering (also inline `[REFLECTION]` tags) |
-| `PROJECT_SCOPE.md` | project scope (in / out of scope), research aim, references |
-| inline header comments | why each function / file works the way it does |
+| `README.md` | what this is, headline findings, how to run, layout |
+| `PROJECT_SCOPE.md` | aim, in/out of scope, data sources |
+| `documentation/data_overview.md` | the two datasets: survey structure/codebook and hub schema |
+| `documentation/findings.md` | the results in full (survey + coverage), with caveats |
+| `documentation/decisions.md` | **why** — key analysis / coding / design decisions (append-only) |
+| `documentation/reflections.md` | interpretation, the verification pass, overclaims to avoid, next analyses |
+| inline header comments | why each script / function works the way it does |
 
-New design decisions go in `documentation/decisions.md` (append-only), so the reasoning is kept
-with the code rather than only in commit messages.
+## Reproducibility & caveats
 
-## Reproducibility
-
-`renv.lock` pins all dependencies (R 4.3.3); `renv::restore()` reproduces the environment.
-Data is public ECDC ERVISS / RespiCompass surveillance data. The build chain regenerates every
-analysis input from the committed snapshots: `code/00_main.R` writes the model-ready inputs to
-`output/models_in.rds` (a gitignored cache), from which `code/04_modelling/build_slim_panel.R`
-reproduces the committed panel `data/slim_flu_iliplus.csv` (verified byte-identical) and
-`code/05_analysis/prepare_descriptors.R` the descriptor tables the analyses consume. See
-`documentation/quickstart.md` and `documentation/data_overview.md` for more.
-
-## Note on the Stan model
-
-The Stan model's priors are currently commented out and a few generated-quantities lines need a
-fix (see the review notes in commit history); re-enable/repair them before production HMC use. The
-R method framework includes the equivalent priors as `optim` penalties and is the ready-to-run path.
+Public data throughout. The survey has **19 respondents** (of ~30 EU/EEA NFPs) — every share moves ~5
+points per person, so read counts, not precise percentages. Q5's 0–5 scale is read **ordinally**
+(higher = more engaged); the exact anchor wording is not in the de-identified export. Hub coverage
+counts a submission's **presence**, not its skill or accuracy. See `documentation/reflections.md` for
+the full list of caveats and the results of the independent verification pass.

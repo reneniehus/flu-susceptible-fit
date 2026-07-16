@@ -1,67 +1,71 @@
 # Data overview
 
-What `load_data()` assembles into the `data` list, and what `gen_model_input()` turns it into.
-All streams are weekly, EU/EEA countries, keyed by ISO2 country code (`country_short`) and an
-ISO-week Wednesday `date`. Seasons run Aug 1 -> Jul 31 (configurable in the settings).
+Two datasets, one committed and one external.
 
-## `data` — raw, per-source streams
+## 1. The NFP survey — `data/survey_deidentified.xlsx`
 
-### `data$epi` — ECDC ERVISS + RespiCompass surveillance
-Loaded via the registry in `code/01_main_supporting/load_data.R` (add a row -> new stream).
-Source: <https://github.com/EU-ECDC/Respiratory_viruses_weekly_data>.
+One sheet ("Content"). The export has a two-row metadata banner, the **question text on row 4**, and
+**one respondent per row below it** (rows 5 down). This project reads **19 respondents**. Each row is
+one country's collective NFP response, de-identified — there is no per-respondent country label.
 
-| key | file | schema | contents |
+`code/02_survey/load_survey.R` turns the wide matrix into a tidy respondent table using an explicit
+**codebook** (raw column index → analysis variable). The analysed columns:
+
+| Q | Variable | Type | Meaning |
 |---|---|---|---|
-| `erviss_ili_ari` | ILIARIRates.csv | rates | ILI & ARI primary-care consultation rates, by age |
-| `erviss_sari_rates` | SARIRates.csv | rates | SARI hospitalisation rates, by age |
-| `erviss_typing_sentinel` | sentinelTestsDetectionsPositivity.csv | detailed | sentinel tests/detections/positivity per pathogen |
-| `erviss_typing_nonsentinel` | nonSentinelTestsDetections.csv | detailed | non-sentinel tests/detections per pathogen |
-| `erviss_typing_sari` | SARITestsDetectionsPositivity.csv | detailed | SARI tests/detections/positivity per pathogen |
-| `erviss_flu_type_subtype` | activityFluTypeSubtype.csv | detailed | influenza type/subtype breakdown |
-| `erviss_severity_nonsentinel` | nonSentinelSeverity.csv | detailed | severity indicators (non-sentinel) |
-| `erviss_sequencing` | sequencingVolumeDetectablePrevalence.csv | detailed | sequencing volume / detectable prevalence |
-| `erviss_variants` | variants.csv | detailed | variant shares |
-| `respicompass_iliplus` | RespiCompass ili_plus.csv | rates | externally-provided influenza ILI+ |
+| Q1 | `q1_is_nfp` | text | confirmation of NFP role (all "Yes") |
+| Q5.1 | `eng_covid_guidance` | 0–5 | engagement: ECDC COVID-19 risk assessments & guidance (2020–2023) |
+| Q5.2 | `eng_covid_forecast` | 0–5 | engagement: European COVID-19 Forecast Hub (2021–2024) — *forecasting* |
+| Q5.3 | `eng_covid_scenario` | 0–5 | engagement: European COVID-19 Scenario Hub (2022–2023) — *scenario* |
+| Q5.4 | `eng_respicast` | 0–5 | engagement: RespiCast (2023–) — *forecasting* |
+| Q5.5 | `eng_respicompass` | 0–5 | engagement: RespiCompass (2024–) — *scenario* |
+| Q6 | `staff` | band | in-house modelling staff: `0 staff` / `1-5 staff` / `>10 staff` |
+| Q7 | `dec_*` | Likert | likelihood modelling informs 5 actions (Very unlikely … Very likely) |
+| Q8 | `value_choice` | choice | most valuable: RespiCast / RespiCompass / Both / Neither |
+| Q10 | `integration` | Likert | agreement there is a clear mechanism to integrate modelling |
+| Q11/Q12 | `comms_*_rank` | ranking | preferred channels for forecasts / scenarios (";"-ordered) |
+| Q8b, Q13, … | `*_text` | free text | open responses |
 
-- **rates** schema = slim columns: `country_short, date, target, agegroup, value`.
-- **detailed** schema = all original columns kept (`pathogen, pathogentype, pathogensubtype,
-  indicator, age, value, ...`) plus added `date` and `country_short`.
-- Pathogens covered by the typing streams: **Influenza, SARS-CoV-2, RSV**.
+**The Q5 0–5 scale** is treated as an **ordinal awareness/engagement** score (0 = not aware / no use,
+higher = more engaged). The exact anchor wording is not present in the de-identified export, so only
+the ordering and distribution are interpreted, never a conversion to "% who find it useful".
 
-### Other `data$` slots
-| slot | contents | source |
+## 2. The RespiCast hubs — external clones under `../hubs/`
+
+Both follow the [hubverse](https://hubverse.io) layout:
+`model-output/<team-model>/<origin_date>-<team-model>.csv`, one file per team per weekly round.
+
+| Column | Meaning |
+|---|---|
+| `origin_date` | the weekly forecast round (a Wednesday); the analysis unit |
+| `target` | the indicator (see below) |
+| `target_end_date`, `horizon` | 1–4 weeks ahead |
+| `location` | EU/EEA country (ISO2) |
+| `output_type`, `output_type_id`, `value` | median + quantile forecast values (not used here) |
+
+Two quirks, both handled in `code/03_hubs/load_forecasts.R` and found by inspecting the raw files:
+1. **Column order is not constant across files** — columns are always parsed **by name**, never by
+   position.
+2. A handful of submissions are **header-only** (no data rows) — skipped and counted.
+
+### Targets (verified against every file and the git history)
+
+| Hub | Target(s) | Window |
 |---|---|---|
-| `data$vax` | `data_vax` (forward coverage scenarios), `data_vax_history` (65+), `data_vax_history_all` (all target groups) | RespiCompass |
-| `data$contact` | per-country synthetic contact matrices (list) | Prem et al. (shipped in `data/`) |
-| `data$helpers_respicompass` | `iso2_code`, `iso_weeks` lookup tables | RespiCompass |
-| `data$demography_respicast` | `population_pyramid`, `population_pyramid_fine` | RespiCompass |
-| `data$demography_ECDC` | `population_pyramid` | committed snapshot `data/population_pyramid.fst` |
+| RespiCast-Covid19 | `hospital admissions` → **COVID-19 hospitalisations** | 2024-10-23 → 2026-06-24 (88 rounds) |
+| RespiCast-SyndromicIndicators | `ILI incidence`, `ARI incidence` | 2024-10-23 → 2026-07-15 (91 rounds) |
 
-## `models_in` — tidy, model/plot-ready tables (`gen_model_input()`)
+There is **no "COVID cases" target** in either hub. COVID-19 hospitalisations sit in their own hub;
+the syndromic hub's git history shows it has **only ever** carried ILI and ARI. (The COVID hub's
+config history still contains an "ILI incidence" template stanza — a trace of the RespiCast
+reorganisation that split the indicators into separate repositories.)
 
-- **`data_timeseries_long`** — the single source of truth. One row per
-  `country_short × season × date × source × stream × pathogen × indicator × agegroup`, with
-  `value`, `unit`, `observed`, and season-time columns (`season_week`, `iso_week`, ...).
-  Indicators: `ILIconsultationrate`, `ARIconsultationrate`, `tests`, `detections`,
-  `positivity`, `ili_plus` (per pathogen), `vaccine_coverage`.
-  Streams include `ili_ari`, `typing_sentinel/nonsentinel`, `ili_plus_sentinel/nonsentinel/
-  respicompass`, `vaccination_history_65plus`, `vaccination_scenario`.
-- **`data_timeseries_wide`** — weekly streams pivoted to one column per indicator series,
-  keyed by `country_short × season × date × agegroup`.
-- **`data_season_summary`** — per `country × season × series` quality/summary stats:
-  `n_weeks_observed`, `weeks_in_season`, `weeks_in_span`, `completeness`,
-  `completeness_active`, `sum/mean/max_value`, `peak_date`, `first/last_date`
-  (age-specific and pooled-over-age rows).
-- **`contacts`** — transformed 4-age-group contact matrices per country (+ EU average).
+### Model roles
 
-### Derived "+" indicators
-`ili_plus` = ILI consultation rate × pathogen positivity, built for Influenza / SARS-CoV-2 /
-RSV from both sentinel and non-sentinel typing. Positivity is `detections / tests` at the
-pathogen-total level (`pathogentype == pathogen`); it is age-total, broadcast across the
-age-specific ILI rate.
+A `model-output/` folder is one team-model. Three are **not** ordinary models and are counted apart:
 
-### Two completeness measures (see captions in the eyeballing report)
-- `completeness` — reported weeks / ISO weeks in the **full Aug–Jul season** (penalises the
-  off-season; winter-only streams cap well below 100%).
-- `completeness_active` — reported weeks / weeks between the **first and last reported week**
-  (off-season ignored; isolates genuine mid-season gaps).
+- **ensembles:** `respicast-hubEnsemble` (both hubs), `fjordhest-ensemble` (syndromic) — the combined
+  products external stakeholders actually see.
+- **baseline:** `respicast-quantileBaseline` — the reference every hub ships to benchmark against.
+
+Everything the analysis calls "models" excludes these three.

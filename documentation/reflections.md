@@ -1,98 +1,75 @@
-# Reflections, interpretations & pondering
+# Reflections — verification, caveats, and where the value really is
 
-*A dedicated home for project-relevance thoughts — the "why does this matter / how should we think about
-this" reasoning that is more speculative than the settled decisions in `decisions.md` or the results in
-`findings_descriptors.md`. Entries are dated and may be provisional. Companion to `analysis_strategy.md`.*
+## The strongest, defensible value story
 
-**Tagging convention.** Project-relevance thoughts live here as dated entries. For a thought that belongs
-next to a specific piece of code or another doc, tag it inline instead: `# [REFLECTION] ...` in R code, or
-`[REFLECTION] ...` / a `> [!reflection]` blockquote in Markdown — so `grep -rn "\[REFLECTION\]"` finds them all.
+**ECDC forecasting is best understood as capacity substitution — a supranational public good that most
+member states cannot produce for themselves — whose value is currently capped by uptake, not supply.**
 
----
+The two datasets interlock. *Demand:* 68% of responding NFPs (13/19) have zero in-house modelling
+staff, corroborated by the free text ("No resources for modelling in Luxembourg"; Ireland "limited
+capacity"; Italy outsources to Fondazione Bruno Kessler). *Supply:* the RespiCast hubs deliver exactly
+what those NFPs lack — a multi-model, ensemble-backed forecast almost every week across two seasons,
+covering 15–30 countries. Yet realised engagement stays modest (RespiCast ≈2.1/5) and flat across
+capacity bands. **The binding constraint has moved to the demand side** — awareness, interpretation
+support, and a route into the decision — not the availability of a forecast.
 
-## 2026-07 — External driver availability: identifiability, confounding, and mechanism
+## Independent verification pass
 
-Prompted by the external-driver availability panel (`code/03_report/driver_availability.R`). Three linked ideas.
+A separate multi-agent pass re-derived the headline numbers from the **raw** files, blind to
+`output/`. Results:
 
-### 1. Some drivers vary by country, others by season — this governs what is identifiable
+- **Survey — all matched** except one rounding nit: Q10 agree+strongly = 9/19 = 47.4% (reported as
+  **47%**, not 48%). The pipeline reports 47%.
+- **Hub targets, date ranges, round counts (88 / 91), and country counts (30 / 25 / 15) — all matched.**
+- **Per-week model counts — the pipeline matched the raw recompute exactly** (e.g. ILI 2026-03-04 = 16;
+  ARI 2026-03-04 = 10; ILI 2024-10-23 = 15). Earlier hand-guessed figures in the verification prompt
+  were the ones that were wrong; the pipeline was right.
+- **Ever-active model counts (ILI 25, ARI 18, COVID 17) — all matched.**
 
-- **Country-varying** drivers: **vaccination coverage**, **climate**. They differ across countries within a
-  season.
-- **Season-varying** drivers: **dominant subtype**, **vaccine effectiveness (VE)**. They are ~constant
-  across countries within a season (continental).
+The one substantive correction the pass forced was narrative, not numeric: an earlier draft claimed
+"engagement rises where capacity is thin". The data do not support it (short-term forecasting engagement
+is flat: 2.42 / 2.25 / 3.0). The framing was corrected to "near-universal need, flat uptake →
+demand-side bottleneck". See `output/audit.json` for the full audit.
 
-This split is decisive for regression identifiability and confounding:
-- Two **season-varying** predictors (subtype, VE) are mutually collinear and collinear with any season
-  effect. With only a handful of seasons they **cannot be cleanly separated** — a "subtype effect" and a
-  "VE effect" compete to explain the same season-level variation. (Concretely pre-COVID: the two A(H3N2)
-  seasons are also the two lowest-VE seasons, so subtype and VE are entangled.)
-- **Country-varying** predictors (coverage, climate) vary *within* a season, so their effect is identified
-  from **country × season** variation — far more information, and separable from season-level confounders.
-- **The sweet spot is a driver that varies by BOTH country and season.** The cleanest example we already
-  hold is **effective protection = VE × coverage**: VE is season-level, coverage is country-level, so the
-  product varies on both axes and is much better identified than VE alone. Local climate anomalies (once
-  pulled per country-season) are the other sweet-spot driver.
+## Caveats — read every claim through these
 
-### 2. Pre- vs post-COVID is a likely confounder — analyse pre-COVID first
+- **n = 19** of ~30 EU/EEA NFPs. Every share moves ~5 points per respondent; the `>10 staff` band is a
+  **single** institute. No confidence intervals or significance are reported, by design.
+- **Q5 is ordinal engagement, not usefulness.** Do not translate scores into "% who find X useful".
+- **The engagement gradient is confounded by time in market** (guidance 2020, RespiCast 2023,
+  RespiCompass 2024). Newer ≠ worse.
+- **Q8 is prospective** ("will be useful") — stated expectation, not demonstrated use.
+- **Coverage counts presence, not skill.** Nothing here shows the ensemble beat the baseline or was
+  well-calibrated.
+- **NFP awareness ≠ national involvement.** Several countries have in-house or partner teams already
+  submitting to the hubs (Institut Pasteur, UHasselt/UNamur, Bruno Kessler), so "NFP not aware" can
+  understate country-level engagement.
+- **Country coverage ≠ national uptake.** A country appearing in a panel means someone forecast it, not
+  that its NFP uses the output.
+- **Non-response is unaddressed** — the 19 respondents may skew more engaged than the ~11
+  non-respondents.
 
-There are plausible **systematic differences between the pre- and post-COVID eras** beyond the virus:
-human contact patterns, health-seeking behaviour, and surveillance/reporting standards all changed. Any
-pre/post contrast is confounded by these. (It compounds the mechanical RespiCompass→ERVISS source change we
-already track.) **Strategy:** fit the analysis on **pre-COVID seasons only** first — one clean era — and
-only then, carefully, add the post-COVID seasons with an explicit era control, treating any era term as
-soaking up an unknown mixture of behaviour + reporting, not a clean effect.
+## Highest-value next analyses (ranked)
 
-**Confirmed (2026-07), and stronger than expected.** VE itself shifted *regime* across the divide — VE
-against the dominant subtype ran 14–45% pre-COVID vs 52–58% in 2023/24–24/25 — so in the cross-validation
-(`precovid_predict_postcovid.R`) the VE×coverage "protection" predictor could not be carried across the
-divide at all: post-COVID protection lies outside the pre-COVID range and extrapolates to nonsense, so it
-had to be dropped from the out-of-sample model. **A driver whose distribution shifts across the divide is
-not merely confounded — it is non-transferable.** By contrast prior-season AUC (which shifts far less)
-transferred fine and predicted post-COVID burden well (cor 0.95) — but mostly via the **country reporting
-scale**, not epidemiological skill (within-country season-to-season deviation cor only 0.34). So "we can
-predict next season's burden" is largely "we know this country's scale," which sharpens what would count
-as a real driver signal: it must move the *within-country deviation*, the part we predict poorly.
+1. **Bring in forecast skill.** Compute WIS / interval coverage / calibration of the hub ensemble vs
+   the quantile baseline and individual models. This is the single biggest missing piece — it converts
+   "coverage" into "value", and NFPs explicitly asked for transparent performance metrics.
+2. **Directly test the capacity → supply link.** Map each of the 19 NFP countries to whether a team
+   from that country submits to the hubs, then cross-tab in-house staff and Q8 value against national
+   hub participation — turning two parallel datasets into one joined story.
+3. **Build an awareness → value funnel** (aware → engaged → intends to use → has an integration
+   mechanism) to locate the demand-side bottleneck quantitatively.
+4. **Recency-adjust engagement:** compare RespiCast against the COVID Forecast Hub at equal maturity
+   (months since launch) to separate time-in-market from intrinsic value.
+5. **Per-country coverage depth:** how many countries have ≥3 models every week vs sporadic coverage?
+   Flag thin-coverage countries (COVID reaches only 15) as capacity-building targets.
+6. **Characterise non-response** — which countries did not reply, and do they skew high or low capacity?
 
-### 3. A mechanistic lens that stays phenomenological
+## Recommendations for ECDC (from the theme synthesis)
 
-- **Vaccines act in tandem: effective protection ≈ VE × coverage.** Halving VE and doubling coverage roughly
-  cancel, so the meaningful quantity is the **product**, not either alone.
-- **EU flu vaccines do not materially change transmission** (coverage is low and concentrated in the
-  elderly, who are not the main transmitters). So they do not alter the epidemic's *dynamics* / final size —
-  their effect is a **direct, ~multiplicative reduction of the observed burden** in the protected fraction,
-  not a change routed through the final-size relationship.
-  - *Clarification we should keep straight:* ILI+ is **symptomatic, medically-attended** influenza, and
-    I-MOVE VE is precisely VE against medically-attended influenza — so VE × coverage **does** predict a
-    (modest) reduction of ILI+ **AUC** in the vaccinated elderly fraction. The "no effect on spread" point
-    means there is **no herd/dynamical amplification** of that reduction, so it stays a direct multiplicative
-    burden subtraction. (A multiplicative reduction of burden is an **additive shift on log(AUC)** — which is
-    why modelling log(AUC) is consistent with this mechanism, not an imposition of one.)
-- **Climate acts on transmissibility.** Its effect on burden should therefore resemble the **Rt → final-size**
-  relationship (non-linear, saturating), *unlike* the vaccine's direct-subtraction effect.
-- **Avoid hard-coding a mechanism by using categorical predictors of AUC.** Subtype is already categorical;
-  once climate is pulled, **categorise it** too, and let each category's mean AUC capture whatever
-  (non-linear) relationship exists — rather than assuming a functional form. This keeps the analysis
-  phenomenological while remaining mechanistically literate.
-
-### Implications for the models (testable predictions)
-
-| Driver | Mechanism | Should predict… | Should NOT predict… |
-|---|---|---|---|
-| VE × coverage (protection) | direct burden subtraction, no dynamics | **AUC / peak height** (↓) | onset / peak **week** (timing) |
-| Dominant subtype | intrinsic transmissibility + population susceptibility | all descriptors (burden & timing) | — |
-| Climate (once pulled) | transmissibility → final size | **AUC** (non-linear) | (timing effect uncertain) |
-
-So a clean falsifiable check: **protection should reduce AUC/peak but leave onset/peak-week unmoved.** This
-is the logic behind `code/05_analysis/bayes_precovid_ve_subtype.R` (see §"pre-COVID VE + subtype" results in
-`findings_descriptors.md`).
-
-**Result (2026-07, prediction NOT confirmed — and that is the point).** In the pre-COVID model the expected
-burden reduction was weak/null (protection→AUC -0.08, ns), while the *only* significant protection/VE
-association was with **earlier onset** (VE -0.65\*, protection -0.38\*) — a *timing* effect vaccines cannot
-cause. So it is **confounding, not mechanism**: with subtype and VE both season-level over 5 seasons, and
-65+ coverage nearly constant within country, the VE×coverage "sweet-spot" term was still dominated by its
-season-level VE component and inherited the subtype/season timing signal rather than isolating burden. The
-lesson stands and sharpens: the vaccine-burden mechanism is **not identifiable at this aggregation/era** —
-it needs either (a) far more seasons, or (b) real *within-country* protection variation, or (c) the outcome
-that vaccines actually act on (severe outcomes / hospitalisation), not all-age ILI+. The subtype contrasts
-(B biggest & latest, H3N2 earliest) are the informative, if season-confounded, signal.
+Position short-term forecasts (RespiCast) as the primary decision-relevant product and scenarios
+(RespiCompass) as explicitly-caveated planning tools; publish transparent skill metrics and consider a
+smaller, curated ensemble; provide plain-language outputs and short training for non-modellers
+(surveillance specialists, policymakers); integrate forecasts with surveillance (an explicit
+RespiCast↔ERVISS link); and back an ECDC recommendation plus sustainable EU funding for national
+modelling capacity, so uptake can happen equitably. Full list in `output/themes.json`.

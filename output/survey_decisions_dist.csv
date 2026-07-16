@@ -1,0 +1,22 @@
+action,level,n,pct
+Healthcare capacity planning,Very unlikely,3,16
+Healthcare capacity planning,Unlikely,5,26
+Healthcare capacity planning,Unsure,8,42
+Healthcare capacity planning,Likely,3,16
+Inform surveillance activities,Very unlikely,2,11
+Inform surveillance activities,Unlikely,3,16
+Inform surveillance activities,Unsure,3,16
+Inform surveillance activities,Likely,10,53
+Inform surveillance activities,Very likely,1,5
+Other activities,Very unlikely,1,25
+Other activities,Unsure,1,25
+Other activities,Likely,1,25
+Other activities,Very likely,1,25
+Planning vaccination campaigns,Very unlikely,3,16
+Planning vaccination campaigns,Unlikely,4,21
+Planning vaccination campaigns,Unsure,5,26
+Planning vaccination campaigns,Likely,7,37
+Procuring medical countermeasures,Very unlikely,3,16
+Procuring medical countermeasures,Unlikely,5,26
+Procuring medical countermeasures,Unsure,6,32
+Procuring medical countermeasures,Likely,5,26

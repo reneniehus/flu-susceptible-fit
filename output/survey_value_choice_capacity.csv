@@ -1,0 +1,8 @@
+staff,value_choice,n
+0 staff,Both will be useful,7
+0 staff,Neither will be useful,2
+0 staff,RespiCast,4
+1-5 staff,Both will be useful,3
+1-5 staff,RespiCast,1
+1-5 staff,RespiCompass,1
+>10 staff,Neither will be useful,1

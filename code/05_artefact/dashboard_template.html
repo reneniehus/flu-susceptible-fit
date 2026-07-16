@@ -1,0 +1,926 @@
+<title>Demand &amp; Delivery — ECDC respiratory-virus forecasting and the focal points it serves</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* ============================================================================
+   DESIGN SYSTEM — "the forecasting desk"
+   A clinical surveillance-instrument look: humanist sans for prose, monospace for
+   data/week-codes/counts. Indicator hues are reserved for data and never for chrome.
+   Tokens carry every colour so the two themes swap in one place.
+   ========================================================================== */
+:root{
+  --font-sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-mono: ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+
+  --ground:#f5f6f9; --surface:#ffffff; --surface-2:#eef1f5;
+  --ink:#141821; --ink-2:#545c6d; --muted:#8b92a2;
+  --hair:#e4e7ec; --baseline:#c9cdd7;
+  --accent:#0b6f8c; --accent-2:#0a5c74;
+
+  /* data — indicator identity (fixed) */
+  --covid:#2a78d6; --ili:#eb6834; --ari:#4a3aa7;
+  /* diverging Likert poles + neutral */
+  --lk-neg2:#184f95; --lk-neg1:#7fb0ec; --lk-mid:#c9cdd7; --lk-pos1:#eb8c6a; --lk-pos2:#c0392b;
+  /* forecasting / scenario / guidance classes */
+  --c-fore:#2a78d6; --c-scen:#4a3aa7; --c-guid:#8b92a2;
+
+  --shadow:0 1px 2px rgba(16,20,28,.06),0 8px 24px rgba(16,20,28,.05);
+  --radius:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root:where(:not([data-theme="light"])){
+    --ground:#0d1015; --surface:#161a21; --surface-2:#1d222b;
+    --ink:#eef1f5; --ink-2:#a9b2c1; --muted:#79808f;
+    --hair:#252b34; --baseline:#39414e;
+    --accent:#38b6d4; --accent-2:#5ac6df;
+    --covid:#3987e5; --ili:#d95926; --ari:#9085e9;
+    --lk-neg2:#3987e5; --lk-neg1:#2b5f9c; --lk-mid:#39414e; --lk-pos1:#c9603f; --lk-pos2:#e0574f;
+    --c-fore:#3987e5; --c-scen:#9085e9; --c-guid:#79808f;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0d1015; --surface:#161a21; --surface-2:#1d222b;
+  --ink:#eef1f5; --ink-2:#a9b2c1; --muted:#79808f;
+  --hair:#252b34; --baseline:#39414e;
+  --accent:#38b6d4; --accent-2:#5ac6df;
+  --covid:#3987e5; --ili:#d95926; --ari:#9085e9;
+  --lk-neg2:#3987e5; --lk-neg1:#2b5f9c; --lk-mid:#39414e; --lk-pos1:#c9603f; --lk-pos2:#e0574f;
+  --c-fore:#3987e5; --c-scen:#9085e9; --c-guid:#79808f;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--font-sans);
+  line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+h1,h2,h3{text-wrap:balance;line-height:1.15;margin:0}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.dim{color:var(--ink-2)} .muted{color:var(--muted)}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* ---- top bar ---- */
+.topbar{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--ground) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
+.topbar .row{display:flex;align-items:center;gap:20px;height:56px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.brand .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent)}
+.navlinks{display:flex;gap:18px;margin-left:auto;font-family:var(--font-mono);font-size:12.5px}
+.navlinks a{color:var(--ink-2)} .navlinks a:hover{color:var(--ink);text-decoration:none}
+.toggle{border:1px solid var(--hair);background:var(--surface);color:var(--ink-2);border-radius:8px;
+  height:34px;width:34px;cursor:pointer;font-size:15px;display:grid;place-items:center}
+.toggle:hover{color:var(--ink);border-color:var(--baseline)}
+@media(max-width:720px){.navlinks{display:none}}
+
+/* ---- hero ---- */
+.hero{padding:64px 0 30px;border-bottom:1px solid var(--hair)}
+.hero h1{font-size:clamp(30px,5vw,50px);font-weight:760;letter-spacing:-.025em}
+.hero .lede{font-size:clamp(16px,2.1vw,20px);color:var(--ink-2);max-width:60ch;margin-top:18px}
+.hero .meta{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-top:22px;display:flex;gap:18px;flex-wrap:wrap}
+.hero .meta b{color:var(--ink-2);font-weight:600}
+
+/* ---- KPI row ---- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}
+@media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:18px 18px 16px;box-shadow:var(--shadow)}
+.kpi .v{font-size:clamp(26px,3.4vw,34px);font-weight:720;letter-spacing:-.02em;line-height:1}
+.kpi .v .u{font-size:15px;font-weight:600;color:var(--ink-2);margin-left:2px}
+.kpi .l{font-size:12.5px;color:var(--ink-2);margin-top:9px}
+.kpi .s{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);margin-top:6px;letter-spacing:.02em}
+.kpi .bar{height:4px}
+
+/* ---- sections ---- */
+section.band{padding:52px 0}
+.part-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.part-head .no{font-family:var(--font-mono);font-size:13px;color:var(--accent);font-weight:600}
+.part-head h2{font-size:clamp(23px,3.2vw,32px);font-weight:720;letter-spacing:-.02em}
+.section-intro{color:var(--ink-2);max-width:72ch;margin:14px 0 26px;font-size:15.5px}
+.divider{height:1px;background:var(--hair);margin:0}
+
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin-bottom:22px}
+.card h3{font-size:17px;font-weight:680;letter-spacing:-.01em}
+.card .sub{color:var(--ink-2);font-size:13.5px;margin-top:5px;max-width:76ch}
+.card .fig{margin-top:18px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.grid-2 .card{margin-bottom:0}
+@media(max-width:860px){.grid-2{grid-template-columns:1fr}}
+
+/* ---- legend ---- */
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--ink-2);margin-top:4px}
+.legend .k{display:inline-flex;align-items:center;gap:7px}
+.legend .sw{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+.legend .ln{width:16px;height:0;border-top:3px solid;border-radius:2px}
+
+/* ---- take / callout ---- */
+.take{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface));
+  padding:14px 18px;border-radius:0 10px 10px 0;margin:20px 0;font-size:14.5px}
+.take b{color:var(--ink)}
+
+/* ---- quotes ---- */
+.quotes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.quotes{grid-template-columns:1fr}}
+.q{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:18px 18px 14px;box-shadow:var(--shadow)}
+.q p{margin:0;font-size:14.5px}
+.q .who{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:11px;letter-spacing:.03em}
+.q .tag{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-weight:600}
+
+/* ---- themes ---- */
+.themerow{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--hair)}
+.themerow:first-child{border-top:0}
+.themerow .name{flex:0 0 34%;font-weight:600;font-size:13.5px}
+.themerow .track{flex:1;height:8px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+.themerow .fill{height:100%;background:var(--accent);border-radius:5px}
+.themerow .w{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-2);flex:0 0 auto;width:74px;text-align:right}
+
+/* ---- tables ---- */
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.tbl th,table.tbl td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--hair)}
+table.tbl th:first-child,table.tbl td:first-child{text-align:left}
+table.tbl th{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+table.tbl td{font-variant-numeric:tabular-nums}
+.tbl .ind{display:inline-flex;align-items:center;gap:7px}
+.tbl .ind .sw{width:9px;height:9px;border-radius:2px}
+
+/* ---- chart chrome ---- */
+.chart{width:100%}
+.scroll-x{overflow-x:auto;overflow-y:hidden}
+svg text{font-family:var(--font-mono)}
+.axis{fill:var(--muted);font-size:10px}
+.axis-t{fill:var(--ink-2);font-size:11px}
+.gridline{stroke:var(--hair);stroke-width:1}
+.baseline{stroke:var(--baseline);stroke-width:1}
+.datalabel{fill:var(--ink-2);font-size:11px;font-family:var(--font-mono)}
+
+/* ---- tooltip ---- */
+#tip{position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .08s;
+  background:var(--surface);border:1px solid var(--baseline);border-radius:10px;box-shadow:var(--shadow);
+  padding:10px 12px;font-size:12.5px;max-width:280px}
+#tip .tt{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+#tip .rowt{display:flex;align-items:center;gap:8px;margin:2px 0}
+#tip .rowt .kk{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+#tip .rowt .ln{width:14px;border-top:3px solid;border-radius:2px}
+#tip .rowt .vv{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---- footer ---- */
+footer{border-top:1px solid var(--hair);padding:40px 0 60px;color:var(--ink-2);font-size:13px}
+footer h4{font-size:12px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 8px}
+footer .cols{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:28px}
+@media(max-width:820px){footer .cols{grid-template-columns:1fr}}
+footer code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:10.5px;padding:2px 8px;border-radius:20px;border:1px solid var(--hair);color:var(--ink-2)}
+</style>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<!-- ============================ TOP BAR ============================ -->
+<div class="topbar"><div class="wrap"><div class="row">
+  <div class="brand"><span class="dot"></span>Demand &amp; Delivery</div>
+  <nav class="navlinks">
+    <a href="#demand">I · Demand</a>
+    <a href="#bridge">Bridge</a>
+    <a href="#delivery">II · Delivery</a>
+    <a href="#method">Method</a>
+  </nav>
+  <button class="toggle" id="themeBtn" title="Toggle light / dark" aria-label="Toggle light or dark theme">◐</button>
+</div></div></div>
+
+<!-- ============================ HERO ============================ -->
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">ECDC respiratory-virus modelling · independent analysis</div>
+  <h1>What do national focal points get from ECDC forecasting — and what do the hubs actually deliver?</h1>
+  <p class="lede">Two views of the same system. <b class="dim">Demand:</b> a survey of 19 EU/EEA National Focal Points on their in-house modelling capacity and the value they place on ECDC's short-term forecasts (RespiCast) and scenarios (RespiCompass). <b class="dim">Delivery:</b> two seasons of the RespiCast forecasting hubs, reconstructed submission-by-submission — which indicators were forecast, in which weeks, by how many models and the ensemble.</p>
+  <div class="meta" id="heroMeta"></div>
+  <div class="kpis" id="kpis"></div>
+</div></header>
+
+<!-- ============================ PART I — DEMAND ============================ -->
+<section class="band" id="demand"><div class="wrap">
+  <div class="part-head"><span class="no">Part I</span><h2>Demand — the value of forecasting to national focal points</h2></div>
+  <p class="section-intro">The survey went to National Focal Points (NFPs) for viral respiratory diseases — one collective response per country. It asked how much modelling they can do themselves, how much they engage with each ECDC output, which decisions those outputs might inform, and which of the two flagship products (forecasts vs scenarios) they expect to be most useful.</p>
+
+  <div class="card">
+    <h3>Most focal points cannot model in-house — so ECDC is often the <em>only</em> forecast they have</h3>
+    <p class="sub">Q6 · Mathematical-modelling staff in the national institute, irrespective of disease area. Each block is one of the 19 respondents.</p>
+    <div class="fig" id="c_staff"></div>
+    <div class="take" id="take_staff"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Awareness &amp; engagement with ECDC outputs</h3>
+      <p class="sub">Q5 · Self-rated engagement, 0 (not aware) → 5 (actively used); an <em>ordinal</em> scale, so read the ranking, not the absolute. Newer products sit lower — but note they have had far less time in market (guidance since 2020, RespiCast 2023, RespiCompass 2024), so recency, not lesser value, explains much of the gap.</p>
+      <div class="fig" id="c_engage"></div>
+    </div>
+    <div class="card">
+      <h3>Which output will be most valuable?</h3>
+      <p class="sub">Q8 · RespiCast (weekly short-term forecasts) vs RespiCompass (seasonal scenarios). Most expect both to be useful; when forced to pick one, forecasts win by a wide margin. This is stated <em>expectation</em> — many respondents note they have not yet used the outputs.</p>
+      <div class="fig" id="c_value"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>The value story: near-universal need, but engagement is flat across capacity</h3>
+    <p class="sub">Q5 × Q6 · Mean engagement with each output class, split by in-house modelling staff. The striking pattern is a non-pattern: institutes with <em>no</em> team of their own — the majority, and those who would gain most — engage with ECDC forecasting no more than better-resourced ones. The need is near-universal; the uptake is not. (The &gt;10-staff band is a single institute — read it lightly.)</p>
+    <div class="fig" id="c_cap"></div>
+    <div class="take" id="take_cap"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Which decisions would modelling inform?</h3>
+      <p class="sub">Q7 · Likelihood that ECDC modelling informs each national action, ordered by share "likely". Situational awareness (surveillance, 58%) leads — but the canonical forecasting use case, healthcare-capacity planning, is the <em>least</em> likely (16%). Value concentrates in awareness, not high-stakes resource decisions.</p>
+      <div class="fig" id="c_dec"></div>
+    </div>
+    <div class="card">
+      <h3>Is there a mechanism to <em>use</em> the modelling?</h3>
+      <p class="sub">Q10 · "There is a clear, consistent mechanism for integrating modelling outputs into public-health decisions at my institute." Only about half agree — a ceiling on realised value.</p>
+      <div class="fig" id="c_integ"></div>
+      <div class="take" id="take_integ"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>How focal points want forecasts delivered</h3>
+    <p class="sub">Q11 / Q12 · Preferred communication channels, ranked (1 = most preferred). Mean rank across respondents — lower is better. A dedicated website and a newsletter beat meetings for both weekly forecasts and seasonal scenarios.</p>
+    <div class="fig" id="c_comms"></div>
+  </div>
+
+  <div class="card">
+    <h3>Voices from the field</h3>
+    <p class="sub" id="themes_sub">Open responses (Q8b, Q13), independently theme-coded. What NFPs say about value, barriers and needs.</p>
+    <div class="fig" id="themes"></div>
+    <div class="quotes" id="quotes" style="margin-top:18px"></div>
+  </div>
+</div></section>
+
+<!-- ============================ BRIDGE ============================ -->
+<section class="band" id="bridge" style="background:var(--surface-2)"><div class="wrap">
+  <div class="eyebrow">Where demand meets delivery</div>
+  <h2 style="font-size:clamp(21px,3vw,29px);font-weight:720;letter-spacing:-.02em;margin-top:10px;max-width:24ch">The survey measures appetite. The hubs are the meal actually being served.</h2>
+  <p class="section-intro" style="max-width:74ch">Focal points told us short-term forecasting is what they most expect to value — yet even the countries with no modelling of their own engage only modestly. One explanation would be that the forecasts simply aren't there for them. So the natural next question is one of supply: over the last two seasons, what did the ECDC RespiCast hubs actually produce — for which indicators, in which weeks, and with how many models behind each ensemble? If supply turns out to be robust, then the gap between value and use lives on the demand side, not the supply side.</p>
+</div></section>
+
+<!-- ============================ PART II — DELIVERY ============================ -->
+<section class="band" id="delivery"><div class="wrap">
+  <div class="part-head"><span class="no">Part II</span><h2>Delivery — two seasons of RespiCast forecast coverage</h2></div>
+  <p class="section-intro">Reconstructed from every submission in the two hubs — <b class="dim">RespiCast-Covid19</b> (COVID-19 hospital admissions) and <b class="dim">RespiCast-SyndromicIndicators</b> (ILI and ARI incidence). COVID-19 hospitalisations sit in their own hub, split off from the syndromic indicators; the syndromic hub has only ever carried ILI and ARI. "Models" counts genuine teams; the ensemble and the reference baseline are counted apart.</p>
+
+  <div class="kpis" id="kpis2" style="margin-top:6px"></div>
+
+  <div class="card" style="margin-top:22px">
+    <h3>The coverage grid — who was forecast, when, by how many models</h3>
+    <p class="sub">Each column is one weekly round. Cell shade = number of contributing models; the thin strip below each indicator marks weeks the <b>ensemble</b> was published. Hover any cell for the exact count, ensemble status and country reach. Coverage counts the <em>presence</em> of a submission — not its accuracy or skill.</p>
+    <div class="fig scroll-x" id="c_heat"></div>
+    <div class="legend" id="heat_legend" style="margin-top:14px"></div>
+  </div>
+
+  <div class="card">
+    <h3>Models per week — winter peaks, summer troughs, a persistent ILI–ARI gap</h3>
+    <p class="sub">Contributing models per round, by indicator. ILI draws roughly twice the models of ARI <em>in the same hub, from the same files</em>; participation swells each winter and thins over summer without stopping. Season means are roughly flat across the two years, though ILI and ARI winter peaks rose. Hover for all three indicators at once.</p>
+    <div class="fig" id="c_line"></div>
+    <div class="legend" id="line_legend"></div>
+  </div>
+
+  <div class="card">
+    <h3>Who showed up — model participation across the two seasons</h3>
+    <p class="sub">Each row is a team-model; a mark sits on every round it submitted. Ensembles and the baseline are pinned at the top of each hub. Some teams are season-round stalwarts, others arrive mid-season or appear for a single winter.</p>
+    <div class="fig scroll-x" id="c_ribbon"></div>
+    <div class="legend" id="ribbon_legend"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Country reach differs sharply by indicator</h3>
+      <p class="sub">Distinct EU/EEA locations ever forecast. ILI reaches the most countries; COVID-19 hospitalisations the fewest — the indicator focal points most associate with capacity planning is the least geographically covered.</p>
+      <div class="fig" id="c_country"></div>
+    </div>
+    <div class="card">
+      <h3>Season by season</h3>
+      <p class="sub">Rounds, mean and peak contributing models, and distinct teams per indicator across the two seasons.</p>
+      <div class="fig" id="c_season"></div>
+    </div>
+  </div>
+
+  <div class="take" id="take_delivery"></div>
+</div></section>
+
+<!-- ============================ FOOTER / METHOD ============================ -->
+<footer id="method"><div class="wrap">
+  <div class="cols">
+    <div>
+      <h4>What this is</h4>
+      <p>An independent analysis, not an ECDC publication. Built from a de-identified NFP survey export and the public RespiCast hub repositories. Every number here is regenerated from source by <code>code/00_main.R</code>; the charts read one embedded JSON produced by that pipeline.</p>
+      <p style="margin-top:10px"><span class="pill">survey n = 19</span> <span class="pill" id="pill_rounds"></span> <span class="pill" id="pill_models"></span></p>
+    </div>
+    <div>
+      <h4>Sources</h4>
+      <p>Survey: <code>data/survey_deidentified.xlsx</code> (ECDC RespiCompass 2024 NFP survey, de-identified).</p>
+      <p style="margin-top:8px">Hubs: <a href="https://github.com/european-modelling-hubs/RespiCast-Covid19">RespiCast-Covid19</a> · <a href="https://github.com/european-modelling-hubs/RespiCast-SyndromicIndicators">RespiCast-SyndromicIndicators</a>.</p>
+    </div>
+    <div>
+      <h4>Read carefully</h4>
+      <p>19 respondents (of ~30 EU/EEA NFPs): every share moves ~5 points per person, so treat all percentages as indicative and read counts. Q5's 0–5 scale is ordinal (higher = more engaged); exact anchors aren't in the de-identified export. Q8 is a stated <em>expectation</em>, not observed use. Newer products have had less time in market. Coverage counts a submission's <em>presence</em>, not its skill; a country appearing in a panel does not mean its NFP uses the output; NFP awareness may understate national involvement where in-house teams already submit to the hubs.</p>
+    </div>
+  </div>
+</div></footer>
+
+<script id="viz-data" type="application/json">__VIZ_DATA__</script>
+<script type="module">
+/* ============================================================================
+   RENDERING — vanilla JS, no libraries (CSP-safe). Hand-built SVG marks with a
+   shared tooltip, re-rendered on theme change so computed colours stay correct.
+   ========================================================================== */
+const DATA = JSON.parse(document.getElementById('viz-data').textContent);
+const S = DATA.survey, C = DATA.coverage, T = DATA.themes;
+const asArr = v => Array.isArray(v) ? v : (v==null ? [] : [v]);
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+/* ---- theme-aware colour access (reads the live CSS custom properties) ---- */
+function cvar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function isDark(){
+  const t = document.documentElement.getAttribute('data-theme');
+  if (t) return t==='dark';
+  return matchMedia('(prefers-color-scheme: dark)').matches;
+}
+const INDCOL = () => ({'COVID-19 hospitalisations':cvar('--covid'),'ILI incidence':cvar('--ili'),'ARI incidence':cvar('--ari')});
+const INDSHORT = {'COVID-19 hospitalisations':'COVID-19 hosp.','ILI incidence':'ILI','ARI incidence':'ARI'};
+
+/* sequential heat ramp for #models (more = darker on light, brighter on dark) */
+function heatRamp(){
+  return isDark()
+    ? ['#17324e','#1e4270','#265795','#2f70bf','#4189de','#79b1f0','#bcd7f8']
+    : ['#e6f0fb','#cfe2fb','#a7cbf5','#75abee','#3f8ae2','#245fb0','#123f7d'];
+}
+function heatColor(v, max){
+  if (!v || v<=0) return cvar('--surface-2');
+  const ramp = heatRamp(); const t = Math.min(1, v/max);
+  return ramp[Math.min(ramp.length-1, Math.round(t*(ramp.length-1)))];
+}
+
+/* ---- tiny DOM/SVG helpers ---- */
+function svg(w,h){ const s=document.createElementNS(SVGNS,'svg'); s.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  s.setAttribute('width','100%'); s.setAttribute('preserveAspectRatio','xMinYMin meet'); s.classList.add('chart'); return s; }
+function e(tag,attrs){ const n=document.createElementNS(SVGNS,tag); for(const k in attrs) n.setAttribute(k,attrs[k]); return n; }
+function txt(x,y,s,cls,extra){ const t=e('text',Object.assign({x,y},extra||{})); if(cls)t.setAttribute('class',cls); t.textContent=s; return t; }
+function clear(id){ const n=document.getElementById(id); if(n) n.replaceChildren(); return n; }
+
+/* ---- shared tooltip ---- */
+const tip = document.getElementById('tip');
+function showTip(nodes, x, y){
+  tip.replaceChildren(...nodes);
+  tip.style.opacity='1';
+  const pad=14, r=tip.getBoundingClientRect();
+  let left=x+pad, top=y+pad;
+  if(left+r.width>innerWidth-8) left=x-r.width-pad;
+  if(top+r.height>innerHeight-8) top=y-r.height-pad;
+  tip.style.left=Math.max(8,left)+'px'; tip.style.top=Math.max(8,top)+'px';
+}
+function hideTip(){ tip.style.opacity='0'; }
+function ttHead(s){ const d=document.createElement('div'); d.className='tt'; d.textContent=s; return d; }
+function ttRow(color,label,val,lineKey){
+  const r=document.createElement('div'); r.className='rowt';
+  const k=document.createElement('span'); k.className='kk';
+  if(color){ const m=document.createElement('span'); if(lineKey){m.className='ln';m.style.borderTopColor=color;} else {m.className='sw';m.style.cssText=`width:11px;height:11px;border-radius:3px;background:${color}`;} k.appendChild(m); }
+  k.appendChild(document.createTextNode(label));
+  const v=document.createElement('span'); v.className='vv'; v.textContent=val;
+  r.appendChild(k); r.appendChild(v); return r;
+}
+
+/* number helpers */
+const pct = x => Math.round(x)+'%';
+const fmtDate = d => { const [y,m,da]=d.split('-'); return `${da} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]} ${y.slice(2)}`; };
+
+/* ============================ HERO / KPIs ============================ */
+function num(sel){ return document.querySelector(sel); }
+function renderHero(){
+  const staff0 = S.staff.find(s=>s.staff==='0 staff');
+  const vc = Object.fromEntries(S.value_choice.map(v=>[v.value_choice,v.n]));
+  const integ = S.integration.filter(i=>i.level==='Agree'||i.level==='Strongly agree').reduce((a,b)=>a+b.n,0);
+  const nresp = DATA.meta.n_respondents;
+  const hd = C.headline;
+  const ili = hd.find(h=>h.indicator==='ILI incidence');
+  const totalRounds = C.weeks.length;
+  const distinctModels = new Set(C.ribbon.filter(r=>r.role==='model').map(r=>r.model)).size;
+  const ensRounds = ili.rounds_with_ens, ensPct = Math.round(100*ensRounds/ili.n_rounds);
+
+  document.getElementById('heroMeta').replaceChildren(...[
+    ['Survey', `${nresp} EU/EEA focal points`],
+    ['Hubs', '2 · RespiCast Covid19 + Syndromic'],
+    ['Coverage', `${totalRounds} weekly rounds · 2 seasons`],
+    ['Window', `${fmtDate(C.weeks[0])} → ${fmtDate(C.weeks[C.weeks.length-1])}`]
+  ].map(([k,v])=>{ const s=document.createElement('span'); const b=document.createElement('b'); b.textContent=k+': '; s.appendChild(b); s.appendChild(document.createTextNode(v)); return s; }));
+
+  // Demand KPIs
+  const k1=document.getElementById('kpis');
+  kpiCards(k1, [
+    {v:nresp, u:'', l:'National focal points responding', s:'one collective reply per country', bar:'var(--accent)'},
+    {v:pct(staff0.pct), u:'', l:'have <b>zero</b> in-house modelling staff', s:`${staff0.n} of ${nresp} institutes`, bar:'var(--ili)'},
+    {v:`${vc['RespiCast']||0}:${vc['RespiCompass']||0}`, u:'', l:'prefer forecasts over scenarios (Q8)', s:'RespiCast vs RespiCompass, sole pick', bar:'var(--covid)'},
+    {v:pct(100*integ/nresp), u:'', l:'report a clear route to <b>use</b> modelling', s:`${integ}/${nresp} agree there is a mechanism`, bar:'var(--ari)'}
+  ]);
+
+  // Delivery KPIs
+  const k2=document.getElementById('kpis2');
+  const peakILI = ili.peak_models;
+  const cc = Object.fromEntries(C.country_coverage.map(c=>[c.indicator,c.n_countries]));
+  kpiCards(k2, [
+    {v:totalRounds, u:'', l:'weekly forecast rounds analysed', s:'across two winter seasons', bar:'var(--accent)'},
+    {v:3, u:'', l:'indicators forecast', s:'COVID-19 hosp. · ILI · ARI', bar:'var(--covid)'},
+    {v:peakILI, u:' models', l:'peak contributors in one round (ILI)', s:`${distinctModels} distinct teams overall`, bar:'var(--ili)'},
+    {v:pct(ensPct), u:'', l:'of ILI rounds carried an ensemble', s:`${ensRounds}/${ili.n_rounds} rounds`, bar:'var(--ari)'}
+  ]);
+
+  document.getElementById('pill_rounds').textContent = `${totalRounds} rounds`;
+  document.getElementById('pill_models').textContent = `${distinctModels} models`;
+}
+function kpiCards(root, items){
+  root.replaceChildren(...items.map(it=>{
+    const c=document.createElement('div'); c.className='kpi';
+    const bar=document.createElement('div'); bar.className='bar'; bar.style.background=it.bar; bar.style.marginBottom='14px'; bar.style.width='34px'; bar.style.borderRadius='3px';
+    const v=document.createElement('div'); v.className='v'; v.innerHTML=it.v+(it.u?`<span class="u">${it.u}</span>`:'');
+    const l=document.createElement('div'); l.className='l'; l.innerHTML=it.l;
+    const s=document.createElement('div'); s.className='s'; s.textContent=it.s;
+    c.append(bar,v,l,s); return c;
+  }));
+}
+
+/* ============================ Q6 STAFF — unit blocks ============================ */
+function renderStaff(){
+  const root=clear('c_staff'); const order=['0 staff','1-5 staff','6-10 staff','>10 staff'];
+  const map=Object.fromEntries(S.staff.map(s=>[s.staff,s]));
+  const colors={'0 staff':cvar('--ili'),'1-5 staff':cvar('--c-fore'),'6-10 staff':cvar('--accent'),'>10 staff':cvar('--ari')};
+  const total=S.staff.reduce((a,b)=>a+b.n,0);
+  const W=680,H=64, gap=4, per=(W-gap*(total-1))/total;
+  const s=svg(W,H+34); let x=0;
+  order.filter(o=>map[o]).forEach(o=>{
+    const rec=map[o];
+    for(let i=0;i<rec.n;i++){
+      const r=e('rect',{x:x.toFixed(1),y:0,width:per.toFixed(1),height:H,rx:3,fill:colors[o]});
+      r.style.cursor='default';
+      r.addEventListener('pointermove',ev=>showTip([ttHead('One respondent'),ttRow(colors[o],o,'')],ev.clientX,ev.clientY));
+      r.addEventListener('pointerleave',hideTip);
+      s.appendChild(r); x+=per+gap;
+    }
+  });
+  // labels under the groups
+  let cx=0;
+  order.filter(o=>map[o]).forEach(o=>{
+    const rec=map[o]; const w=rec.n*per+(rec.n-1)*gap; const mid=cx+w/2;
+    s.appendChild(txt(mid, H+16, `${rec.n}`, 'axis-t', {'text-anchor':'middle','font-weight':'700'}));
+    s.appendChild(txt(mid, H+30, o.replace(' staff',''), 'axis', {'text-anchor':'middle'}));
+    cx+=w+gap;
+  });
+  root.appendChild(s);
+  document.getElementById('take_staff').innerHTML =
+    `<b>${map['0 staff'].n} of ${total}</b> focal points have <b>no</b> mathematical modeller at all, and only one institute has a team of any size. For most countries, "using a forecast" can only mean using someone else's — which makes ECDC's hubs less a convenience than the national forecasting capability itself.`;
+}
+
+/* ============================ Q5 ENGAGEMENT — horizontal bars ============================ */
+function renderEngagement(){
+  const root=clear('c_engage');
+  const rows=[...S.engagement].sort((a,b)=>b.mean_score-a.mean_score);
+  const classcol={'Short-term forecasting':cvar('--c-fore'),'Scenario modelling':cvar('--c-scen'),'Guidance':cvar('--c-guid')};
+  const W=560, rowH=44, padL=150, padR=54, top=8, H=top+rows.length*rowH+30, maxX=5;
+  const sx=v=>padL+(v/maxX)*(W-padL-padR);
+  const s=svg(W,H);
+  // gridlines 0..5
+  for(let i=0;i<=5;i++){ const gx=sx(i);
+    s.appendChild(e('line',{x1:gx,y1:top,x2:gx,y2:top+rows.length*rowH,class:'gridline'}));
+    s.appendChild(txt(gx, H-12, i, 'axis',{'text-anchor':'middle'})); }
+  rows.forEach((r,i)=>{
+    const y=top+i*rowH, col=classcol[r.class]||cvar('--accent'), bh=16;
+    s.appendChild(txt(padL-10, y+rowH/2-3, r.output, 'axis-t',{'text-anchor':'end'}));
+    s.appendChild(txt(padL-10, y+rowH/2+11, r.class.replace(' modelling','').replace('Short-term ','short-term '), 'axis',{'text-anchor':'end'}));
+    // track
+    s.appendChild(e('rect',{x:padL,y:y+rowH/2-bh/2,width:W-padL-padR,height:bh,rx:4,fill:'var(--surface-2)'}));
+    const bw=sx(r.mean_score)-padL;
+    const bar=e('rect',{x:padL,y:y+rowH/2-bh/2,width:Math.max(2,bw),height:bh,rx:4,fill:col});
+    bar.addEventListener('pointermove',ev=>showTip([ttHead(r.output),
+      ttRow(col,'Mean engagement',r.mean_score.toFixed(2)+' / 5'),
+      ttRow('','Not aware / no use',r.pct_not_aware+'%'),
+      ttRow('','Actively engaged (≥4)',r.pct_high+'%'),
+      ttRow('','Responses',String(r.n))],ev.clientX,ev.clientY));
+    bar.addEventListener('pointerleave',hideTip);
+    s.appendChild(bar);
+    s.appendChild(txt(sx(r.mean_score)+7, y+rowH/2+4, r.mean_score.toFixed(2), 'datalabel'));
+    // not-aware annotation
+    s.appendChild(txt(W-4, y+rowH/2+4, r.pct_not_aware+'% unaware', 'axis',{'text-anchor':'end'}));
+  });
+  root.appendChild(s);
+  legend('c_engage', root, [['Short-term forecasting',classcol['Short-term forecasting'],'sw'],['Scenario modelling',classcol['Scenario modelling'],'sw'],['Guidance',classcol['Guidance'],'sw']]);
+}
+function legend(_id, root, items){
+  const l=document.createElement('div'); l.className='legend';
+  items.forEach(([lab,col,kind])=>{ const k=document.createElement('span'); k.className='k';
+    const m=document.createElement('span'); m.className=kind==='ln'?'ln':'sw'; if(kind==='ln')m.style.borderTopColor=col; else m.style.background=col;
+    k.append(m,document.createTextNode(lab)); l.appendChild(k); });
+  root.appendChild(l);
+}
+
+/* ============================ Q8 VALUE CHOICE ============================ */
+function renderValue(){
+  const root=clear('c_value');
+  const order=['Both will be useful','RespiCast','RespiCompass','Neither will be useful'];
+  const labelMap={'Both will be useful':'Both useful','RespiCast':'RespiCast (forecasts)','RespiCompass':'RespiCompass (scenarios)','Neither will be useful':'Neither'};
+  const col={'Both will be useful':cvar('--accent'),'RespiCast':cvar('--covid'),'RespiCompass':cvar('--ari'),'Neither will be useful':cvar('--muted')};
+  const map=Object.fromEntries(S.value_choice.map(v=>[v.value_choice,v]));
+  const rows=order.filter(o=>map[o]);
+  const total=S.value_choice.reduce((a,b)=>a+b.n,0);
+  const W=520, rowH=52, padL=170, padR=40, top=6, H=top+rows.length*rowH, maxN=Math.max(...rows.map(o=>map[o].n));
+  const s=svg(W,H);
+  rows.forEach((o,i)=>{
+    const rec=map[o], y=top+i*rowH, bh=20, bw=(rec.n/maxN)*(W-padL-padR);
+    s.appendChild(txt(padL-10,y+rowH/2+4,labelMap[o],'axis-t',{'text-anchor':'end'}));
+    const bar=e('rect',{x:padL,y:y+rowH/2-bh/2,width:Math.max(3,bw),height:bh,rx:4,fill:col[o]});
+    bar.addEventListener('pointermove',ev=>showTip([ttHead('Q8 · most valuable output'),ttRow(col[o],labelMap[o],`${rec.n} (${rec.pct}%)`)],ev.clientX,ev.clientY));
+    bar.addEventListener('pointerleave',hideTip); s.appendChild(bar);
+    s.appendChild(txt(padL+bw+8,y+rowH/2+4,`${rec.n}  ·  ${rec.pct}%`,'datalabel'));
+  });
+  root.appendChild(s);
+}
+
+/* ============================ Q5×Q6 CAPACITY ============================ */
+function renderCapacity(){
+  const root=clear('c_cap');
+  const classes=['Short-term forecasting','Scenario modelling','Guidance'];
+  const bands=['0 staff','1-5 staff','>10 staff'];
+  const bandLabel={'0 staff':'No team','1-5 staff':'1–5 staff','>10 staff':'>10 staff'};
+  const col={'Short-term forecasting':cvar('--c-fore'),'Scenario modelling':cvar('--c-scen'),'Guidance':cvar('--c-guid')};
+  const data={}; S.engagement_capacity.forEach(r=>{ (data[r.class]=data[r.class]||{})[r.staff]=r; });
+  const W=620, padL=96, padR=20, top=14, groupH=118, H=top+classes.length*groupH+8, maxX=5;
+  const sx=v=>padL+(v/maxX)*(W-padL-padR);
+  const s=svg(W,H);
+  classes.forEach((cl,ci)=>{
+    const gy=top+ci*groupH;
+    s.appendChild(txt(padL, gy-2, cl, 'axis-t',{'font-weight':'700'}));
+    const barH=18, gap=8, innerTop=gy+10;
+    bands.forEach((bd,bi)=>{
+      const rec=data[cl] && data[cl][bd]; const y=innerTop+bi*(barH+gap);
+      s.appendChild(txt(padL-8, y+barH/2+4, bandLabel[bd], 'axis',{'text-anchor':'end'}));
+      s.appendChild(e('rect',{x:padL,y,width:W-padL-padR,height:barH,rx:4,fill:'var(--surface-2)'}));
+      if(rec){ const bw=sx(rec.mean_score)-padL;
+        const bar=e('rect',{x:padL,y,width:Math.max(2,bw),height:barH,rx:4,fill:col[cl],opacity:bd==='0 staff'?1:0.55});
+        bar.addEventListener('pointermove',ev=>showTip([ttHead(cl),ttRow(col[cl],bandLabel[bd],rec.mean_score.toFixed(2)+' / 5'),ttRow('','Respondents',String(rec.n))],ev.clientX,ev.clientY));
+        bar.addEventListener('pointerleave',hideTip); s.appendChild(bar);
+        s.appendChild(txt(sx(rec.mean_score)+6,y+barH/2+4,rec.mean_score.toFixed(1),'datalabel'));
+      } else { s.appendChild(txt(padL+6,y+barH/2+4,'n/a','axis')); }
+    });
+  });
+  // x axis
+  for(let i=0;i<=5;i++){ s.appendChild(txt(sx(i),H-2,i,'axis',{'text-anchor':'middle'})); }
+  root.appendChild(s);
+  legend('c_cap',root,[['Short-term forecasting',col['Short-term forecasting'],'sw'],['Scenario modelling',col['Scenario modelling'],'sw'],['Guidance',col['Guidance'],'sw']]);
+  const note=document.createElement('span'); note.className='muted'; note.style.cssText='font-size:11px;margin-left:6px'; note.textContent='solid = no-team band (the majority); faded = has staff';
+  root.querySelector('.legend').appendChild(note);
+  const f=data['Short-term forecasting'];
+  if(f && f['0 staff']){
+    document.getElementById('take_cap').innerHTML =
+      `Institutes with <b>no modelling team</b> rate short-term forecasting <b>${f['0 staff'].mean_score.toFixed(1)}/5</b> — essentially the same as everyone else, not higher. So the value here is <b>potential, not yet realised</b>: the countries who most need an external forecast are not engaging with it more. The binding constraint has moved to the demand side — awareness, interpretation, and a route into the decision — which is exactly what the hubs (Part II) already supply the raw material for.`;
+  }
+}
+
+/* ============================ Q7 DECISIONS — diverging Likert ============================ */
+const LK=['Very unlikely','Unlikely','Unsure','Likely','Very likely'];
+const AG=['Strongly disagree','Disagree','Neither agree nor disagree','Agree','Strongly agree'];
+function lkColors(){ return [cvar('--lk-neg2'),cvar('--lk-neg1'),cvar('--lk-mid'),cvar('--lk-pos1'),cvar('--lk-pos2')]; }
+function divergingLikert(rootId, rows, levels, headline){
+  const root=clear(rootId); const cols=lkColors();
+  const W=560, padL=185, padR=24, top=10, rowH=40, H=top+rows.length*rowH+34;
+  const plotW=W-padL-padR, cx=padL+plotW/2;
+  // scale: each row sums to 100%; center on the neutral midpoint
+  const s=svg(W,H);
+  s.appendChild(e('line',{x1:cx,y1:top-4,x2:cx,y2:top+rows.length*rowH,class:'baseline'}));
+  const half=plotW/2, unit=half/100; // up to 100% each side (safe headroom)
+  rows.forEach((r,i)=>{
+    const y=top+i*rowH+rowH/2, bh=18;
+    const counts=levels.map(L=>r.dist[L]||0); const tot=counts.reduce((a,b)=>a+b,0)||1;
+    const p=counts.map(c=>100*c/tot);
+    // left of center: neg2+neg1 + half of mid; right: half mid + pos1 + pos2
+    let leftW=p[0]+p[1]+p[2]/2;
+    let xstart=cx-leftW*unit;
+    s.appendChild(txt(padL-12,y+4,r.label,'axis-t',{'text-anchor':'end'}));
+    let x=xstart;
+    p.forEach((pp,li)=>{
+      const w=pp*unit;
+      if(w>0){ const seg=e('rect',{x:x+ (li===0?0:1),y:y-bh/2,width:Math.max(0.5,w-1),height:bh,fill:cols[li],rx: (li===0||li===p.length-1)?3:0});
+        seg.addEventListener('pointermove',ev=>showTip([ttHead(r.label),ttRow(cols[li],levels[li],`${counts[li]} · ${Math.round(pp)}%`)],ev.clientX,ev.clientY));
+        seg.addEventListener('pointerleave',hideTip); s.appendChild(seg);
+      }
+      x+=w;
+    });
+    // % likely / agree on the right
+    const posPct=Math.round(p[3]+p[4]);
+    s.appendChild(txt(W-2,y+4,posPct+'%','datalabel',{'text-anchor':'end'}));
+  });
+  s.appendChild(txt(padL-12, H-8, '← less likely', 'axis',{'text-anchor':'end'}));
+  s.appendChild(txt(cx, H-8, 'neutral', 'axis',{'text-anchor':'middle'}));
+  s.appendChild(txt(W-2, H-8, 'more likely →', 'axis',{'text-anchor':'end'}));
+  root.appendChild(s);
+}
+function renderDecisions(){
+  // build dist per action from decisions_dist
+  const byAction={};
+  S.decisions_dist.forEach(d=>{ (byAction[d.action]=byAction[d.action]||{dist:{}}).dist[d.level]=d.n; });
+  const head=S.decisions_headline.filter(h=>h.action!=='Other activities'); // drop tiny 'other'
+  const rows=head.map(h=>({label:h.action.replace('Planning ','').replace('Procuring ','procuring ').replace('Inform ','').replace(' activities',''), dist:byAction[h.action].dist, pos:h.pct_likely}));
+  // nicer labels
+  const lbl={'surveillance':'Surveillance','vaccination campaigns':'Vaccination campaigns','Healthcare capacity planning':'Healthcare capacity','procuring medical countermeasures':'Medical countermeasures'};
+  rows.forEach(r=>{ r.label = lbl[r.label]||r.label; });
+  divergingLikert('c_dec', rows, LK);
+  const l=document.createElement('div'); l.className='legend';
+  LK.forEach((L,i)=>{const k=document.createElement('span');k.className='k';const m=document.createElement('span');m.className='sw';m.style.background=lkColors()[i];k.append(m,document.createTextNode(L));l.appendChild(k);});
+  document.getElementById('c_dec').appendChild(l);
+}
+function renderIntegration(){
+  const dist={}; S.integration.forEach(d=>dist[d.level]=d.n);
+  divergingLikert('c_integ', [{label:'Clear mechanism to integrate modelling',dist}], AG);
+  const agree=S.integration.filter(i=>i.level==='Agree'||i.level==='Strongly agree').reduce((a,b)=>a+b.n,0);
+  const dis=S.integration.filter(i=>i.level==='Disagree'||i.level==='Strongly disagree').reduce((a,b)=>a+b.n,0);
+  const tot=S.integration.reduce((a,b)=>a+b.n,0);
+  document.getElementById('take_integ').innerHTML=`Just <b>${agree}/${tot}</b> institutes agree a clear integration mechanism exists; <b>${dis}/${tot}</b> disagree. Even a perfectly accurate forecast stalls without a route into the decision.`;
+}
+
+/* ============================ Q11/Q12 COMMS RANKINGS ============================ */
+function renderComms(){
+  const root=clear('c_comms');
+  const modes=[...new Set(S.rankings.map(r=>r.mode))];
+  const channels=[...new Set(S.rankings.map(r=>r.channel))];
+  const short={'Dedicated newsletter / mailing list':'Newsletter / mailing list','Dedicated website':'Dedicated website','Online meetings for data analysts and modellers':'Meetings · analysts','Online meetings for policy decision-makers':'Meetings · policy','Other':'Other'};
+  // order channels by mean of mean_rank across modes (best first)
+  const meanRank={}; channels.forEach(c=>{ const rs=S.rankings.filter(r=>r.channel===c); meanRank[c]=rs.reduce((a,b)=>a+b.mean_rank,0)/rs.length; });
+  channels.sort((a,b)=>meanRank[a]-meanRank[b]);
+  const cols=[cvar('--covid'),cvar('--ari')]; // forecasts vs scenarios
+  const W=620, padL=190, padR=40, top=24, rowH=46, H=top+channels.length*rowH+10;
+  const x1=padL, x2=W-padR, sx=v=>x1+((v-1)/4)*(x2-x1); // rank 1..5
+  const s=svg(W,H);
+  // header + gridlines rank 1..5
+  for(let k=1;k<=5;k++){ const gx=sx(k); s.appendChild(e('line',{x1:gx,y1:top,x2:gx,y2:top+channels.length*rowH,class:'gridline'})); s.appendChild(txt(gx,top-8,k,'axis',{'text-anchor':'middle'})); }
+  s.appendChild(txt(x1,top-8,'rank →','axis',{'text-anchor':'start'}));
+  channels.forEach((c,i)=>{
+    const y=top+i*rowH+rowH/2;
+    s.appendChild(txt(padL-12,y+4,short[c]||c,'axis-t',{'text-anchor':'end'}));
+    // connector between the two modes
+    const pts=modes.map((m,mi)=>{ const rec=S.rankings.find(r=>r.channel===c&&r.mode===m); return rec?{x:sx(rec.mean_rank),rec,col:cols[mi],m}:null; }).filter(Boolean);
+    if(pts.length===2){ s.appendChild(e('line',{x1:pts[0].x,y1:y,x2:pts[1].x,y2:y,stroke:'var(--baseline)','stroke-width':2,'stroke-linecap':'round'})); }
+    pts.forEach(p=>{
+      const dot=e('circle',{cx:p.x,cy:y,r:6,fill:p.col,stroke:'var(--surface)','stroke-width':2});
+      dot.addEventListener('pointermove',ev=>showTip([ttHead(short[c]||c),ttRow(p.col,p.m,'mean rank '+p.rec.mean_rank.toFixed(2)),ttRow('','Ranked #1 by',p.rec.pct_first+'%')],ev.clientX,ev.clientY));
+      dot.addEventListener('pointerleave',hideTip); s.appendChild(dot);
+    });
+  });
+  root.appendChild(s);
+  legend('c_comms',root,[['Weekly forecasts (RespiCast)',cols[0],'sw'],['Seasonal scenarios (RespiCompass)',cols[1],'sw']]);
+}
+
+/* ============================ THEMES + QUOTES ============================ */
+function renderThemes(){
+  const root=clear('themes'); const qroot=clear('quotes');
+  if(T && T.themes && T.themes.length){
+    const maxW=Math.max(...T.themes.map(t=>t.weight||0))||1;
+    T.themes.slice(0,7).forEach(t=>{
+      const row=document.createElement('div'); row.className='themerow';
+      const nm=document.createElement('div'); nm.className='name'; nm.textContent=t.theme;
+      const tr=document.createElement('div'); tr.className='track'; const fl=document.createElement('div'); fl.className='fill'; fl.style.width=Math.round(100*(t.weight||0)/maxW)+'%'; tr.appendChild(fl);
+      const w=document.createElement('div'); w.className='w'; w.textContent=(t.weight||0)+' mention'+((t.weight===1)?'':'s');
+      row.append(nm,tr,w); root.appendChild(row);
+    });
+    if(T.value_narrative){ document.getElementById('themes_sub').textContent = T.value_narrative; }
+  } else {
+    root.innerHTML='<p class="muted" style="font-size:13px">Theme synthesis pending.</p>';
+  }
+  // quotes: pick a few strong free-text answers (Q8b / Q13)
+  const picks = pickQuotes();
+  qroot.replaceChildren(...picks.map(q=>{
+    const d=document.createElement('div'); d.className='q';
+    const tag=document.createElement('div'); tag.className='tag'; tag.textContent=q.tag;
+    const p=document.createElement('p'); p.textContent='“'+q.text+'”';
+    const who=document.createElement('div'); who.className='who'; who.textContent=q.who;
+    d.append(tag,p,who); return d;
+  }));
+}
+function pickQuotes(){
+  const ft=S.free_text;
+  const want=[
+    {m:/we use them to compare our own modelling/i,tag:'On how forecasts are used'},
+    {m:/limited modelling capacity/i,tag:'On capacity'},
+    {m:/No resources for modelling/i,tag:'On capacity'},
+    {m:/understandable and easy to interpret/i,tag:'On interpretability'},
+    {m:/adequately resourced and funded national/i,tag:'On what ECDC could do'},
+    {m:/country-specific/i,tag:'On relevance'},
+    {m:/short.?term projections to be more reliable/i,tag:'Forecasts vs scenarios'},
+    {m:/reducing the number of models/i,tag:'On transparency'}
+  ];
+  const out=[];
+  want.forEach(w=>{ const hit=ft.find(f=>w.m.test(f.text||'')); if(hit && out.length<6) out.push({text:trimQuote(hit.text),who:`${hit.respondent_id} · ${hit.question}`,tag:w.tag}); });
+  return out;
+}
+function trimQuote(t){ t=t.replace(/\s+/g,' ').trim(); return t.length>230? t.slice(0,227)+'…':t; }
+
+/* ============================ COVERAGE HEATMAP ============================ */
+function renderHeat(){
+  const root=clear('c_heat');
+  const inds=['COVID-19 hospitalisations','ILI incidence','ARI incidence'];
+  const weeks=C.weeks, n=weeks.length;
+  const maxModels=Math.max(...inds.flatMap(ind=>asArr(C.series[ind].n_models)));
+  const cw=12, gap=2, padL=140, padTop=26, rowBlock=48, ensH=6, H=padTop+inds.length*rowBlock+40;
+  const W=padL+n*(cw+gap)+16;
+  const s=svg(W,H); s.style.minWidth=W+'px';
+  // month ticks
+  let lastMonth='';
+  weeks.forEach((w,i)=>{ const mo=w.slice(0,7); if(mo!==lastMonth){ lastMonth=mo; const x=padL+i*(cw+gap);
+    s.appendChild(e('line',{x1:x-1,y1:padTop-6,x2:x-1,y2:padTop+inds.length*rowBlock-6,stroke:'var(--hair)','stroke-width':1}));
+    const [yy,mm]=mo.split('-'); s.appendChild(txt(x+1,padTop-10,['J','F','M','A','M','J','J','A','S','O','N','D'][+mm-1]+(mm==='01'?" '"+yy.slice(2):''),'axis')); } });
+  // season divider (2025/26 starts 2025-08)
+  const seasonStart=weeks.findIndex(w=>w>='2025-08-01');
+  if(seasonStart>0){ const x=padL+seasonStart*(cw+gap)-gap/2; s.appendChild(e('line',{x1:x,y1:padTop-6,x2:x,y2:padTop+inds.length*rowBlock-6,stroke:'var(--baseline)','stroke-width':1.5,'stroke-dasharray':'2 3'}));
+    s.appendChild(txt(x+4,padTop+inds.length*rowBlock+2,"2025/26 →",'axis')); s.appendChild(txt(x-4,padTop+inds.length*rowBlock+2,"← 2024/25",'axis',{'text-anchor':'end'})); }
+  inds.forEach((ind,ri)=>{
+    const y=padTop+ri*rowBlock; const nm=asArr(C.series[ind].n_models), ens=asArr(C.series[ind].has_ensemble), loc=asArr(C.series[ind].ensemble_locations);
+    const col=INDCOL()[ind];
+    // indicator label
+    s.appendChild(txt(padL-12,y+16,INDSHORT[ind],'axis-t',{'text-anchor':'end','font-weight':'700'}));
+    s.appendChild(e('rect',{x:padL-11,y:y+22,width:8,height:8,rx:2,fill:col}));
+    weeks.forEach((w,i)=>{
+      const x=padL+i*(cw+gap), v=nm[i]||0;
+      const cell=e('rect',{x,y:y+4,width:cw,height:24,rx:2,fill:heatColor(v,maxModels),stroke:'var(--hair)','stroke-width':.5});
+      cell.style.cursor='default';
+      cell.addEventListener('pointermove',ev=>showTip([ttHead(fmtDate(w)+' · '+INDSHORT[ind]),
+        ttRow(col,'Contributing models',String(v)),
+        ttRow('','Ensemble',ens[i]? 'published':'—'),
+        ttRow('','Countries in ensemble',(loc[i]==null?'—':String(loc[i])))],ev.clientX,ev.clientY));
+      cell.addEventListener('pointerleave',hideTip); s.appendChild(cell);
+      // ensemble strip
+      s.appendChild(e('rect',{x,y:y+30,width:cw,height:ensH,rx:1.5,fill: ens[i]? col : 'var(--surface-2)', opacity: ens[i]?0.85:1}));
+    });
+    s.appendChild(txt(padL-12,y+38,'ensemble','axis',{'text-anchor':'end'}));
+  });
+  root.appendChild(s);
+  // legend: heat scale + ensemble
+  const lg=clear('heat_legend');
+  const grad=document.createElement('div'); grad.style.cssText='display:flex;align-items:center;gap:6px';
+  const cap=document.createElement('span'); cap.textContent='fewer'; cap.className='muted'; cap.style.fontSize='11px';
+  const ramp=heatRamp(); const bar=document.createElement('span'); bar.style.cssText=`display:inline-block;width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,${ramp.join(',')})`;
+  const cap2=document.createElement('span'); cap2.textContent=`more models (max ${maxModels})`; cap2.className='muted'; cap2.style.fontSize='11px';
+  grad.append(cap,bar,cap2);
+  lg.appendChild(grad);
+  const k=document.createElement('span'); k.className='k'; const m=document.createElement('span'); m.className='sw'; m.style.background=cvar('--covid'); k.append(m,document.createTextNode('ensemble published (strip)')); lg.appendChild(k);
+}
+
+/* ============================ MODELS-PER-WEEK LINE ============================ */
+function renderLine(){
+  const root=clear('c_line');
+  const inds=['ILI incidence','COVID-19 hospitalisations','ARI incidence'];
+  const weeks=C.weeks, n=weeks.length;
+  const maxY=Math.max(...inds.flatMap(ind=>asArr(C.series[ind].n_models)));
+  const W=980, H=300, padL=42, padR=16, padT=16, padB=44;
+  const sx=i=>padL+(i/(n-1))*(W-padL-padR);
+  const sy=v=>padT+(1-v/maxY)*(H-padT-padB);
+  const s=svg(W,H); s.style.minWidth='680px';
+  // gridlines
+  for(let v=0;v<=maxY;v+=5){ const y=sy(v); s.appendChild(e('line',{x1:padL,y1:y,x2:W-padR,y2:y,class:'gridline'})); s.appendChild(txt(padL-8,y+4,v,'axis',{'text-anchor':'end'})); }
+  // season shading for summers (low season): shade Jun-Sep
+  weeks.forEach((w,i)=>{ const mo=+w.slice(5,7); if(mo>=6&&mo<=9){ const x=sx(i); s.appendChild(e('rect',{x:x-3,y:padT,width:6,height:H-padT-padB,fill:'var(--surface-2)',opacity:.5})); }});
+  // month labels
+  let lastY='';
+  weeks.forEach((w,i)=>{ const yr=w.slice(0,7); const mm=w.slice(5,7); if(mm==='01'||mm==='07'){ if(yr!==lastY){lastY=yr; const x=sx(i); s.appendChild(txt(x,H-14,fmtMonth(w),'axis',{'text-anchor':'middle'})); s.appendChild(e('line',{x1:x,y1:padT,x2:x,y2:H-padB,stroke:'var(--hair)','stroke-width':1})); }}});
+  const col=INDCOL();
+  inds.forEach(ind=>{
+    const nm=asArr(C.series[ind].n_models);
+    let d=''; nm.forEach((v,i)=>{ d+=(i?'L':'M')+sx(i).toFixed(1)+','+sy(v).toFixed(1); });
+    s.appendChild(e('path',{d,fill:'none',stroke:col[ind],'stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round',opacity:.95}));
+  });
+  // crosshair + hit layer
+  const cross=e('line',{x1:0,y1:padT,x2:0,y2:H-padB,stroke:'var(--baseline)','stroke-width':1,opacity:0});
+  s.appendChild(cross);
+  const dots=inds.map(ind=>{ const c=e('circle',{r:4,fill:col[ind],stroke:'var(--surface)','stroke-width':2,opacity:0}); s.appendChild(c); return c; });
+  const hit=e('rect',{x:padL,y:padT,width:W-padL-padR,height:H-padT-padB,fill:'transparent'});
+  hit.addEventListener('pointermove',ev=>{
+    const pt=s.getBoundingClientRect(); const rx=(ev.clientX-pt.left)/pt.width*W;
+    let i=Math.round((rx-padL)/(W-padL-padR)*(n-1)); i=Math.max(0,Math.min(n-1,i));
+    const x=sx(i); cross.setAttribute('x1',x); cross.setAttribute('x2',x); cross.setAttribute('opacity',1);
+    const rows=[ttHead(fmtDate(weeks[i]))];
+    inds.forEach((ind,k)=>{ const v=asArr(C.series[ind].n_models)[i]||0; dots[k].setAttribute('cx',x); dots[k].setAttribute('cy',sy(v)); dots[k].setAttribute('opacity',1);
+      rows.push(ttRow(col[ind],INDSHORT[ind],String(v),true)); });
+    showTip(rows,ev.clientX,ev.clientY);
+  });
+  hit.addEventListener('pointerleave',()=>{ hideTip(); cross.setAttribute('opacity',0); dots.forEach(d=>d.setAttribute('opacity',0)); });
+  s.appendChild(hit);
+  root.appendChild(s);
+  const lg=clear('line_legend');
+  legend('line_legend',lg,inds.map(ind=>[INDSHORT[ind],col[ind],'ln']));
+  const note=document.createElement('span'); note.className='muted'; note.style.cssText='font-size:11px;margin-left:6px'; note.textContent='shaded = summer weeks (Jun–Sep)';
+  lg.querySelector('.legend').appendChild(note);
+}
+const fmtMonth = d => { const [y,m]=d.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]+" '"+y.slice(2); };
+
+/* ============================ PARTICIPATION RIBBON ============================ */
+function renderRibbon(){
+  const root=clear('c_ribbon');
+  const weeks=C.weeks, n=weeks.length;
+  // group per hub: COVID (indicator hosp) vs Syndromic (ILI/ARI union)
+  const hubOf = ind => ind==='COVID-19 hospitalisations' ? 'COVID-19 hub' : 'Syndromic hub (ILI/ARI)';
+  const groups={'COVID-19 hub':{}, 'Syndromic hub (ILI/ARI)':{}};
+  C.ribbon.forEach(r=>{ const h=hubOf(r.indicator); const g=groups[h]; const key=r.model;
+    if(!g[key]) g[key]={model:r.model,role:r.role,present:new Set()}; asArr(r.present).forEach(i=>g[key].present.add(i)); });
+  const roleRank={ensemble:0,baseline:1,model:2};
+  const roleCol={ensemble:cvar('--accent'),baseline:cvar('--muted'),model:cvar('--ink-2')};
+  const cw=(880-160)/n; // week column width
+  const padL=160, rowH=15, blockGap=30, padTop=20;
+  const order=Object.keys(groups);
+  const rowsPer=order.map(h=>Object.values(groups[h]).sort((a,b)=> (roleRank[a.role]-roleRank[b.role]) || (Math.min(...a.present)-Math.min(...b.present)) ));
+  const totalRows=rowsPer.reduce((a,b)=>a+b.length,0);
+  const W=880, H=padTop+totalRows*rowH+order.length*blockGap+20;
+  const s2=svg(W,H); s2.style.minWidth='680px';
+  let y=padTop;
+  order.forEach((h,gi)=>{
+    s2.appendChild(txt(8,y-4,h,'axis-t',{'font-weight':'700'}));
+    y+=8;
+    rowsPer[gi].forEach(m=>{
+      // baseline track
+      s2.appendChild(e('line',{x1:padL,y1:y+rowH/2,x2:padL+n*cw,y2:y+rowH/2,stroke:'var(--surface-2)','stroke-width':rowH-6,'stroke-linecap':'round'}));
+      const label=m.model.length>22?m.model.slice(0,21)+'…':m.model;
+      s2.appendChild(txt(padL-8,y+rowH/2+3,label,'axis',{'text-anchor':'end'}));
+      m.present.forEach(i=>{ const x=padL+i*cw; s2.appendChild(e('rect',{x:x,y:y+3,width:Math.max(2,cw-0.6),height:rowH-6,rx:1.5,fill:roleCol[m.role]})); });
+      // hit row for tooltip
+      const hitr=e('rect',{x:padL,y:y,width:n*cw,height:rowH,fill:'transparent'});
+      const cnt=m.present.size, span=`${fmtDate(weeks[Math.min(...m.present)])} → ${fmtDate(weeks[Math.max(...m.present)])}`;
+      hitr.addEventListener('pointermove',ev=>showTip([ttHead(m.model),ttRow(roleCol[m.role],m.role,cnt+' rounds'),ttRow('','Active',span)],ev.clientX,ev.clientY));
+      hitr.addEventListener('pointerleave',hideTip); s2.appendChild(hitr);
+      y+=rowH;
+    });
+    y+=blockGap;
+  });
+  root.appendChild(s2);
+  const lg=clear('ribbon_legend');
+  legend('ribbon_legend',lg,[['Ensemble',roleCol.ensemble,'sw'],['Baseline',roleCol.baseline,'sw'],['Model',roleCol.model,'sw']]);
+}
+
+/* ============================ COUNTRY COVERAGE ============================ */
+function renderCountry(){
+  const root=clear('c_country');
+  const rows=[...C.country_coverage].sort((a,b)=>b.n_countries-a.n_countries);
+  const col=INDCOL();
+  const W=520, rowH=64, padL=150, padR=60, top=6, H=top+rows.length*rowH, maxN=Math.max(...rows.map(r=>r.n_countries));
+  const s=svg(W,H);
+  rows.forEach((r,i)=>{
+    const y=top+i*rowH, bh=22, bw=(r.n_countries/maxN)*(W-padL-padR);
+    s.appendChild(txt(padL-10,y+rowH/2-2,INDSHORT[r.indicator],'axis-t',{'text-anchor':'end','font-weight':'700'}));
+    const bar=e('rect',{x:padL,y:y+rowH/2-bh/2,width:Math.max(3,bw),height:bh,rx:4,fill:col[r.indicator]});
+    const countries=(r.countries||'').split(',').filter(Boolean);
+    bar.addEventListener('pointermove',ev=>showTip([ttHead(r.indicator),ttRow(col[r.indicator],'Distinct countries',String(r.n_countries)),(()=>{const d=document.createElement('div');d.style.cssText='font-size:11px;color:var(--ink-2);margin-top:4px;max-width:240px';d.textContent=countries.join(' ');return d;})()],ev.clientX,ev.clientY));
+    bar.addEventListener('pointerleave',hideTip); s.appendChild(bar);
+    s.appendChild(txt(padL+bw+8,y+rowH/2+5,r.n_countries+' countries','datalabel'));
+    // country codes preview
+    s.appendChild(txt(padL,y+rowH/2+22,(r.countries||'').split(',').slice(0,18).join(' '),'axis'));
+  });
+  root.appendChild(s);
+}
+
+/* ============================ SEASON TABLE ============================ */
+function renderSeason(){
+  const root=clear('c_season');
+  const inds=['COVID-19 hospitalisations','ILI incidence','ARI incidence'];
+  const seasons=[...new Set(C.season_summary.map(s=>s.season))].sort();
+  const col=INDCOL();
+  const tbl=document.createElement('table'); tbl.className='tbl';
+  const thead=document.createElement('thead'); const htr=document.createElement('tr');
+  ['Indicator','Season','Rounds','Mean','Peak','Teams'].forEach(h=>{const th=document.createElement('th');th.textContent=h;htr.appendChild(th);});
+  thead.appendChild(htr); tbl.appendChild(thead);
+  const tb=document.createElement('tbody');
+  inds.forEach(ind=>{ seasons.forEach(se=>{ const r=C.season_summary.find(x=>x.indicator===ind&&x.season===se); if(!r)return;
+    const tr=document.createElement('tr');
+    const c0=document.createElement('td'); const wrap=document.createElement('span'); wrap.className='ind'; const sw=document.createElement('span'); sw.className='sw'; sw.style.background=col[ind]; wrap.append(sw,document.createTextNode(INDSHORT[ind])); c0.appendChild(wrap); tr.appendChild(c0);
+    [se,r.n_rounds,r.mean_models,r.peak_models,r.distinct_models].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td);});
+    tb.appendChild(tr);
+  });});
+  tbl.appendChild(tb); root.appendChild(tbl);
+  // delivery take
+  const ili=C.headline.find(h=>h.indicator==='ILI incidence'), ari=C.headline.find(h=>h.indicator==='ARI incidence'), cov=C.headline.find(h=>h.indicator==='COVID-19 hospitalisations');
+  const cc=Object.fromEntries(C.country_coverage.map(c=>[c.indicator,c.n_countries]));
+  document.getElementById('take_delivery').innerHTML=
+    `Two seasons in, the machine runs — but unevenly. <b>ILI</b> draws up to ${ili.peak_models} models across ${cc['ILI incidence']} countries; <b>ARI</b>, in the very same hub, peaks at ${ari.peak_models} across ${cc['ARI incidence']}; <b>COVID-19 hospitalisations</b> — the indicator focal points tie most to capacity planning — reaches only ${cc['COVID-19 hospitalisations']} countries. The ensemble is published almost every week, but its strength is only ever the number of models behind it that week. <b>Read together with Part I</b>, the picture is a working supranational public good whose supply is already robust: the constraint on its value is now demand-side — awareness, interpretation and integration — not the availability of a forecast. (Coverage here is presence, not measured skill.)`;
+}
+
+/* ============================ RENDER ALL (theme-reactive) ============================ */
+function renderAll(){
+  renderHero();
+  renderStaff(); renderEngagement(); renderValue(); renderCapacity();
+  renderDecisions(); renderIntegration(); renderComms(); renderThemes();
+  renderHeat(); renderLine(); renderRibbon(); renderCountry(); renderSeason();
+}
+renderAll();
+
+/* theme toggle + reactive re-render */
+const btn=document.getElementById('themeBtn');
+btn.addEventListener('click',()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next = cur ? (cur==='dark'?'light':'dark') : (isDark()?'light':'dark');
+  document.documentElement.setAttribute('data-theme',next);
+  renderAll();
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ if(!document.documentElement.getAttribute('data-theme')) renderAll(); });
+addEventListener('resize',()=>{ clearTimeout(window.__rt); window.__rt=setTimeout(renderAll,180); });
+</script>

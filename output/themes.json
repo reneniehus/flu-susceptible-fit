@@ -1,0 +1,66 @@
+{
+  "themes": [
+    {
+      "theme": "Structural capacity gap: limited, outsourced or absent national modelling staff and funding",
+      "weight": 5,
+      "summary": "The most frequently cited barrier across codings. NFPs without dedicated modellers (some outsource entirely, others have none) lack the internal capacity to ingest ECDC outputs, run them against national work, or act on them. Respondents tie this directly to an explicit ask: an ECDC recommendation for Member States to fund national modelling capacity within public health institutes, plus a sustainable EU funding mechanism, so uptake can happen equitably across MS.",
+      "quote": "No resources for modelling in Luxembourg."
+    },
+    {
+      "theme": "Awareness and adoption gap: outputs known but not embedded in national decision-making, with adoption deferred pending a season's track record",
+      "weight": 4,
+      "summary": "A distinct cluster of NFPs are aware the outputs exist but have not routinely incorporated them into decisions or communications. Adoption is explicitly postponed until they can compare at least one season of real-world data against model outputs, after which the outputs are expected to influence work and announcements. Combined with reported low awareness, this signals the products are not yet operationally integrated into national decision cycles.",
+      "quote": "We are aware of the outputs but have not been using them for our own national decision making."
+    },
+    {
+      "theme": "Trust hinges on demonstrated skill: short-term forecasts (RespiCast) trusted more than long-horizon scenarios (RespiCompass), and NFPs want fewer models plus transparent performance metrics",
+      "weight": 4,
+      "summary": "Uptake is held back pending demonstrated reliability. NFPs judge short-term projections credible and actionable but doubt long-horizon (e.g. 6-month) scenarios as a basis for concrete national decisions. To earn trust they ask for transparent skill/performance metrics beyond a baseline model and for a smaller, simpler set of models to improve transparency.",
+      "quote": "I find short term projections to be more reliable that long term. I also find unlikely that ... decision-makers make relevant decisions based on a mathematical model with for example 6 months horizon"
+    },
+    {
+      "theme": "For resourced NFPs, ECDC outputs are a secondary benchmark rather than a decision input; national/in-house predictions are preferred and outputs need country-specific tailoring",
+      "weight": 3,
+      "summary": "NFPs with their own or partner (e.g. national institute) modelling preferentially use national predictions for decisions and treat ECDC outputs mainly as an external comparator to cross-check against. This caps the marginal value of supranational products for better-resourced teams and drives a request that models be tailored to country-specific situations to be useful for national policy questions.",
+      "quote": "Frankly, none. We don't use them to make decisions, we use them to compare our own modelling work against that of other teams"
+    },
+    {
+      "theme": "Realised positive value for public-health planning and Ministry of Health briefings",
+      "weight": 3,
+      "summary": "A minority express clear positive value, seeing the outputs as inputs that feed MoH briefings and public-health planning (e.g. healthcare capacity, vaccination), in some cases via their own contributions to RespiCompass. This is the clearest evidence of forecasting delivering decision-relevant value today.",
+      "quote": "Both are useful in public health planning."
+    },
+    {
+      "theme": "Interpretability and training gap: outputs must be usable by non-modellers (surveillance specialists, policymakers)",
+      "weight": 2,
+      "summary": "Even where outputs exist, the people who consume them in most countries are surveillance specialists and policymakers, not modellers, and they struggle to interpret them. Respondents ask for plain-language outputs legible to non-modellers plus short training courses, framing interpretability as a gate on whether forecasts reach the decision layer at all.",
+      "quote": "forecasts should be understandable and easy to interpret by specialists (not staff for mathematical modelling)"
+    },
+    {
+      "theme": "Weak integration with surveillance systems (ERVISS) and thin dissemination channels",
+      "weight": 2,
+      "summary": "Respondents point to missing mechanisms that would embed forecasts in existing workflows: explicit links between RespiCast and surveillance data (ERVISS), closer surveillance-modelling exchange, and richer self-serve web content rather than reliance on email/newsletter reminders as the main touchpoint.",
+      "quote": "Suggest cross-interdisciplinary exchange between surveillance and modelling groups."
+    }
+  ],
+  "value_narrative": "The realised value of ECDC forecasting to NFPs today is modest and largely indirect: better-resourced teams use RespiCast/RespiCompass mainly as an external benchmark to cross-check their own models (\"we use them to compare our own modelling work against that of other teams\"), while a cluster of others are aware of the outputs but have \"not been using them for our own national decision making.\" Where value is clearly realised it is concentrated in public-health planning and MoH briefings (\"Both are useful in public health planning\") and in the more-trusted short-term forecasts. The potential value is real but conditional: several NFPs say the outputs \"will both influence our work and announcements\" once a season of real-world comparison builds trust, but that value will only reach the decision layer if outputs become interpretable to non-modellers and national modelling capacity is strengthened.",
+  "barriers": [
+    "No, limited, or outsourced national modelling capacity and no sustainable funding <e2><80><94> the single most-cited barrier (r10, r13, r15, r17, r19)",
+    "Low awareness and outputs not yet embedded in routine national decision-making or communications",
+    "Lack of a demonstrated track record <e2><80><94> NFPs want at least one season comparing real-world data against model outputs before trusting them",
+    "Scepticism that long-horizon scenarios (e.g. 6-month RespiCompass) can plausibly drive concrete national decisions",
+    "Outputs not interpretable by the actual consumers (surveillance specialists, policymakers) and no training on how to use/interpret them",
+    "Limited transparency: too many models and a lack of clear performance/skill metrics beyond a baseline model",
+    "Weak integration with surveillance data streams (no explicit RespiCast-ERVISS link) and thin dissemination reliant on email/newsletters",
+    "Strong preference for national/in-house models plus lack of country-specific tailoring caps the marginal value of supranational outputs for resourced NFPs"
+  ],
+  "recommendations": [
+    "Issue an ECDC recommendation urging Member States to establish adequately resourced, funded national-level modelling capacity within public health institutes, and advocate for a sustainable EU funding mechanism so uptake is possible equitably across all MS.",
+    "Publish transparent, standardised performance and skill metrics (beyond the baseline model) and curate/reduce the number of models in the ensemble to improve transparency and earn decision-making trust.",
+    "Clearly position short-term forecasts (RespiCast) as the primary decision-relevant product, and frame long-horizon scenarios (RespiCompass) as planning/what-if tools with explicit uncertainty caveats rather than decision drivers.",
+    "Provide short training courses and plain-language, non-modeller-friendly outputs aimed at surveillance specialists and policymakers, with concrete guidance on how to interpret and apply the forecasts.",
+    "Run and openly publish a structured one-season retrospective comparing forecasts against real-world outcomes to build the validation track record NFPs say they need before adopting.",
+    "Integrate forecasts with surveillance systems by creating explicit links between RespiCast and ERVISS, and foster cross-disciplinary exchange between surveillance and modelling teams to embed outputs in existing epidemiological workflows.",
+    "Strengthen dissemination with richer, self-serve web content instead of relying on email/newsletter reminders, and add country-specific tailoring plus comparability/benchmarking features so NFPs can cross-check ECDC outputs against national models."
+  ]
+}

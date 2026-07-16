@@ -1,0 +1,10 @@
+class,staff,mean_score,n
+Guidance,0 staff,3.92,13
+Guidance,1-5 staff,4,5
+Guidance,>10 staff,3,1
+Scenario modelling,0 staff,1.87,23
+Scenario modelling,1-5 staff,2.12,8
+Scenario modelling,>10 staff,3,2
+Short-term forecasting,0 staff,2.42,26
+Short-term forecasting,1-5 staff,2.25,8
+Short-term forecasting,>10 staff,3,2

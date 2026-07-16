@@ -1,0 +1,27 @@
+respondent_id,question,variable,text
+r02,Q13,reflections,"to address policy questions, models should be tailored to country-specific situation"
+r02,Q8b,value_choice_text,"Frankly, none. We don’t use them to make decisions, we use them to compare our own modelling work against that of other teams"
+r02,Q7b,dec_other_text,"We are aware of respiratory virus burden modelling work done at ECDC, and we participate in some of this work. The public health actions or decisions at the national level are informed by our own modelling outputs, by ECDC activities ."
+r03,Q13,reflections,Suggest cross-interdisciplinary exchange between surveillance and modelling groups.
+r03,Q8b,value_choice_text,We have not routinely used the outputs in our evaluations and we plan to review them during the coming season.
+r03,Q7b,dec_other_text,May contribute to assessment on epidemiological situation.
+r03,Q11b,comms_forecast_text,Links between RespiCast and ERVISS
+r05,Q8b,value_choice_text,"We do have in-house modelling work for influenza, and we collaborate with Institut Pasteur on modelling COVID-19 activity, and we will probably use preferentially the French predictions. However, we will certainly find it interesting to compare them with RespiCast and RespiCompass outputs. Santé publique France is not directly involved in decision making, but the modelling outputs can be used to inform the MoH every week, and could impact decision making (healtcare capacity planning, vaccination, etc.)"
+r08,Q13,reflections,Emails/newletters are very nice reminders but more detail should be on web
+r08,Q8b,value_choice_text,"RespiCast will be very interesting internally but unclear how much other institutions will be affected, RespiCompass will almost certainly be used in announcements etc IF it seems to fit well - together, once we have at least one season to compare real world with the model outputs, they will both influence our work and announcements to other entities etc."
+r09,Q8b,value_choice_text,This would cover short-term and long-term modeling.
+r10,Q13,reflections,We have no staff in our institute because we outsource modelling to another institution (Fondazione Bruno Kressler). They do the mathematical modelling that informs policy and surveillance in our Institute and the MOH
+r12,Q8b,value_choice_text,Belgian teams are collaborating to the RespiCompass (UHasselt/UNamur). Their work for the Compass is also used to inform public health authorities.
+r12,Q12b,comms_scenario_text,Reducing the number of models might improve transparency and possibly add more transparent performance metrics (e.g. outside of baseline model)
+r13,Q13,reflections,"An ECDC recommendation for MSs to have adequately resourced and funded national level modelling capacity within public health institutes would support our own advocacy. A sustainable European funding mechanism for building MS capacity in modelling would lead to equitable competency across Europe. Supranational modelling is useful, but national level capacity is required to respond to needs of each MS."
+r13,Q8b,value_choice_text,"We are aware of the outputs but have not been using them for our own national decision making. We have limited modelling capacity and these outputs may support our HPSC staff. For the coming season we plan to monitor regularly, and will review how we can make use of them as an additional contribution to our national modelling capacity. Respicast will be more useful as it is short time frame."
+r14,Q13,reflections,Some short training course might be beneficial
+r14,Q8b,value_choice_text,higher probability
+r15,Q13,reflections,"Even though we do not have modelling capacity in communicable diseases right now, there is a mathematical modeller that used to work at the institute and is expecting to come back in a few months. So we expect to reinforce our modelling capacities in the future."
+r15,Q8b,value_choice_text,I find short term projections to be more reliable that long term. I also find unlikely that they decision-makers make relevant decisions based on a mathematical model with for example 6 months horizon.
+r17,Q13,reflections,"All mentioned above forecasts should be understandable and easy to interpret by specialists (not staff for mathematical modelling) involved in respiratory infection surveillance. These forecasts are not used due to low awareness and lack of information on how to use/ interpret the data. Policy makers may not be able to interpret the data, so ask specialists to interpret these data"
+r17,Q8b,value_choice_text,"Problems with the interpretation of the results, working with mentioned forecasts and lack of staff for mathematical modelling (analysts/statisticians)"
+r18,Q13,reflections,No additional reflections
+r18,Q8b,value_choice_text,Both are useful in public health planning.
+r19,Q8b,value_choice_text,No resources for modelling in Luxembourg.
+r19,Q7b,dec_other_text,did not want to select other
