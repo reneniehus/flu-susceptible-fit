@@ -13,6 +13,23 @@ covering 15–30 countries. Yet realised engagement stays modest (RespiCast ≈2
 capacity bands. **The binding constraint has moved to the demand side** — awareness, interpretation
 support, and a route into the decision — not the availability of a forecast.
 
+## The COVID-19 hospitalisation continuity claim
+
+Claim under test: *"COVID-19 hospitalisation forecasts have been produced almost uninterrupted since
+2021, first by the COVID-19 hub and then within RespiCast."*
+
+**Verdict: supported, with one refinement.** Stitching the archived EU COVID-19 Forecast Hub to
+RespiCast-Covid19 on the ISO-week grid, hospitalisation forecasts ran **2021-07-26 → 2026-06-22**:
+**255 of 257 weeks (99.2%)**, only **two isolated one-week gaps**, and a **seamless** handover (the
+archive's last hospitalisation round is the ISO week immediately before RespiCast's first). The one
+refinement worth stating plainly: **"since 2021" means late July 2021** for hospitalisations
+specifically — COVID *cases and deaths* go back to February 2021, but hospitalisations were added mid-
+2021. Two honest caveats on the word "produced": (i) in the EU-COVID-hub era the record was **thin** —
+a median of ~4 models per week — before roughly doubling under RespiCast; (ii) coverage is *presence*,
+not skill. A defensible restatement: *"An ensemble COVID-19 hospitalisation forecast has been published
+for the EU/EEA almost every week since mid-2021, without a meaningful interruption across the change of
+host from the EU COVID-19 Forecast Hub to RespiCast."*
+
 ## Independent verification pass
 
 A separate multi-agent pass re-derived the headline numbers from the **raw** files, blind to

@@ -1,4 +1,6 @@
-indicator,first_round,last_round,n_rounds,n_seasons,peak_models,median_models,rounds_with_ens,distinct_models
-ARI incidence,2024-10-23,2026-07-15,91,2,14,7,89,18
-COVID-19 hospitalisations,2024-10-23,2026-06-24,88,2,11,8.5,87,17
-ILI incidence,2024-10-23,2026-07-15,91,2,20,14,89,25
+indicator,first_round,last_round,n_rounds,n_seasons,peak_models,median_models,rounds_with_ens,distinct_models,span_weeks,covered_weeks,coverage_pct,n_gaps,longest_gap
+ARI incidence,2023-12-18,2026-07-13,111,3,14,8,109,27,135,111,82.2,1,24
+COVID-19 cases,2021-02-01,2024-10-14,193,5,32,16,166,55,194,193,99.5,1,1
+COVID-19 deaths,2021-02-01,2024-10-14,193,5,32,12,172,53,194,193,99.5,1,1
+COVID-19 hospitalisations,2021-07-26,2026-06-22,255,6,11,6,215,36,257,255,99.2,2,1
+ILI incidence,2023-11-13,2026-07-13,113,3,20,13,109,33,140,113,80.7,2,24

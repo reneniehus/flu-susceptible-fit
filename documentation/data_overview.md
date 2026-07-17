@@ -30,42 +30,54 @@ one country's collective NFP response, de-identified — there is no per-respond
 higher = more engaged). The exact anchor wording is not present in the de-identified export, so only
 the ordering and distribution are interpreted, never a conversion to "% who find it useful".
 
-## 2. The RespiCast hubs — external clones under `../hubs/`
+## 2. The forecasting hubs — external clones under `../hubs/`
 
-Both follow the [hubverse](https://hubverse.io) layout:
-`model-output/<team-model>/<origin_date>-<team-model>.csv`, one file per team per weekly round.
+**Five** hubs, chosen so the record is *continuous* — each live RespiCast hub is paired with the
+archived predecessor it replaced. Two file formats (dispatched on `format` in `config.R$hubs`):
 
-| Column | Meaning |
-|---|---|
-| `origin_date` | the weekly forecast round (a Wednesday); the analysis unit |
-| `target` | the indicator (see below) |
-| `target_end_date`, `horizon` | 1–4 weeks ahead |
-| `location` | EU/EEA country (ISO2) |
-| `output_type`, `output_type_id`, `value` | median + quantile forecast values (not used here) |
+| Hub | Format | Era | Indicator(s) | Window (ISO weeks) |
+|---|---|---|---|---|
+| covid19-forecast-hub-europe_archive | legacy | archive | COVID-19 cases / hospitalisations / deaths | 2021-02 → 2024-10 |
+| RespiCast-Covid19 | modern | current | COVID-19 hospitalisations | 2024-10 → 2026-06 |
+| flu-forecast-hub_archive | modern | archive | ILI incidence | 2023-11 → 2024-05 |
+| ari-forecast-hub_archive | modern | archive | ARI incidence | 2023-12 → 2024-05 |
+| RespiCast-SyndromicIndicators | modern | current | ILI + ARI incidence | 2024-10 → 2026-07 |
 
-Two quirks, both handled in `code/03_hubs/load_forecasts.R` and found by inspecting the raw files:
-1. **Column order is not constant across files** — columns are always parsed **by name**, never by
-   position.
+**Modern (hubverse) format** — `model-output/<team>/<origin_date>-<team>.csv`, with an `origin_date`
+(Wednesday round) and a `target` column naming the indicator. **Legacy (old EU COVID hub) format** —
+`data-processed/<team>/<forecast_date>-<team>.csv`, with a `forecast_date` (Monday round) and compound
+targets like `"2 wk ahead inc hosp"`; the indicator is the last token (`case` / `hosp` / `death`).
+
+Three quirks, all handled in `code/03_hubs/load_forecasts.R` and found by inspecting the raw files:
+1. **Column order is not constant across modern files** — columns are parsed **by name**, never by position.
 2. A handful of submissions are **header-only** (no data rows) — skipped and counted.
+3. Legacy rounds fall on **Mondays**, modern rounds on **Wednesdays** — both are snapped to the
+   **ISO-week Monday** (`week_monday()`) so the two eras land on one weekly grid; that shared grid is
+   what makes gap-detection (the "uninterrupted since 2021" test) meaningful.
 
-### Targets (verified against every file and the git history)
-
-| Hub | Target(s) | Window |
-|---|---|---|
-| RespiCast-Covid19 | `hospital admissions` → **COVID-19 hospitalisations** | 2024-10-23 → 2026-06-24 (88 rounds) |
-| RespiCast-SyndromicIndicators | `ILI incidence`, `ARI incidence` | 2024-10-23 → 2026-07-15 (91 rounds) |
-
-There is **no "COVID cases" target** in either hub. COVID-19 hospitalisations sit in their own hub;
-the syndromic hub's git history shows it has **only ever** carried ILI and ARI. (The COVID hub's
-config history still contains an "ILI incidence" template stanza — a trace of the RespiCast
-reorganisation that split the indicators into separate repositories.)
+There is **no "COVID cases" target** in the RespiCast era — it lived only in the archived hub. The
+syndromic hub's git history shows it has **only ever** carried ILI and ARI.
 
 ### Model roles
 
-A `model-output/` folder is one team-model. Three are **not** ordinary models and are counted apart:
+A `model-output/` (or `data-processed/`) folder is one team-model. A few are **not** ordinary models
+and are counted apart:
 
-- **ensembles:** `respicast-hubEnsemble` (both hubs), `fjordhest-ensemble` (syndromic) — the combined
-  products external stakeholders actually see.
-- **baseline:** `respicast-quantileBaseline` — the reference every hub ships to benchmark against.
+- **ensembles (the official hub product):** `respicast-hubEnsemble` (RespiCast), `EuroCOVIDhub-ensemble`
+  (legacy). **Note:** `fjordhest-ensemble` is a *participating team's* model (Fjordhest, NIPH;
+  `team_model_designation: primary`), not a hub ensemble — so it counts as a **model**, not an ensemble.
+- **baseline:** `respicast-quantileBaseline`, `EuroCOVIDhub-baseline`.
 
-Everything the analysis calls "models" excludes these three.
+Everything the analysis calls "models" excludes the ensembles and baselines.
+
+### The other org repositories (assessed, and why they are / aren't used)
+
+The `european-modelling-hubs` org has 23 repositories. Beyond the five above, the rest are **not**
+sources of time-stamped forecast submissions and are out of scope for a coverage analysis: the COVID/
+RespiCompass **scenario** hubs (scenario projections, not weekly forecasts — `RespiCompass`,
+`covid19-scenario-hub-europe-1`), **websites/viz** (`*-website`, `*-viz`, `actions-dashboard`),
+**tooling / validation / R packages** (`hub-tools`, `HubValidations`, `EuroForecastHub`,
+`*-baseline`, `*-validations`, `HubSubmissionApp`, `modelling_setup`, `respicompass-resources`,
+`.github`), and **per-team auto-submission** repos (`*-submissions`, `autosubmission-*`). The scenario
+hubs are related to the *survey* (Q5.3 / Q5.5) but hold scenarios, not the weekly forecasts this
+delivery analysis counts.

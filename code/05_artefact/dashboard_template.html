@@ -16,8 +16,9 @@
   --hair:#e4e7ec; --baseline:#c9cdd7;
   --accent:#0b6f8c; --accent-2:#0a5c74;
 
-  /* data — indicator identity (fixed) */
-  --covid:#2a78d6; --ili:#eb6834; --ari:#4a3aa7;
+  /* data — indicator identity (fixed). COVID trio validated as a set (aqua/blue/magenta). */
+  --covid-cases:#1baf7a; --covid:#2a78d6; --covid-deaths:#e87ba4; --ili:#eb6834; --ari:#4a3aa7;
+  --era-archive:#7a8699; --era-current:#2a78d6;  /* handover: archived predecessor vs live hub */
   /* diverging Likert poles + neutral */
   --lk-neg2:#184f95; --lk-neg1:#7fb0ec; --lk-mid:#c9cdd7; --lk-pos1:#eb8c6a; --lk-pos2:#c0392b;
   /* forecasting / scenario / guidance classes */
@@ -32,7 +33,8 @@
     --ink:#eef1f5; --ink-2:#a9b2c1; --muted:#79808f;
     --hair:#252b34; --baseline:#39414e;
     --accent:#38b6d4; --accent-2:#5ac6df;
-    --covid:#3987e5; --ili:#d95926; --ari:#9085e9;
+    --covid-cases:#199e70; --covid:#3987e5; --covid-deaths:#d55181; --ili:#d95926; --ari:#9085e9;
+    --era-archive:#8791a3; --era-current:#3987e5;
     --lk-neg2:#3987e5; --lk-neg1:#2b5f9c; --lk-mid:#39414e; --lk-pos1:#c9603f; --lk-pos2:#e0574f;
     --c-fore:#3987e5; --c-scen:#9085e9; --c-guid:#79808f;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
@@ -191,7 +193,7 @@ footer code{font-family:var(--font-mono);font-size:12px;background:var(--surface
 <header class="hero"><div class="wrap">
   <div class="eyebrow">ECDC respiratory-virus modelling · independent analysis</div>
   <h1>What do national focal points get from ECDC forecasting — and what do the hubs actually deliver?</h1>
-  <p class="lede">Two views of the same system. <b class="dim">Demand:</b> a survey of 19 EU/EEA National Focal Points on their in-house modelling capacity and the value they place on ECDC's short-term forecasts (RespiCast) and scenarios (RespiCompass). <b class="dim">Delivery:</b> two seasons of the RespiCast forecasting hubs, reconstructed submission-by-submission — which indicators were forecast, in which weeks, by how many models and the ensemble.</p>
+  <p class="lede">Two views of the same system. <b class="dim">Demand:</b> a survey of 19 EU/EEA National Focal Points on their in-house modelling capacity and the value they place on ECDC's short-term forecasts (RespiCast) and scenarios (RespiCompass). <b class="dim">Delivery:</b> five European forecasting hubs reconstructed submission-by-submission — the archived EU COVID-19 hub (2021) and its RespiCast successors — to trace which indicators were forecast, in which weeks, by how many models. The through-line: <b class="dim">COVID-19 hospitalisation forecasts, produced almost every week since mid-2021.</b></p>
   <div class="meta" id="heroMeta"></div>
   <div class="kpis" id="kpis"></div>
 </div></header>
@@ -260,33 +262,41 @@ footer code{font-family:var(--font-mono);font-size:12px;background:var(--surface
 <section class="band" id="bridge" style="background:var(--surface-2)"><div class="wrap">
   <div class="eyebrow">Where demand meets delivery</div>
   <h2 style="font-size:clamp(21px,3vw,29px);font-weight:720;letter-spacing:-.02em;margin-top:10px;max-width:24ch">The survey measures appetite. The hubs are the meal actually being served.</h2>
-  <p class="section-intro" style="max-width:74ch">Focal points told us short-term forecasting is what they most expect to value — yet even the countries with no modelling of their own engage only modestly. One explanation would be that the forecasts simply aren't there for them. So the natural next question is one of supply: over the last two seasons, what did the ECDC RespiCast hubs actually produce — for which indicators, in which weeks, and with how many models behind each ensemble? If supply turns out to be robust, then the gap between value and use lives on the demand side, not the supply side.</p>
+  <p class="section-intro" style="max-width:74ch">Focal points told us short-term forecasting is what they most expect to value — yet even the countries with no modelling of their own engage only modestly. One explanation would be that the forecasts simply aren't there for them. So the natural next question is one of supply: going back to 2021 — across the archived EU COVID-19 hub and the RespiCast successors — what did ECDC actually produce, for which indicators, in which weeks, and with how many models? If supply turns out to be durable, then the gap between value and use lives on the demand side, not the supply side.</p>
 </div></section>
 
 <!-- ============================ PART II — DELIVERY ============================ -->
 <section class="band" id="delivery"><div class="wrap">
-  <div class="part-head"><span class="no">Part II</span><h2>Delivery — two seasons of RespiCast forecast coverage</h2></div>
-  <p class="section-intro">Reconstructed from every submission in the two hubs — <b class="dim">RespiCast-Covid19</b> (COVID-19 hospital admissions) and <b class="dim">RespiCast-SyndromicIndicators</b> (ILI and ARI incidence). COVID-19 hospitalisations sit in their own hub, split off from the syndromic indicators; the syndromic hub has only ever carried ILI and ARI. "Models" counts genuine teams; the ensemble and the reference baseline are counted apart.</p>
+  <div class="part-head"><span class="no">Part II</span><h2>Delivery — European respiratory forecasting since 2021</h2></div>
+  <p class="section-intro">Reconstructed from every submission in <b>five</b> hubs: the archived <b class="dim">EU COVID-19 Forecast Hub</b> (cases, hospitalisations, deaths; 2021–2024) and its RespiCast successors — <b class="dim">RespiCast-Covid19</b> (hospitalisations) and <b class="dim">RespiCast-SyndromicIndicators</b> (ILI, ARI) — plus the archived <b class="dim">flu</b> and <b class="dim">ARI</b> hubs that ran the 2023/24 syndromic season. "Models" counts genuine teams; the official hub ensemble and the reference baseline are counted apart. (fjordhest-ensemble is a participating team, not a hub ensemble — so it counts as a model.)</p>
 
   <div class="kpis" id="kpis2" style="margin-top:6px"></div>
 
   <div class="card" style="margin-top:22px">
-    <h3>The coverage grid — who was forecast, when, by how many models</h3>
-    <p class="sub">Each column is one weekly round. Cell shade = number of contributing models; the thin strip below each indicator marks weeks the <b>ensemble</b> was published. Hover any cell for the exact count, ensemble status and country reach. Coverage counts the <em>presence</em> of a submission — not its accuracy or skill.</p>
+    <h3>The claim, tested — COVID-19 hospitalisation forecasts since 2021</h3>
+    <p class="sub">One weekly track, stitched across the handover from the archived EU COVID-19 hub to RespiCast. Bar height = contributing models that week; colour = which era produced it; a red tick marks any week with no hospitalisation forecast at all. Hover for the week's detail.</p>
+    <div class="fig" id="c_continuity"></div>
+    <div class="legend" id="cont_legend"></div>
+    <div class="take" id="take_claim"></div>
+  </div>
+
+  <div class="card">
+    <h3>The full coverage grid — five indicators, five years</h3>
+    <p class="sub">Each column is one ISO week. Cell shade = number of contributing models; the strip below each row marks weeks the <b>ensemble</b> was published. The dashed line is the October-2024 archive → RespiCast handover. Coverage counts the <em>presence</em> of a submission, not its skill.</p>
     <div class="fig scroll-x" id="c_heat"></div>
     <div class="legend" id="heat_legend" style="margin-top:14px"></div>
   </div>
 
   <div class="card">
-    <h3>Models per week — winter peaks, summer troughs, a persistent ILI–ARI gap</h3>
-    <p class="sub">Contributing models per round, by indicator. ILI draws roughly twice the models of ARI <em>in the same hub, from the same files</em>; participation swells each winter and thins over summer without stopping. Season means are roughly flat across the two years, though ILI and ARI winter peaks rose. Hover for all three indicators at once.</p>
-    <div class="fig" id="c_line"></div>
-    <div class="legend" id="line_legend"></div>
+    <h3>COVID-19: from three indicators to one</h3>
+    <p class="sub">Contributing models per week for the three COVID indicators. Cases and deaths drew the deepest fields — up to 32 models — but <b>ended when the EU COVID hub closed in October 2024</b>; RespiCast carried only hospitalisations forward. Hospitalisations were always the sparser indicator. Hover for all three at once.</p>
+    <div class="fig" id="c_covidline"></div>
+    <div class="legend" id="covidline_legend"></div>
   </div>
 
   <div class="card">
-    <h3>Who showed up — model participation across the two seasons</h3>
-    <p class="sub">Each row is a team-model; a mark sits on every round it submitted. Ensembles and the baseline are pinned at the top of each hub. Some teams are season-round stalwarts, others arrive mid-season or appear for a single winter.</p>
+    <h3>The teams behind COVID-19 hospitalisation forecasts</h3>
+    <p class="sub">Every team that ever submitted a COVID-19 hospitalisation forecast — archived EU COVID hub, then RespiCast. A mark sits on each week submitted. A handful bridge the handover; most belong to one era.</p>
     <div class="fig scroll-x" id="c_ribbon"></div>
     <div class="legend" id="ribbon_legend"></div>
   </div>
@@ -294,13 +304,13 @@ footer code{font-family:var(--font-mono);font-size:12px;background:var(--surface
   <div class="grid-2">
     <div class="card">
       <h3>Country reach differs sharply by indicator</h3>
-      <p class="sub">Distinct EU/EEA locations ever forecast. ILI reaches the most countries; COVID-19 hospitalisations the fewest — the indicator focal points most associate with capacity planning is the least geographically covered.</p>
+      <p class="sub">Distinct EU/EEA locations ever forecast. COVID cases and deaths reached the most countries; COVID-19 hospitalisations — the indicator focal points most tie to capacity planning — reached the fewest.</p>
       <div class="fig" id="c_country"></div>
     </div>
     <div class="card">
       <h3>Season by season</h3>
-      <p class="sub">Rounds, mean and peak contributing models, and distinct teams per indicator across the two seasons.</p>
-      <div class="fig" id="c_season"></div>
+      <p class="sub">Rounds, mean and peak contributing models, and distinct teams per indicator per season.</p>
+      <div class="fig scroll-x" id="c_season"></div>
     </div>
   </div>
 
@@ -312,13 +322,13 @@ footer code{font-family:var(--font-mono);font-size:12px;background:var(--surface
   <div class="cols">
     <div>
       <h4>What this is</h4>
-      <p>An independent analysis, not an ECDC publication. Built from a de-identified NFP survey export and the public RespiCast hub repositories. Every number here is regenerated from source by <code>code/00_main.R</code>; the charts read one embedded JSON produced by that pipeline.</p>
+      <p>An independent analysis, not an ECDC publication. Built from a de-identified NFP survey export and five public European forecasting-hub repositories (the archived EU COVID-19 hub, its RespiCast successors, and the archived flu/ARI hubs). Every number here is regenerated from source by <code>code/00_main.R</code>; the charts read one embedded JSON produced by that pipeline.</p>
       <p style="margin-top:10px"><span class="pill">survey n = 19</span> <span class="pill" id="pill_rounds"></span> <span class="pill" id="pill_models"></span></p>
     </div>
     <div>
       <h4>Sources</h4>
       <p>Survey: <code>data/survey_deidentified.xlsx</code> (ECDC RespiCompass 2024 NFP survey, de-identified).</p>
-      <p style="margin-top:8px">Hubs: <a href="https://github.com/european-modelling-hubs/RespiCast-Covid19">RespiCast-Covid19</a> · <a href="https://github.com/european-modelling-hubs/RespiCast-SyndromicIndicators">RespiCast-SyndromicIndicators</a>.</p>
+      <p style="margin-top:8px">Five hubs (european-modelling-hubs): <a href="https://github.com/european-modelling-hubs/covid19-forecast-hub-europe_archive">covid19-forecast-hub-europe_archive</a>, <a href="https://github.com/european-modelling-hubs/RespiCast-Covid19">RespiCast-Covid19</a>, <a href="https://github.com/european-modelling-hubs/RespiCast-SyndromicIndicators">RespiCast-SyndromicIndicators</a>, <a href="https://github.com/european-modelling-hubs/flu-forecast-hub_archive">flu-forecast-hub_archive</a>, <a href="https://github.com/european-modelling-hubs/ari-forecast-hub_archive">ari-forecast-hub_archive</a>.</p>
     </div>
     <div>
       <h4>Read carefully</h4>
@@ -345,8 +355,13 @@ function isDark(){
   if (t) return t==='dark';
   return matchMedia('(prefers-color-scheme: dark)').matches;
 }
-const INDCOL = () => ({'COVID-19 hospitalisations':cvar('--covid'),'ILI incidence':cvar('--ili'),'ARI incidence':cvar('--ari')});
-const INDSHORT = {'COVID-19 hospitalisations':'COVID-19 hosp.','ILI incidence':'ILI','ARI incidence':'ARI'};
+const INDCOL = () => ({
+  'COVID-19 cases':cvar('--covid-cases'), 'COVID-19 hospitalisations':cvar('--covid'), 'COVID-19 deaths':cvar('--covid-deaths'),
+  'ILI incidence':cvar('--ili'), 'ARI incidence':cvar('--ari')});
+const INDSHORT = {
+  'COVID-19 cases':'COVID cases', 'COVID-19 hospitalisations':'COVID hosp.', 'COVID-19 deaths':'COVID deaths',
+  'ILI incidence':'ILI', 'ARI incidence':'ARI'};
+const eraCol = era => cvar(era==='archive' ? '--era-archive' : '--era-current');
 
 /* sequential heat ramp for #models (more = darker on light, brighter on dark) */
 function heatRamp(){
@@ -401,15 +416,14 @@ function renderHero(){
   const integ = S.integration.filter(i=>i.level==='Agree'||i.level==='Strongly agree').reduce((a,b)=>a+b.n,0);
   const nresp = DATA.meta.n_respondents;
   const hd = C.headline;
-  const ili = hd.find(h=>h.indicator==='ILI incidence');
+  const hosp = C.continuity.find(c=>c.indicator==='COVID-19 hospitalisations');
   const totalRounds = C.weeks.length;
   const distinctModels = new Set(C.ribbon.filter(r=>r.role==='model').map(r=>r.model)).size;
-  const ensRounds = ili.rounds_with_ens, ensPct = Math.round(100*ensRounds/ili.n_rounds);
 
   document.getElementById('heroMeta').replaceChildren(...[
     ['Survey', `${nresp} EU/EEA focal points`],
-    ['Hubs', '2 · RespiCast Covid19 + Syndromic'],
-    ['Coverage', `${totalRounds} weekly rounds · 2 seasons`],
+    ['Hubs', '5 · EU COVID archive + RespiCast + flu/ARI archives'],
+    ['Indicators', '5 · COVID cases/hosp/deaths · ILI · ARI'],
     ['Window', `${fmtDate(C.weeks[0])} → ${fmtDate(C.weeks[C.weeks.length-1])}`]
   ].map(([k,v])=>{ const s=document.createElement('span'); const b=document.createElement('b'); b.textContent=k+': '; s.appendChild(b); s.appendChild(document.createTextNode(v)); return s; }));
 
@@ -422,18 +436,16 @@ function renderHero(){
     {v:pct(100*integ/nresp), u:'', l:'report a clear route to <b>use</b> modelling', s:`${integ}/${nresp} agree there is a mechanism`, bar:'var(--ari)'}
   ]);
 
-  // Delivery KPIs
+  // Delivery KPIs — centred on the continuity claim
   const k2=document.getElementById('kpis2');
-  const peakILI = ili.peak_models;
-  const cc = Object.fromEntries(C.country_coverage.map(c=>[c.indicator,c.n_countries]));
   kpiCards(k2, [
-    {v:totalRounds, u:'', l:'weekly forecast rounds analysed', s:'across two winter seasons', bar:'var(--accent)'},
-    {v:3, u:'', l:'indicators forecast', s:'COVID-19 hosp. · ILI · ARI', bar:'var(--covid)'},
-    {v:peakILI, u:' models', l:'peak contributors in one round (ILI)', s:`${distinctModels} distinct teams overall`, bar:'var(--ili)'},
-    {v:pct(ensPct), u:'', l:'of ILI rounds carried an ensemble', s:`${ensRounds}/${ili.n_rounds} rounds`, bar:'var(--ari)'}
+    {v:hosp.coverage_pct+'%', u:'', l:'of weeks carried a <b>COVID-19 hospitalisation</b> forecast since 2021', s:`${hosp.covered_weeks}/${hosp.span_weeks} ISO weeks`, bar:'var(--covid)'},
+    {v:hosp.span_weeks, u:' wks', l:'unbroken record length', s:`${fmtDate(hosp.first_week)} → ${fmtDate(hosp.last_week)}`, bar:'var(--accent)'},
+    {v:hosp.longest_gap, u:' wk', l:'longest interruption in that record', s:`only ${hosp.n_gaps} one-week gaps; handover seamless`, bar:'var(--covid-cases)'},
+    {v:5, u:'', l:'indicators across five hubs', s:`${distinctModels} distinct teams, 2021–2026`, bar:'var(--ili)'}
   ]);
 
-  document.getElementById('pill_rounds').textContent = `${totalRounds} rounds`;
+  document.getElementById('pill_rounds').textContent = `${totalRounds} weeks`;
   document.getElementById('pill_models').textContent = `${distinctModels} models`;
 }
 function kpiCards(root, items){
@@ -719,80 +731,119 @@ function pickQuotes(){
 }
 function trimQuote(t){ t=t.replace(/\s+/g,' ').trim(); return t.length>230? t.slice(0,227)+'…':t; }
 
+const fmtMonth = d => { const [y,m]=d.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]+" '"+y.slice(2); };
+
+/* ============================ CONTINUITY — the claim, tested ============================ */
+function renderContinuity(){
+  const root=clear('c_continuity');
+  const IND='COVID-19 hospitalisations';
+  const weeks=C.weeks;
+  const nm=asArr(C.series[IND].n_models), era=asArr(C.series[IND].era), ens=asArr(C.series[IND].has_ensemble);
+  const cont=C.continuity.find(c=>c.indicator===IND);
+  const gaps=C.gaps_covid_hosp||[];
+  const i0=weeks.indexOf(cont.first_week), i1=weeks.indexOf(cont.last_week);
+  const idx=[]; for(let i=i0;i<=i1;i++) idx.push(i);
+  const n=idx.length, maxY=Math.max(1,...idx.map(i=>nm[i]||0));
+  const W=980,H=210,padL=32,padR=14,padT=16,padB=42;
+  const sx=k=>padL+(k/(n-1))*(W-padL-padR);
+  const sy=v=>padT+(1-v/maxY)*(H-padT-padB);
+  const s=svg(W,H); s.style.minWidth='680px';
+  for(let v=0;v<=maxY;v+=Math.max(1,Math.ceil(maxY/4))){const y=sy(v);s.appendChild(e('line',{x1:padL,y1:y,x2:W-padR,y2:y,class:'gridline'}));s.appendChild(txt(padL-6,y+4,v,'axis',{'text-anchor':'end'}));}
+  let lastY=''; idx.forEach((i,k)=>{const w=weeks[i];const mm=w.slice(5,7);if(mm==='01'||mm==='07'){const yr=w.slice(0,7);if(yr!==lastY){lastY=yr;const x=sx(k);s.appendChild(txt(x,H-14,fmtMonth(w),'axis',{'text-anchor':'middle'}));s.appendChild(e('line',{x1:x,y1:padT,x2:x,y2:H-padB,stroke:'var(--hair)','stroke-width':1}));}}});
+  // handover
+  const hk=idx.findIndex(i=>era[i]==='current');
+  if(hk>0){const x=sx(hk)-1;s.appendChild(e('line',{x1:x,y1:padT,x2:x,y2:H-padB,stroke:'var(--baseline)','stroke-width':1.5,'stroke-dasharray':'3 3'}));s.appendChild(txt(x-4,padT+9,'EU COVID hub','axis',{'text-anchor':'end'}));s.appendChild(txt(x+4,padT+9,'RespiCast','axis'));}
+  // bars
+  const bw=Math.max(1,(W-padL-padR)/n-0.5);
+  idx.forEach((i,k)=>{const v=nm[i]||0;if(v>0){const x=sx(k)-bw/2,y=sy(v);s.appendChild(e('rect',{x,y,width:bw,height:H-padB-y,rx:0.5,fill:eraCol(era[i])}));}});
+  // gap ticks (red)
+  gaps.forEach(g=>{const wi=weeks.indexOf(g.gap_start);const k=idx.indexOf(wi);if(k>=0){const x=sx(k);s.appendChild(e('rect',{x:x-1.5,y:H-padB-7,width:3,height:7,fill:cvar('--lk-pos2')}));s.appendChild(txt(x,H-padB-10,'gap','axis',{'text-anchor':'middle',fill:cvar('--lk-pos2')}));}});
+  // crosshair hover
+  const cross=e('line',{x1:0,y1:padT,x2:0,y2:H-padB,stroke:'var(--baseline)','stroke-width':1,opacity:0});s.appendChild(cross);
+  const hit=e('rect',{x:padL,y:padT,width:W-padL-padR,height:H-padT-padB,fill:'transparent'});
+  hit.addEventListener('pointermove',ev=>{const pt=s.getBoundingClientRect();const rx=(ev.clientX-pt.left)/pt.width*W;let k=Math.round((rx-padL)/(W-padL-padR)*(n-1));k=Math.max(0,Math.min(n-1,k));const i=idx[k];const x=sx(k);cross.setAttribute('x1',x);cross.setAttribute('x2',x);cross.setAttribute('opacity',1);
+    const v=nm[i]||0,eraName=era[i]==='current'?'RespiCast':(era[i]==='archive'?'EU COVID hub':'— no forecast');
+    showTip([ttHead(fmtDate(weeks[i])),ttRow(eraCol(era[i]||'archive'),'Models',String(v)),ttRow('','Source',eraName),ttRow('','Ensemble',ens[i]?'yes':'—')],ev.clientX,ev.clientY);});
+  hit.addEventListener('pointerleave',()=>{hideTip();cross.setAttribute('opacity',0);});
+  s.appendChild(hit); root.appendChild(s);
+  const lg=clear('cont_legend');
+  legend('cont_legend',lg,[['EU COVID-19 Forecast Hub (archive)',cvar('--era-archive'),'sw'],['RespiCast-Covid19 (current)',cvar('--era-current'),'sw'],['week with no forecast',cvar('--lk-pos2'),'sw']]);
+  document.getElementById('take_claim').innerHTML=`<b>Verdict — supported, with one refinement.</b> COVID-19 hospitalisation forecasts ran from <b>${fmtDate(cont.first_week)}</b> to <b>${fmtDate(cont.last_week)}</b>: <b>${cont.covered_weeks} of ${cont.span_weeks} ISO weeks (${cont.coverage_pct}%)</b>, with just <b>${cont.n_gaps} isolated one-week gaps</b> and a seamless archive→RespiCast handover (consecutive weeks). "Since 2021" is precisely <b>late July 2021</b> — COVID <em>cases and deaths</em> were forecast from February 2021, but hospitalisations began that summer. And the record is deep only recently: in the EU-COVID-hub era a median of ~4 models forecast hospitalisations each week, roughly doubling under RespiCast.`;
+}
+
 /* ============================ COVERAGE HEATMAP ============================ */
 function renderHeat(){
   const root=clear('c_heat');
-  const inds=['COVID-19 hospitalisations','ILI incidence','ARI incidence'];
+  const inds=C.indicators;                     // cases,hosp,deaths,ILI,ARI
   const weeks=C.weeks, n=weeks.length;
   const maxModels=Math.max(...inds.flatMap(ind=>asArr(C.series[ind].n_models)));
-  const cw=12, gap=2, padL=140, padTop=26, rowBlock=48, ensH=6, H=padTop+inds.length*rowBlock+40;
-  const W=padL+n*(cw+gap)+16;
-  const s=svg(W,H); s.style.minWidth=W+'px';
-  // month ticks
-  let lastMonth='';
-  weeks.forEach((w,i)=>{ const mo=w.slice(0,7); if(mo!==lastMonth){ lastMonth=mo; const x=padL+i*(cw+gap);
-    s.appendChild(e('line',{x1:x-1,y1:padTop-6,x2:x-1,y2:padTop+inds.length*rowBlock-6,stroke:'var(--hair)','stroke-width':1}));
-    const [yy,mm]=mo.split('-'); s.appendChild(txt(x+1,padTop-10,['J','F','M','A','M','J','J','A','S','O','N','D'][+mm-1]+(mm==='01'?" '"+yy.slice(2):''),'axis')); } });
-  // season divider (2025/26 starts 2025-08)
-  const seasonStart=weeks.findIndex(w=>w>='2025-08-01');
-  if(seasonStart>0){ const x=padL+seasonStart*(cw+gap)-gap/2; s.appendChild(e('line',{x1:x,y1:padTop-6,x2:x,y2:padTop+inds.length*rowBlock-6,stroke:'var(--baseline)','stroke-width':1.5,'stroke-dasharray':'2 3'}));
-    s.appendChild(txt(x+4,padTop+inds.length*rowBlock+2,"2025/26 →",'axis')); s.appendChild(txt(x-4,padTop+inds.length*rowBlock+2,"← 2024/25",'axis',{'text-anchor':'end'})); }
+  const cw=3, gap=0.5, padL=118, padTop=28, rowBlock=42, ensH=5, groupGap=16;
+  const covidCount=inds.filter(i=>i.startsWith('COVID')).length;   // rows before the syndromic block
+  const rowY=ri=>padTop+ri*rowBlock+(ri>=covidCount?groupGap:0);
+  const gridBottom=rowY(inds.length-1)+30;
+  const W=padL+n*(cw+gap)+16;   // ~1130px: the whole 5 years fits the card with only mild scaling
+  const s=svg(W, gridBottom+30); s.style.minWidth='820px';
+  // year ticks: ONE label per year (at its first January week), so labels never collide
+  let lastYr=weeks[0].slice(0,4);
+  s.appendChild(txt(padL+2,padTop-10,lastYr,'axis-t'));
+  weeks.forEach((w,i)=>{ const yr=w.slice(0,4); if(w.slice(5,7)==='01' && yr!==lastYr){ lastYr=yr; const x=padL+i*(cw+gap);
+    s.appendChild(e('line',{x1:x-1,y1:padTop-6,x2:x-1,y2:gridBottom,stroke:'var(--hair)','stroke-width':1}));
+    s.appendChild(txt(x+3,padTop-10,yr,'axis-t')); } });
+  // archive -> RespiCast handover (~2024-10-21)
+  const hIdx=weeks.findIndex(w=>w>='2024-10-20');
+  if(hIdx>0){ const x=padL+hIdx*(cw+gap)-gap/2; s.appendChild(e('line',{x1:x,y1:padTop-6,x2:x,y2:gridBottom,stroke:'var(--baseline)','stroke-width':1.5,'stroke-dasharray':'2 3'}));
+    s.appendChild(txt(x-3,gridBottom+12,'← archive','axis',{'text-anchor':'end'})); s.appendChild(txt(x+3,gridBottom+12,'RespiCast →','axis')); }
   inds.forEach((ind,ri)=>{
-    const y=padTop+ri*rowBlock; const nm=asArr(C.series[ind].n_models), ens=asArr(C.series[ind].has_ensemble), loc=asArr(C.series[ind].ensemble_locations);
+    const y=rowY(ri);
+    const nm=asArr(C.series[ind].n_models), ens=asArr(C.series[ind].has_ensemble), loc=asArr(C.series[ind].ensemble_locations), era=asArr(C.series[ind].era);
     const col=INDCOL()[ind];
-    // indicator label
-    s.appendChild(txt(padL-12,y+16,INDSHORT[ind],'axis-t',{'text-anchor':'end','font-weight':'700'}));
-    s.appendChild(e('rect',{x:padL-11,y:y+22,width:8,height:8,rx:2,fill:col}));
+    s.appendChild(txt(padL-12,y+13,INDSHORT[ind],'axis-t',{'text-anchor':'end','font-weight':'700'}));
+    s.appendChild(e('rect',{x:padL-11,y:y+19,width:8,height:8,rx:2,fill:col}));
     weeks.forEach((w,i)=>{
       const x=padL+i*(cw+gap), v=nm[i]||0;
-      const cell=e('rect',{x,y:y+4,width:cw,height:24,rx:2,fill:heatColor(v,maxModels),stroke:'var(--hair)','stroke-width':.5});
+      const cell=e('rect',{x,y:y+2,width:cw,height:22,rx:1.5,fill:heatColor(v,maxModels)});
       cell.style.cursor='default';
       cell.addEventListener('pointermove',ev=>showTip([ttHead(fmtDate(w)+' · '+INDSHORT[ind]),
         ttRow(col,'Contributing models',String(v)),
         ttRow('','Ensemble',ens[i]? 'published':'—'),
-        ttRow('','Countries in ensemble',(loc[i]==null?'—':String(loc[i])))],ev.clientX,ev.clientY));
+        ttRow('','Countries',(loc[i]==null?'—':String(loc[i]))),
+        ttRow('','Era',era[i]==='current'?'RespiCast':(era[i]==='archive'?'archive':'—'))],ev.clientX,ev.clientY));
       cell.addEventListener('pointerleave',hideTip); s.appendChild(cell);
-      // ensemble strip
-      s.appendChild(e('rect',{x,y:y+30,width:cw,height:ensH,rx:1.5,fill: ens[i]? col : 'var(--surface-2)', opacity: ens[i]?0.85:1}));
+      s.appendChild(e('rect',{x,y:y+26,width:cw,height:ensH,rx:1,fill: ens[i]? col : 'var(--surface-2)', opacity: ens[i]?0.85:1}));
     });
-    s.appendChild(txt(padL-12,y+38,'ensemble','axis',{'text-anchor':'end'}));
   });
   root.appendChild(s);
-  // legend: heat scale + ensemble
   const lg=clear('heat_legend');
   const grad=document.createElement('div'); grad.style.cssText='display:flex;align-items:center;gap:6px';
   const cap=document.createElement('span'); cap.textContent='fewer'; cap.className='muted'; cap.style.fontSize='11px';
   const ramp=heatRamp(); const bar=document.createElement('span'); bar.style.cssText=`display:inline-block;width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,${ramp.join(',')})`;
   const cap2=document.createElement('span'); cap2.textContent=`more models (max ${maxModels})`; cap2.className='muted'; cap2.style.fontSize='11px';
-  grad.append(cap,bar,cap2);
-  lg.appendChild(grad);
-  const k=document.createElement('span'); k.className='k'; const m=document.createElement('span'); m.className='sw'; m.style.background=cvar('--covid'); k.append(m,document.createTextNode('ensemble published (strip)')); lg.appendChild(k);
+  grad.append(cap,bar,cap2); lg.appendChild(grad);
+  const k=document.createElement('span'); k.className='k'; const m=document.createElement('span'); m.className='sw'; m.style.background=cvar('--covid'); k.append(m,document.createTextNode('ensemble strip (indicator colour, below each row)')); lg.appendChild(k);
 }
 
-/* ============================ MODELS-PER-WEEK LINE ============================ */
-function renderLine(){
-  const root=clear('c_line');
-  const inds=['ILI incidence','COVID-19 hospitalisations','ARI incidence'];
+/* ============================ COVID: THREE INDICATORS TO ONE ============================ */
+function renderCovidLine(){
+  const root=clear('c_covidline');
+  const inds=['COVID-19 cases','COVID-19 hospitalisations','COVID-19 deaths'];
   const weeks=C.weeks, n=weeks.length;
   const maxY=Math.max(...inds.flatMap(ind=>asArr(C.series[ind].n_models)));
-  const W=980, H=300, padL=42, padR=16, padT=16, padB=44;
+  const W=980, H=300, padL=34, padR=16, padT=16, padB=44;
   const sx=i=>padL+(i/(n-1))*(W-padL-padR);
   const sy=v=>padT+(1-v/maxY)*(H-padT-padB);
   const s=svg(W,H); s.style.minWidth='680px';
-  // gridlines
-  for(let v=0;v<=maxY;v+=5){ const y=sy(v); s.appendChild(e('line',{x1:padL,y1:y,x2:W-padR,y2:y,class:'gridline'})); s.appendChild(txt(padL-8,y+4,v,'axis',{'text-anchor':'end'})); }
-  // season shading for summers (low season): shade Jun-Sep
-  weeks.forEach((w,i)=>{ const mo=+w.slice(5,7); if(mo>=6&&mo<=9){ const x=sx(i); s.appendChild(e('rect',{x:x-3,y:padT,width:6,height:H-padT-padB,fill:'var(--surface-2)',opacity:.5})); }});
-  // month labels
+  for(let v=0;v<=maxY;v+=5){ const y=sy(v); s.appendChild(e('line',{x1:padL,y1:y,x2:W-padR,y2:y,class:'gridline'})); s.appendChild(txt(padL-6,y+4,v,'axis',{'text-anchor':'end'})); }
   let lastY='';
   weeks.forEach((w,i)=>{ const yr=w.slice(0,7); const mm=w.slice(5,7); if(mm==='01'||mm==='07'){ if(yr!==lastY){lastY=yr; const x=sx(i); s.appendChild(txt(x,H-14,fmtMonth(w),'axis',{'text-anchor':'middle'})); s.appendChild(e('line',{x1:x,y1:padT,x2:x,y2:H-padB,stroke:'var(--hair)','stroke-width':1})); }}});
+  // handover marker
+  const hIdx=weeks.findIndex(w=>w>='2024-10-20');
+  if(hIdx>0){const x=sx(hIdx);s.appendChild(e('line',{x1:x,y1:padT,x2:x,y2:H-padB,stroke:'var(--baseline)','stroke-width':1.5,'stroke-dasharray':'3 3'}));s.appendChild(txt(x,padT+10,'EU COVID hub closes →','axis',{'text-anchor':'end'}));}
   const col=INDCOL();
   inds.forEach(ind=>{
     const nm=asArr(C.series[ind].n_models);
     let d=''; nm.forEach((v,i)=>{ d+=(i?'L':'M')+sx(i).toFixed(1)+','+sy(v).toFixed(1); });
     s.appendChild(e('path',{d,fill:'none',stroke:col[ind],'stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round',opacity:.95}));
   });
-  // crosshair + hit layer
   const cross=e('line',{x1:0,y1:padT,x2:0,y2:H-padB,stroke:'var(--baseline)','stroke-width':1,opacity:0});
   s.appendChild(cross);
   const dots=inds.map(ind=>{ const c=e('circle',{r:4,fill:col[ind],stroke:'var(--surface)','stroke-width':2,opacity:0}); s.appendChild(c); return c; });
@@ -809,26 +860,24 @@ function renderLine(){
   hit.addEventListener('pointerleave',()=>{ hideTip(); cross.setAttribute('opacity',0); dots.forEach(d=>d.setAttribute('opacity',0)); });
   s.appendChild(hit);
   root.appendChild(s);
-  const lg=clear('line_legend');
-  legend('line_legend',lg,inds.map(ind=>[INDSHORT[ind],col[ind],'ln']));
-  const note=document.createElement('span'); note.className='muted'; note.style.cssText='font-size:11px;margin-left:6px'; note.textContent='shaded = summer weeks (Jun–Sep)';
-  lg.querySelector('.legend').appendChild(note);
+  const lg=clear('covidline_legend');
+  legend('covidline_legend',lg,inds.map(ind=>[INDSHORT[ind],col[ind],'ln']));
 }
-const fmtMonth = d => { const [y,m]=d.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]+" '"+y.slice(2); };
 
 /* ============================ PARTICIPATION RIBBON ============================ */
 function renderRibbon(){
   const root=clear('c_ribbon');
   const weeks=C.weeks, n=weeks.length;
-  // group per hub: COVID (indicator hosp) vs Syndromic (ILI/ARI union)
-  const hubOf = ind => ind==='COVID-19 hospitalisations' ? 'COVID-19 hub' : 'Syndromic hub (ILI/ARI)';
-  const groups={'COVID-19 hub':{}, 'Syndromic hub (ILI/ARI)':{}};
-  C.ribbon.forEach(r=>{ const h=hubOf(r.indicator); const g=groups[h]; const key=r.model;
+  // COVID-19 hospitalisation models only, grouped by era (archive EU COVID hub vs RespiCast)
+  const groups={'EU COVID-19 Forecast Hub · 2021–2024':{}, 'RespiCast-Covid19 · 2024–':{}};
+  C.ribbon.filter(r=>r.indicator==='COVID-19 hospitalisations').forEach(r=>{
+    const h = r.era==='current' ? 'RespiCast-Covid19 · 2024–' : 'EU COVID-19 Forecast Hub · 2021–2024';
+    const g=groups[h]; const key=r.model;
     if(!g[key]) g[key]={model:r.model,role:r.role,present:new Set()}; asArr(r.present).forEach(i=>g[key].present.add(i)); });
   const roleRank={ensemble:0,baseline:1,model:2};
   const roleCol={ensemble:cvar('--accent'),baseline:cvar('--muted'),model:cvar('--ink-2')};
-  const cw=(880-160)/n; // week column width
-  const padL=160, rowH=15, blockGap=30, padTop=20;
+  const cw=(880-180)/n; // week column width
+  const padL=180, rowH=15, blockGap=30, padTop=20;
   const order=Object.keys(groups);
   const rowsPer=order.map(h=>Object.values(groups[h]).sort((a,b)=> (roleRank[a.role]-roleRank[b.role]) || (Math.min(...a.present)-Math.min(...b.present)) ));
   const totalRows=rowsPer.reduce((a,b)=>a+b.length,0);
@@ -882,7 +931,7 @@ function renderCountry(){
 /* ============================ SEASON TABLE ============================ */
 function renderSeason(){
   const root=clear('c_season');
-  const inds=['COVID-19 hospitalisations','ILI incidence','ARI incidence'];
+  const inds=C.indicators;
   const seasons=[...new Set(C.season_summary.map(s=>s.season))].sort();
   const col=INDCOL();
   const tbl=document.createElement('table'); tbl.className='tbl';
@@ -898,10 +947,9 @@ function renderSeason(){
   });});
   tbl.appendChild(tb); root.appendChild(tbl);
   // delivery take
-  const ili=C.headline.find(h=>h.indicator==='ILI incidence'), ari=C.headline.find(h=>h.indicator==='ARI incidence'), cov=C.headline.find(h=>h.indicator==='COVID-19 hospitalisations');
   const cc=Object.fromEntries(C.country_coverage.map(c=>[c.indicator,c.n_countries]));
   document.getElementById('take_delivery').innerHTML=
-    `Two seasons in, the machine runs — but unevenly. <b>ILI</b> draws up to ${ili.peak_models} models across ${cc['ILI incidence']} countries; <b>ARI</b>, in the very same hub, peaks at ${ari.peak_models} across ${cc['ARI incidence']}; <b>COVID-19 hospitalisations</b> — the indicator focal points tie most to capacity planning — reaches only ${cc['COVID-19 hospitalisations']} countries. The ensemble is published almost every week, but its strength is only ever the number of models behind it that week. <b>Read together with Part I</b>, the picture is a working supranational public good whose supply is already robust: the constraint on its value is now demand-side — awareness, interpretation and integration — not the availability of a forecast. (Coverage here is presence, not measured skill.)`;
+    `The record is durable but uneven. <b>COVID-19 hospitalisations</b> have been forecast almost every week since mid-2021 — yet often thinly (a median of ~4 models in the archive era, reaching only ${cc['COVID-19 hospitalisations']} countries). <b>COVID cases and deaths</b> drew far deeper fields (up to 32 models, ${cc['COVID-19 cases']} countries) but were dropped at the 2024 handover; <b>ILI and ARI</b> run winter-only, with a summer-long break between the 2023/24 archive hubs and RespiCast. <b>Read with Part I:</b> supply has been remarkably continuous for years — so the constraint on value sits on the demand side (awareness, interpretation, integration), not the availability of a forecast. (Coverage is presence, not measured skill.)`;
 }
 
 /* ============================ RENDER ALL (theme-reactive) ============================ */
@@ -909,7 +957,7 @@ function renderAll(){
   renderHero();
   renderStaff(); renderEngagement(); renderValue(); renderCapacity();
   renderDecisions(); renderIntegration(); renderComms(); renderThemes();
-  renderHeat(); renderLine(); renderRibbon(); renderCountry(); renderSeason();
+  renderContinuity(); renderHeat(); renderCovidLine(); renderRibbon(); renderCountry(); renderSeason();
 }
 renderAll();
 

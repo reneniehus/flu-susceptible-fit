@@ -50,6 +50,33 @@ made — each entry: the **decision**, the reason, and the main alternative cons
   Every coverage view carries this caveat so "covered" is never misread as "accurate". *Alternative:*
   bring in scores now — deferred (needs the quantiles + truth data; the highest-value next step).
 
+- **Include the archived predecessor hubs; pair each live hub with the one it replaced.** To test the
+  "COVID-19 hospitalisation forecasts since 2021" claim we added the archived EU COVID hub
+  (`covid19-forecast-hub-europe_archive`), and — for symmetry and to extend ILI/ARI back a season — the
+  archived flu and ARI hubs. The other 18 org repos are scenario hubs, websites, tooling or
+  auto-submission repos with no time-stamped forecast submissions, so they are out of scope for a
+  coverage analysis (documented in `data_overview.md`). *Alternative:* the COVID archive alone —
+  rejected; the flu/ARI archives were cheap (modern format, ~120 MB) and complete the syndromic timeline.
+
+- **Snap every round to its ISO-week Monday, then detect gaps on that shared grid.** Legacy COVID-hub
+  rounds fall on Mondays, modern RespiCast rounds on Wednesdays; without a common key the archive→live
+  handover looks like a 9-day gap when it is actually two consecutive ISO weeks. `week_monday()` maps
+  both to the week's Monday; continuity is then "is every Monday from first to last present?".
+  *Alternative:* use raw dates — rejected; it fabricates handover gaps and can't align the two formats.
+
+- **Count `fjordhest-ensemble` as a model, not an ensemble.** Its metadata is `team_name: Fjordhest`
+  (Norwegian Institute of Public Health), `team_model_designation: primary` — a participating team that
+  happens to use an ensemble method, not the hub's official product. Only the hub-designated ensembles
+  (`respicast-hubEnsemble`, `EuroCOVIDhub-ensemble`) count as "the ensemble". This corrects the first
+  pass, which had wrongly listed fjordhest as an ensemble (it inflated "ensemble present" and undercounted
+  models by one in the weeks it submitted).
+
+- **Parse the legacy compound target by its last token.** Old EU-hub targets encode indicator + horizon
+  in one string (`"2 wk ahead inc hosp"`). We extract the indicator from the trailing `case|hosp|death`
+  token and the horizon from the leading integer, then map to the same indicator labels the modern hubs
+  use — so both formats flow into one `submissions` table. *Alternative:* a separate legacy schema —
+  rejected; one shared schema keeps every downstream view format-agnostic.
+
 ## Artefact & design
 
 - **One unified dashboard, two chapters, sticky nav — not two separate pages.** The strongest telling

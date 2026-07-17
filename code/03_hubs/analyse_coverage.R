@@ -1,149 +1,167 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-### Analyse forecast coverage across weeks, indicators and models ##########
+### Analyse forecast coverage across weeks, indicators, models and eras ##########
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# From the submission-level table (load_forecasts.R) we build the coverage views the
-# brief asks for: for each indicator, in which weeks were there forecasts, and by how
-# many models (+ the ensemble). Everything keys off `role` from the loader so that
-# the ensemble and the reference baseline are always counted apart from real models.
+# From the submission-level table (load_forecasts.R) we build the coverage views: for each indicator,
+# in which weeks were there forecasts, by how many models (+ the ensemble), and -- now spanning the
+# archived predecessor hubs -- whether the record is CONTINUOUS across the archive -> current handover.
+#
+# Legacy (Monday) and modern (Wednesday) rounds are snapped to the ISO-week Monday so the two eras land
+# on ONE weekly grid; that shared grid is what makes gap-detection (the "uninterrupted since 2021"
+# claim) meaningful.
 
-# ---- |-label a round with its winter season ----
-# RespiCast rounds run across a winter; anything from August on belongs to the season
-# that starts that calendar year (e.g. 2024-10-23 -> "2024/25").
+# ---- |-snap any round date to the Monday of its ISO week (the shared weekly key) ----
+week_monday <- function(date) lubridate::floor_date(as.Date(date), unit = "week", week_start = 1)
+
+# ---- |-label a round with its winter season (Aug-anchored) ----
 label_season <- function(date) {
   y  <- lubridate::year(date)
   yr <- ifelse(lubridate::month(date) >= 8, y, y - 1L)
   sprintf("%d/%02d", yr, (yr + 1L) %% 100L)
 }
 
-# ---- |-the master weekly-coverage table ----------------------------------------
-# one row per (indicator, round): how many genuine models, whether the ensemble and
-# the baseline were published, and how many countries the ensemble covered.
+# ---- |-the master weekly-coverage table (indicator x ISO-week, across eras) ---------------------
+# one row per (indicator, week): genuine models, ensemble/baseline presence, ensemble country reach,
+# and the era (archive / current) so the handover can be drawn.
 coverage_weekly <- function(submissions) {
-  # the published-ensemble country reach per round (prefer the hub ensemble)
-  ens <- submissions %>%
-    filter(role == "ensemble") %>%
-    group_by(indicator, origin_date) %>%
-    summarise(ensemble_locations = max(n_locations), .groups = "drop")
+  s <- submissions %>% mutate(week = week_monday(origin_date))
 
-  submissions %>%
-    group_by(hub, indicator, origin_date) %>%
+  ens <- s %>% filter(role == "ensemble") %>%
+    group_by(indicator, week) %>% summarise(ensemble_locations = max(n_locations), .groups = "drop")
+
+  s %>%
+    group_by(indicator, week) %>%
     summarise(
-      n_models      = sum(role == "model"),         # genuine models feeding the ensemble
-      has_ensemble  = any(role == "ensemble"),
-      has_baseline  = any(role == "baseline"),
-      models_max_locations = safe_max(n_locations[role == "model"]),
+      n_models     = n_distinct(model[role == "model"]),   # distinct genuine models that week
+      has_ensemble = any(role == "ensemble"),
+      has_baseline = any(role == "baseline"),
+      era          = if (any(era == "current")) "current" else "archive",
+      hub          = paste(sort(unique(hub)), collapse = "+"),
       .groups = "drop"
     ) %>%
-    left_join(ens, by = c("indicator", "origin_date")) %>%
+    left_join(ens, by = c("indicator", "week")) %>%
     mutate(
-      season             = label_season(origin_date),
+      season             = label_season(week),
       ensemble_locations = ifelse(is.finite(ensemble_locations), ensemble_locations, NA_integer_),
-      # total published forecasters a stakeholder sees that week (models + ensemble)
       n_published        = n_models + as.integer(has_ensemble)
     ) %>%
-    arrange(indicator, origin_date)
+    arrange(indicator, week)
 }
 
-# ---- |-per-model activity ribbon (who was active, when) -------------------------
-# one row per (indicator, model): its role, span of rounds and how many it hit.
+# ---- |-CONTINUITY: is an indicator's weekly record unbroken from first to last round? -----------
+# Walks the full Monday grid from the indicator's first to last covered week and finds the gaps.
+# Returns one row per indicator with the span, coverage and the longest gap -- the direct test of
+# "produced almost uninterrupted since ...".
+coverage_continuity <- function(weekly) {
+  weekly %>%
+    group_by(indicator) %>%
+    group_modify(function(d, key) {
+      d <- arrange(d, week)
+      full  <- seq(min(d$week), max(d$week), by = 7)          # every Monday in the span
+      have  <- full %in% d$week
+      # run-length encode the missing weeks to size the gaps
+      miss  <- !have
+      runs  <- rle(miss)
+      gap_lengths <- runs$lengths[runs$values]
+      tibble(
+        first_week    = min(d$week),
+        last_week     = max(d$week),
+        span_weeks    = length(full),
+        covered_weeks = sum(have),
+        missing_weeks = sum(miss),
+        coverage_pct  = round(100 * sum(have) / length(full), 1),
+        n_gaps        = length(gap_lengths),
+        longest_gap   = if (length(gap_lengths)) max(gap_lengths) else 0L
+      )
+    }) %>%
+    ungroup()
+}
+
+# the actual gap intervals for an indicator (for annotating the timeline)
+coverage_gaps <- function(weekly, indicator_name) {
+  d <- weekly %>% filter(indicator == indicator_name) %>% arrange(week)
+  if (nrow(d) < 2) return(tibble())
+  full <- seq(min(d$week), max(d$week), by = 7)
+  miss <- !(full %in% d$week)
+  r <- rle(miss); ends <- cumsum(r$lengths); starts <- ends - r$lengths + 1
+  idx <- which(r$values)
+  tibble(indicator = indicator_name,
+         gap_start = full[starts[idx]], gap_end = full[ends[idx]],
+         gap_weeks = r$lengths[idx]) %>% arrange(desc(gap_weeks))
+}
+
+# ---- |-per-model activity + presence (on the ISO-week grid) -------------------------------------
 model_activity <- function(submissions) {
-  submissions %>%
-    group_by(hub, indicator, model, role) %>%
-    summarise(
-      n_rounds    = n_distinct(origin_date),
-      first_round = min(origin_date),
-      last_round  = max(origin_date),
-      .groups = "drop"
-    ) %>%
+  submissions %>% mutate(week = week_monday(origin_date)) %>%
+    group_by(hub, era, indicator, model, role) %>%
+    summarise(n_rounds = n_distinct(week), first_round = min(week), last_round = max(week), .groups = "drop") %>%
     arrange(indicator, role, desc(n_rounds))
 }
 
-# the raw presence grid (indicator x model x round) -- feeds the artefact ribbon directly
 model_presence <- function(submissions) {
-  submissions %>%
-    distinct(hub, indicator, model, role, origin_date) %>%
-    mutate(season = label_season(origin_date)) %>%
-    arrange(indicator, model, origin_date)
+  submissions %>% mutate(week = week_monday(origin_date)) %>%
+    distinct(hub, era, indicator, model, role, week) %>%
+    mutate(season = label_season(week)) %>%
+    arrange(indicator, model, week)
 }
 
-# ---- |-country coverage --------------------------------------------------------
-# union of countries ever forecast, per indicator (splits the per-cell location sets)
+# ---- |-country coverage (union per indicator, across eras) --------------------------------------
 country_coverage_overall <- function(submissions) {
   submissions %>%
     filter(role %in% c("model", "ensemble")) %>%
     separate_rows(locations, sep = ",") %>%
     filter(locations != "") %>%
     group_by(indicator) %>%
-    summarise(
-      n_countries = n_distinct(locations),
-      countries   = paste(sort(unique(locations)), collapse = ","),
-      .groups = "drop"
-    )
+    summarise(n_countries = n_distinct(locations),
+              countries   = paste(sort(unique(locations)), collapse = ","), .groups = "drop")
 }
 
-# ---- |-headline numbers for the artefact ---------------------------------------
-coverage_headline <- function(submissions, weekly) {
-  per_indicator <- weekly %>%
+# ---- |-headline numbers per indicator -----------------------------------------------------------
+coverage_headline <- function(submissions, weekly, continuity) {
+  per <- weekly %>%
     group_by(indicator) %>%
-    summarise(
-      first_round     = min(origin_date),
-      last_round      = max(origin_date),
-      n_rounds        = n_distinct(origin_date),
-      n_seasons       = n_distinct(season),
-      peak_models     = max(n_models),
-      median_models   = median(n_models),
-      rounds_with_ens = sum(has_ensemble),
-      .groups = "drop"
-    )
-  distinct_models <- submissions %>%
-    filter(role == "model") %>%
-    group_by(indicator) %>%
-    summarise(distinct_models = n_distinct(model), .groups = "drop")
-  per_indicator %>% left_join(distinct_models, by = "indicator")
+    summarise(first_round = min(week), last_round = max(week),
+              n_rounds = n_distinct(week), n_seasons = n_distinct(season),
+              peak_models = max(n_models), median_models = median(n_models),
+              rounds_with_ens = sum(has_ensemble), .groups = "drop")
+  dm <- submissions %>% filter(role == "model") %>%
+    group_by(indicator) %>% summarise(distinct_models = n_distinct(model), .groups = "drop")
+  per %>% left_join(dm, by = "indicator") %>%
+    left_join(select(continuity, indicator, span_weeks, covered_weeks, coverage_pct, n_gaps, longest_gap),
+              by = "indicator")
 }
 
-# per (indicator, season) roll-up for the summary cards
+# per (indicator, season) roll-up
 season_summary <- function(submissions, weekly) {
   weekly %>%
     group_by(indicator, season) %>%
-    summarise(
-      n_rounds      = n_distinct(origin_date),
-      first_round   = min(origin_date),
-      last_round    = max(origin_date),
-      mean_models   = round(mean(n_models), 1),
-      peak_models   = max(n_models),
-      .groups = "drop"
-    ) %>%
+    summarise(n_rounds = n_distinct(week), first_round = min(week), last_round = max(week),
+              mean_models = round(mean(n_models), 1), peak_models = max(n_models), .groups = "drop") %>%
     left_join(
-      submissions %>%
-        filter(role == "model") %>%
-        mutate(season = label_season(origin_date)) %>%
-        group_by(indicator, season) %>%
-        summarise(distinct_models = n_distinct(model), .groups = "drop"),
-      by = c("indicator", "season")
-    ) %>%
+      submissions %>% filter(role == "model") %>% mutate(season = label_season(week_monday(origin_date))) %>%
+        group_by(indicator, season) %>% summarise(distinct_models = n_distinct(model), .groups = "drop"),
+      by = c("indicator", "season")) %>%
     arrange(indicator, season)
 }
 
-# ---- |-run everything and persist ----------------------------------------------
+# ---- |-run everything and persist ---------------------------------------------------------------
 run_coverage_analysis <- function(submissions, params) {
   step("Analysing forecast coverage")
-  weekly <- coverage_weekly(submissions)
+  weekly     <- coverage_weekly(submissions)
+  continuity <- coverage_continuity(weekly)
   out <- list(
     coverage_weekly  = weekly,
+    continuity       = continuity,
+    gaps_covid_hosp  = coverage_gaps(weekly, "COVID-19 hospitalisations"),
     model_activity   = model_activity(submissions),
     model_presence   = model_presence(submissions),
     country_coverage = country_coverage_overall(submissions),
-    headline         = coverage_headline(submissions, weekly),
+    headline         = coverage_headline(submissions, weekly, continuity),
     season_summary   = season_summary(submissions, weekly)
   )
 
   dir.create(params$output_dir, showWarnings = FALSE, recursive = TRUE)
-  # keep the full submissions table too (the reproducible base for everything above)
   write_csv(submissions, file.path(params$output_dir, "hub_submissions.csv"))
-  for (nm in names(out)) {
-    write_csv(out[[nm]], file.path(params$output_dir, paste0("hub_", nm, ".csv")))
-  }
+  for (nm in names(out)) write_csv(out[[nm]], file.path(params$output_dir, paste0("hub_", nm, ".csv")))
   say(sprintf("wrote submissions + %d coverage tables to output/", length(out)))
   out
 }

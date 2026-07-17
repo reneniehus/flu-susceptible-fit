@@ -78,30 +78,45 @@ performance metrics and fewer models); benchmark-only use by resourced NFPs; and
 **interpretability/training gap** (outputs must be usable by non-modellers). Full synthesis in
 `output/themes.json`.
 
-## Part II — Delivery (the hubs)
+## Part II — Delivery (five hubs, 2021–2026)
 
-### Indicators, windows, coverage
-| Indicator | Hub | Rounds | Distinct models | Peak models | Countries |
-|---|---|---:|---:|---:|---:|
-| COVID-19 hospitalisations | RespiCast-Covid19 | 88 | 17 | 11 | 15 |
-| ILI incidence | RespiCast-SyndromicIndicators | 91 | 25 | 20 | 30 |
-| ARI incidence | RespiCast-SyndromicIndicators | 91 | 18 | 14 | 25 |
+### The claim, tested
+> *"COVID-19 hospitalisation forecasts have been produced almost uninterrupted since 2021, first by the
+> COVID-19 hub and then within RespiCast."*
 
-91 weekly rounds span two seasons (2024/25, 2025/26). The **ensemble** is present in ~98% of rounds
-(89/91 ILI & ARI; 87/88 COVID).
+**Verdict: supported, with one refinement.** On the shared ISO-week grid, COVID-19 hospitalisation
+forecasts ran from **2021-07-26 to 2026-06-22** — **255 of 257 weeks (99.2%)**, with only **two
+isolated one-week gaps** (2024-05-13, 2024-09-09) and a **seamless handover**: the EU COVID hub's last
+hospitalisation round (2024-10-14, ISO W42) is immediately followed by RespiCast's first (2024-10-21,
+W43). The refinement: *hospitalisations* specifically began **late July 2021** — COVID cases and deaths
+were forecast from **2021-02-01**, but hospitalisations were added that summer. Depth grew late: a
+**median of ~4 models/week** in the EU-COVID-hub era, roughly doubling to **~8.5** under RespiCast.
 
-### The ILI–ARI asymmetry
-ILI and ARI live in the **same hub, in the same files**, yet ILI draws roughly twice the models
-(median 14 vs 7) and reaches more countries (30 vs 25): six syndromic teams submit ILI-only in a given
-round. Coverage breadth is an indicator-level choice by teams, not a hub-level constraint.
+### Continuity & depth per indicator
+| Indicator | First → last week | Weeks covered | Coverage | Longest gap | Distinct models | Peak |
+|---|---|---:|---:|---:|---:|---:|
+| COVID-19 hospitalisations | 2021-07-26 → 2026-06-22 | 255 / 257 | 99.2% | 1 wk | 36 | 11 |
+| COVID-19 cases | 2021-02-01 → 2024-10-14 | 193 / 194 | 99.5% | 1 wk | 55 | 32 |
+| COVID-19 deaths | 2021-02-01 → 2024-10-14 | 193 / 194 | 99.5% | 1 wk | 53 | 32 |
+| ILI incidence | 2023-11-13 → 2026-07-13 | 113 / 140 | 80.7% | 24 wk | 33 | 20 |
+| ARI incidence | 2023-12-18 → 2026-07-13 | 111 / 135 | 82.2% | 24 wk | 27 | 14 |
 
-### Temporal texture
-Participation swells each winter (Nov–Mar) and thins over summer without stopping — the hubs run
-year-round at reduced cadence. Season *means* are roughly flat across the two years (e.g. ILI 12.3 →
-11.4), though winter *peaks* rose (ILI 16 → 20, ARI 9 → 14). The mid-2026 tail (1–2 models) is
-off-season / incomplete current weeks, not a coverage collapse.
+### ECDC narrowed COVID forecasting
+The archived EU hub forecast **cases, hospitalisations and deaths**; cases and deaths drew the **deepest
+fields (up to 32 models, 32 countries)** but **ended at the October-2024 handover** — RespiCast carried
+only hospitalisations forward, and hospitalisations were always the sparser COVID indicator (≤11 models,
+15 countries). So the transition to RespiCast both *narrowed* the COVID indicator set and *thinned* it.
+
+### Syndromic indicators reach back one season
+The archived **flu** and **ARI** hubs ran the **2023/24** winter (ILI from 2023-11, ARI from 2023-12)
+before RespiCast-SyndromicIndicators took over in 2024-10. Both indicators are **winter-only**, so the
+24-week "longest gap" is the summer between the archive season and RespiCast — seasonality, not an
+outage. Within a season ILI still draws ~2× the models of ARI **from the same files** (six syndromic
+teams submit ILI-only in a given round).
 
 ### Participation & churn
-Across both hubs, a spine of stalwarts (ECDC-SARIMA, ISI-*, the ensembles and baseline) submits nearly
-every round, while other teams arrive mid-season, appear for a single winter, or rotate in and out —
-visible as the participation ribbon in the dashboard.
+A spine of stalwarts (ECDC-*, ISI-*, the epiforecasts teams, the ensembles and baseline) submits nearly
+every round; others arrive mid-season, appear for a single winter, or rotate in and out. A handful of
+teams (e.g. epiforecasts, fjordhest) bridge the EU-COVID-hub → RespiCast handover; most belong to one
+era. The **ensemble** is published in ~98% of active rounds — but its strength is only ever the number
+of models behind it that week.

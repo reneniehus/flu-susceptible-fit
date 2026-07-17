@@ -5,8 +5,9 @@ Two views of the same system, built from source and rendered into one interactiv
 - **Demand** — a survey of **19 EU/EEA National Focal Points (NFPs)** for viral respiratory diseases,
   on their in-house modelling capacity and the value they place on ECDC's short-term forecasts
   (**RespiCast**) and seasonal scenarios (**RespiCompass**).
-- **Delivery** — two seasons of the **RespiCast forecasting hubs**, reconstructed submission-by-submission:
-  which indicators were forecast, in which weeks, by how many models and the ensemble.
+- **Delivery** — **five** European forecasting hubs reconstructed submission-by-submission, back to 2021:
+  the archived **EU COVID-19 Forecast Hub** and its **RespiCast** successors, plus the archived **flu**
+  and **ARI** hubs — which indicators were forecast, in which weeks, by how many models and the ensemble.
 
 The brief was to focus on the **value (and potential value) of forecasting / nowcasting by ECDC for
 external stakeholders** such as national public health institutes — so the whole analysis circles one
@@ -32,26 +33,39 @@ convenience or the only forecast a country has.
   planning** — the canonical forecasting use — least (16%). Only **~half** report a clear mechanism to
   integrate modelling into decisions.
 
-**Delivery (hubs).**
-- **91 weekly rounds** over two seasons, **3 indicators**: COVID-19 hospitalisations (its own hub),
-  ILI and ARI incidence (a second hub that has only ever carried these two). No "COVID cases" target
-  exists in either hub.
-- Coverage is uneven: **ILI** draws up to **20 models** across **30 countries**; **ARI**, from the very
-  same files, peaks at **14** across **25**; **COVID-19 hospitalisations** reaches only **15** countries.
-- The **ensemble** is published in ~**98%** of rounds — but its strength is only ever the number of
-  models behind it that week.
+**Delivery (five hubs, 2021–2026).**
+- **The claim tested** — *"COVID-19 hospitalisation forecasts have been produced almost uninterrupted
+  since 2021, first by the COVID-19 hub and then within RespiCast"*: **supported, with one refinement.**
+  Hospitalisation forecasts ran from **26 Jul 2021 → 22 Jun 2026**, covering **255 of 257 ISO weeks
+  (99.2%)** with only **two isolated one-week gaps** and a **seamless** archive→RespiCast handover
+  (consecutive weeks). The refinement: "since 2021" is precisely **late July 2021** — COVID *cases and
+  deaths* were forecast from February 2021, but hospitalisations began that summer. And the record is
+  deep only recently: a **median of ~4 models** per week in the EU-COVID-hub era, roughly doubling to
+  ~8.5 under RespiCast.
+- **ECDC narrowed COVID forecasting.** The archived EU hub forecast **cases, hospitalisations and
+  deaths** — cases/deaths with the deepest fields (up to **32 models**, 32 countries) — but those two
+  **ended at the October-2024 handover**; RespiCast carried only hospitalisations forward.
+- **Syndromic indicators** (ILI, ARI) reach back one further season: the archived flu and ARI hubs ran
+  the **2023/24** winter before RespiCast-SyndromicIndicators. Both run winter-only, with a summer-long
+  gap between eras. ILI still draws ~2× the models of ARI from the same files.
+- No **"COVID cases"** target exists in the RespiCast era — that indicator lived only in the archived hub.
 
 > Every number above is regenerated from source by `code/00_main.R`. Key figures were independently
 > re-derived from the raw files by a verification pass (see `documentation/reflections.md`); the survey
-> counts, target lists, date ranges, round counts, country counts and per-week model counts all matched.
+> counts, target lists, date/round counts, country counts, per-week model counts **and the
+> hospitalisation continuity** all matched.
 
 ## Quick start
 
 ```r
-# 1. get the two hub repositories (they are NOT vendored here -- ~1.7 GB of submissions)
-#    clone them next to this repo, into ../hubs/  (or set RESPICAST_HUBS_DIR)
-#      git clone https://github.com/european-modelling-hubs/RespiCast-Covid19.git             ../hubs/RespiCast-Covid19
-#      git clone https://github.com/european-modelling-hubs/RespiCast-SyndromicIndicators.git ../hubs/RespiCast-SyndromicIndicators
+# 1. get the five hub repositories (NOT vendored here -- ~4 GB of submissions).
+#    clone them next to this repo, into ../hubs/  (or set RESPICAST_HUBS_DIR). Shallow (--depth 1)
+#    is fine: the current tree already holds every historical submission.
+#      git clone --depth 1 https://github.com/european-modelling-hubs/covid19-forecast-hub-europe_archive.git ../hubs/covid19-forecast-hub-europe_archive
+#      git clone --depth 1 https://github.com/european-modelling-hubs/RespiCast-Covid19.git                    ../hubs/RespiCast-Covid19
+#      git clone --depth 1 https://github.com/european-modelling-hubs/RespiCast-SyndromicIndicators.git        ../hubs/RespiCast-SyndromicIndicators
+#      git clone --depth 1 https://github.com/european-modelling-hubs/flu-forecast-hub_archive.git             ../hubs/flu-forecast-hub_archive
+#      git clone --depth 1 https://github.com/european-modelling-hubs/ari-forecast-hub_archive.git             ../hubs/ari-forecast-hub_archive
 
 # 2. build every analysis table + the artefact data
 Rscript code/00_main.R

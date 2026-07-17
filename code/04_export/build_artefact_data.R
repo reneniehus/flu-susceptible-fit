@@ -28,27 +28,35 @@ records <- function(df) {
 # ribbon: per (model, indicator), the week indices it was present (0-based, for JS)
 build_coverage_web <- function(coverage_out, params) {
   weekly <- coverage_out$coverage_weekly
-  weeks  <- sort(unique(as.character(weekly$origin_date)))
+  # the shared weekly axis is the FULL Monday grid from first to last round across all indicators,
+  # so gaps show up as empty cells rather than being closed silently.
+  all_weeks <- seq(min(weekly$week), max(weekly$week), by = 7)
+  weeks  <- as.character(all_weeks)
   wk_idx <- setNames(seq_along(weeks) - 1L, weeks)          # 0-based index for JS
 
-  indicators <- sort(unique(weekly$indicator))
+  # order indicators: COVID trio, then ILI, ARI
+  ind_order  <- c("COVID-19 cases", "COVID-19 hospitalisations", "COVID-19 deaths",
+                  "ILI incidence", "ARI incidence")
+  indicators <- intersect(ind_order, unique(weekly$indicator))
+
   series <- lapply(indicators, function(ind) {
     d <- weekly %>% filter(indicator == ind)
     align <- function(col, fill = NA) {
-      v <- rep(fill, length(weeks)); v[wk_idx[as.character(d$origin_date)] + 1L] <- d[[col]]; v
+      v <- rep(fill, length(weeks)); v[wk_idx[as.character(d$week)] + 1L] <- d[[col]]; v
     }
     list(
       n_models           = align("n_models", 0L),
       has_ensemble       = as.integer(align("has_ensemble", FALSE)),
       ensemble_locations = align("ensemble_locations"),
+      era                = align("era"),
       season             = align("season")
     )
   })
   names(series) <- indicators
 
   ribbon <- coverage_out$model_presence %>%
-    group_by(indicator, model, role) %>%
-    summarise(present = list(unname(wk_idx[as.character(origin_date)])), .groups = "drop") %>%
+    group_by(indicator, model, role, era) %>%
+    summarise(present = list(unname(wk_idx[as.character(week)])), .groups = "drop") %>%
     arrange(indicator, role, model)
 
   list(
@@ -56,13 +64,15 @@ build_coverage_web <- function(coverage_out, params) {
     indicators       = indicators,
     series           = series,
     ribbon           = records(ribbon %>% mutate(present = present)),
+    continuity       = records(coverage_out$continuity %>%
+                                 mutate(first_week = as.character(first_week), last_week = as.character(last_week))),
+    gaps_covid_hosp  = records(coverage_out$gaps_covid_hosp %>%
+                                 mutate(gap_start = as.character(gap_start), gap_end = as.character(gap_end))),
     country_coverage = records(coverage_out$country_coverage),
     headline         = records(coverage_out$headline %>%
-                                 mutate(first_round = as.character(first_round),
-                                        last_round  = as.character(last_round))),
+                                 mutate(first_round = as.character(first_round), last_round = as.character(last_round))),
     season_summary   = records(coverage_out$season_summary %>%
-                                 mutate(first_round = as.character(first_round),
-                                        last_round  = as.character(last_round)))
+                                 mutate(first_round = as.character(first_round), last_round = as.character(last_round)))
   )
 }
 
