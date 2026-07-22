@@ -24,9 +24,9 @@ p_eng <- engagement %>%
   geom_text(aes(label = sprintf("%.2f", mean_score)), hjust = -0.2, size = 3, colour = "#52514e") +
   scale_fill_manual(values = class_col, name = NULL) +
   scale_x_continuous(limits = c(0, 5.2), expand = c(0, 0)) +
-  labs(title = "Engagement with ECDC outputs (Q5)",
-       subtitle = "Mean 0-5; ordinal, read the ranking. Newer products (RespiCast, RespiCompass) sit lower.",
-       x = "mean engagement", y = NULL) +
+  labs(title = "Awareness of ECDC outputs (Q5)",
+       subtitle = "'How aware are you...' mean 0-5. Newer products (RespiCast, RespiCompass) least known - a recency effect.",
+       x = "mean awareness (0-5)", y = NULL) +
   theme_project() + theme(legend.position = "top")
 
 # ---- |-Fig B: engagement by class x capacity band ----
@@ -37,9 +37,9 @@ p_cap <- capacity %>%
   geom_col(position = position_dodge(width = 0.8), width = 0.72) +
   scale_fill_manual(values = class_col, name = NULL) +
   scale_y_continuous(limits = c(0, 5), expand = c(0, 0)) +
-  labs(title = "Engagement by in-house capacity (Q5 x Q6)",
-       subtitle = "Short-term forecasting is roughly flat across capacity - the need is universal, the uptake is not",
-       x = "in-house modelling staff", y = "mean engagement") +
+  labs(title = "Awareness by in-house capacity (Q5 x Q6)",
+       subtitle = "No-modeller countries are no more aware of ECDC forecasting; every institute unaware of RespiCast has no team",
+       x = "in-house modelling staff", y = "mean awareness (0-5)") +
   theme_project() + theme(legend.position = "top")
 
 # ---- |-Fig C: Q7 decision-relevance, stacked Likert ----

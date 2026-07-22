@@ -14,11 +14,11 @@ one country's collective NFP response, de-identified — there is no per-respond
 | Q | Variable | Type | Meaning |
 |---|---|---|---|
 | Q1 | `q1_is_nfp` | text | confirmation of NFP role (all "Yes") |
-| Q5.1 | `eng_covid_guidance` | 0–5 | engagement: ECDC COVID-19 risk assessments & guidance (2020–2023) |
-| Q5.2 | `eng_covid_forecast` | 0–5 | engagement: European COVID-19 Forecast Hub (2021–2024) — *forecasting* |
-| Q5.3 | `eng_covid_scenario` | 0–5 | engagement: European COVID-19 Scenario Hub (2022–2023) — *scenario* |
-| Q5.4 | `eng_respicast` | 0–5 | engagement: RespiCast (2023–) — *forecasting* |
-| Q5.5 | `eng_respicompass` | 0–5 | engagement: RespiCompass (2024–) — *scenario* |
+| Q5.1 | `eng_covid_guidance` | 0–5 | awareness: ECDC COVID-19 risk assessments & guidance (2020–2023) |
+| Q5.2 | `eng_covid_forecast` | 0–5 | awareness: European COVID-19 Forecast Hub (2021–2024) — *forecasting* |
+| Q5.3 | `eng_covid_scenario` | 0–5 | awareness: European COVID-19 Scenario Hub (2022–2023) — *scenario* |
+| Q5.4 | `eng_respicast` | 0–5 | awareness: RespiCast (2023–) — *forecasting* |
+| Q5.5 | `eng_respicompass` | 0–5 | awareness: RespiCompass (2024–) — *scenario* |
 | Q6 | `staff` | band | in-house modelling staff: `0 staff` / `1-5 staff` / `>10 staff` |
 | Q7 | `dec_*` | Likert | likelihood modelling informs 5 actions (Very unlikely … Very likely) |
 | Q8 | `value_choice` | choice | most valuable: RespiCast / RespiCompass / Both / Neither |
@@ -26,9 +26,13 @@ one country's collective NFP response, de-identified — there is no per-respond
 | Q11/Q12 | `comms_*_rank` | ranking | preferred channels for forecasts / scenarios (";"-ordered) |
 | Q8b, Q13, … | `*_text` | free text | open responses |
 
-**The Q5 0–5 scale** is treated as an **ordinal awareness/engagement** score (0 = not aware / no use,
-higher = more engaged). The exact anchor wording is not present in the de-identified export, so only
-the ordering and distribution are interpreted, never a conversion to "% who find it useful".
+**Q5** asked *"How aware are you of respiratory virus burden modelling work done at ECDC?"*, rated 0–5
+on a slider for each output (0 = not aware, 5 = fully aware). It measures **awareness, not use** — so
+scores are never read as usefulness or uptake. (The variable names `eng_*` and the `engagement*` keys in
+the derived tables are historical; the measure is awareness — see `code/02_survey/load_survey.R`.) The
+survey itself (ECDC Respiratory Viruses & Legionella group + Modelling team, 2024) asked whether/how
+countries use modelling and which ECDC outputs they would prefer; results went to a network meeting in
+October 2024.
 
 ## 2. The forecasting hubs — external clones under `../hubs/`
 

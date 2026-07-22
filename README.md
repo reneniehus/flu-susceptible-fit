@@ -21,14 +21,14 @@ convenience or the only forecast a country has.
 **Demand (survey).**
 - **13 of 19** focal points have **no in-house mathematical modeller at all**; only one institute has a
   team of any size. For most countries "using a forecast" can only mean using someone else's.
-- Engagement with the newer flagship products is modest — RespiCast mean **2.11/5**, RespiCompass
-  **1.35/5** — but they have had far less time in market than the older COVID-era outputs (a recency
-  confound, not a value verdict).
+- **Awareness** of the newer flagship products is modest — RespiCast mean **2.11/5**, RespiCompass
+  **1.35/5** — largely a **recency effect** (far less time in circulation than the older COVID-era
+  outputs). Q5 measured *awareness* ("How aware are you…"), **not use**.
 - When forced to choose, focal points prefer **RespiCast (forecasts) over RespiCompass (scenarios)
   5:1**; a majority expect **both** to be useful (an *expectation* — many have not yet used them).
-- Engagement is **flat across capacity bands** — the institutes that would gain most engage no more
-  than better-resourced ones. The value is **potential, not yet realised**; the binding constraint is
-  demand-side (awareness, interpretation, a route into the decision), not supply.
+- Awareness is **no higher where in-house capacity is absent**, and every institute entirely **unaware**
+  of RespiCast has no team — an awareness (distribution) gap concentrated where the need is greatest, and
+  cheap to close. Whether closing it converts into *use* the survey does not measure.
 - Forecasting is expected to inform **surveillance** most (58% likely) and **healthcare-capacity
   planning** — the canonical forecasting use — least (16%). Only **~half** report a clear mechanism to
   integrate modelling into decisions.
@@ -125,7 +125,7 @@ documentation/                  data_overview, decisions, findings, reflections 
 ## Reproducibility & caveats
 
 Public data throughout. The survey has **19 respondents** (of ~30 EU/EEA NFPs) — every share moves ~5
-points per person, so read counts, not precise percentages. Q5's 0–5 scale is read **ordinally**
-(higher = more engaged); the exact anchor wording is not in the de-identified export. Hub coverage
+points per person, so read counts, not precise percentages. Q5's 0–5 slider measures self-rated
+**awareness** ("How aware are you of respiratory virus burden modelling work done at ECDC?"), **not use**. Hub coverage
 counts a submission's **presence**, not its skill or accuracy. See `documentation/reflections.md` for
 the full list of caveats and the results of the independent verification pass.

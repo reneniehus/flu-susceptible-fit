@@ -17,8 +17,8 @@ Two-thirds of institutes have **no** mathematical modeller; one has a team of an
 whole reason ECDC forecasting matters here — for most countries it substitutes for a capability they
 do not possess.
 
-### Engagement with ECDC outputs (Q5, mean 0–5, ordinal)
-| Output | Class | Mean | % ≥4 | % not aware |
+### Awareness of ECDC outputs (Q5: *"How aware are you…"*, mean 0–5)
+| Output | Class | Mean awareness | % fully aware (≥4) | % not aware |
 |---|---|---:|---:|---:|
 | COVID-19 risk assessments | Guidance | 3.89 | 68 | 5 |
 | COVID-19 Forecast Hub | Forecasting | 2.72 | 33 | 17 |
@@ -26,9 +26,9 @@ do not possess.
 | RespiCast | Forecasting | 2.11 | 22 | 17 |
 | RespiCompass | Scenario | 1.35 | 6 | 29 |
 
-Engagement declines from the oldest, most human-readable output (guidance) to the newest hubs.
-**Caveat:** this gradient tracks *time in market* (guidance since 2020, RespiCast 2023, RespiCompass
-2024), so it is not a value ranking.
+Q5 measured **awareness, not use**. Awareness declines from the oldest, most-communicated output
+(guidance) to the newest hubs — a **recency effect** (guidance since 2020, RespiCast 2023, RespiCompass
+2024), not a value ranking and not a use ranking.
 
 ### Value: forecasts vs scenarios (Q8)
 | Choice | n | % |
@@ -41,11 +41,14 @@ Engagement declines from the oldest, most human-readable output (guidance) to th
 A majority expect both to be useful; forced to pick one, forecasts beat scenarios **5:1**. This is a
 stated *expectation* — several respondents note they have not yet used the outputs.
 
-### The value story: near-universal need, flat uptake
-Mean engagement by class × capacity band shows short-term forecasting essentially **flat** across
-capacity (0 staff 2.42 · 1–5 2.25 · >10 3.0, the last n=1). The institutes that would gain most do not
-engage more. So the value is **potential, not yet realised**: supply is not the bottleneck (Part II) —
-demand-side friction is (awareness, interpretation, integration).
+### The value story: near-universal need, an awareness gap where it's greatest
+Mean **awareness** of short-term forecasting is essentially **flat** across capacity (0 staff 2.42 ·
+1–5 2.25 · >10 3.0, the last n=1) — the neediest countries are no more aware than the rest — and **all
+three institutes entirely unaware of RespiCast have no in-house team**. So there is an awareness
+(distribution) gap concentrated exactly where the need is greatest, cheap to close. But **awareness is
+not use**: whether the need converts into uptake is not measured by Q5 — only the open text touches it
+(several say they have not yet used the outputs). Supply is not the bottleneck (Part II); demand-side
+friction (awareness, interpretation, integration) is.
 
 ### Decisions modelling would inform (Q7, % likely / very likely)
 | Action | % likely | % unlikely |

@@ -30,9 +30,11 @@ COMMS_CHANNELS <- c(
   "Other"
 )
 
-# ---- |-Q5: engagement with each ECDC output -------------------------------------
-# Per output: response count, how many gave 0 (= not aware / no engagement), mean &
-# median on the 0-5 scale, and the share "high" (>=4). Ordered by mean engagement.
+# ---- |-Q5: AWARENESS of each ECDC output ----------------------------------------
+# NB the function/table names say "engagement" for historical reasons, but Q5 measured
+# AWARENESS ("How aware are you...", 0 = not aware, 5 = fully aware) -- NOT use. Every
+# human-facing label reads "awareness". Per output: response count, how many gave 0
+# (= not aware at all), mean & median on the 0-5 scale, and the share "high" (>=4, fully aware).
 engagement_summary <- function(survey) {
   survey$responses %>%
     select(all_of(ENGAGEMENT_CLASS$variable)) %>%

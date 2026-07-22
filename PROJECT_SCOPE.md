@@ -8,7 +8,7 @@ external stakeholders** — principally EU/EEA national public health institutes
 independent evidence bases:
 
 1. **Demand.** A de-identified survey of National Focal Points (NFPs) for viral respiratory diseases,
-   probing national modelling capacity, awareness of and engagement with ECDC modelling outputs, the
+   probing national modelling capacity, awareness of ECDC modelling outputs (Q5 measured awareness, not use), the
    decisions those outputs might inform, and the relative value NFPs place on forecasts vs scenarios.
 2. **Delivery.** The public RespiCast forecasting-hub repositories, which record every model
    submission and every ensemble — used here to measure coverage: which indicators were forecast, in
@@ -18,7 +18,7 @@ independent evidence bases:
 
 - **RQ1 (capacity).** How much modelling can EU/EEA NFPs do in-house, and how does that shape their
   reliance on ECDC outputs?
-- **RQ2 (value).** How much do NFPs engage with, and expect to value, ECDC forecasting (RespiCast) vs
+- **RQ2 (value).** How aware are NFPs of, and which do they prefer/expect to value — ECDC forecasting (RespiCast) vs
   scenarios (RespiCompass)? Which national decisions might they inform, and what stops them being used?
 - **RQ3 (delivery).** Over the last two seasons, what did the RespiCast hubs actually produce — by
   indicator, week, model count and ensemble — and how well does that supply match the demand in RQ1–2?

@@ -17,23 +17,31 @@ made — each entry: the **decision**, the reason, and the main alternative cons
 
 ## Survey coding
 
-- **Treat Q5's 0–5 as ordinal engagement, never as a usefulness percentage.** The de-identified export
-  does not carry the scale's anchor wording, so we interpret ordering and distribution only. This also
-  guards against the recency confound (below). *Alternative:* map to "% who find it useful" — rejected
-  as unsupported by the data.
+- **CORRECTION — Q5 measures AWARENESS, not engagement/use.** After the official question wording was
+  supplied — *"How aware are you of respiratory virus burden modelling work done at ECDC?"* (0–5 slider,
+  0 = not aware, 5 = fully aware) — every "engagement / actively used / uptake" reading of the Q5 scores
+  was corrected to **awareness** across all deliverables (dashboard, decision note, supplement, figures,
+  docs). The internal variable/key names (`eng_*`, `engagement*`) are kept to avoid destabilising the
+  reproducible pipeline, but are documented as historical at their definitions. Awareness is a *necessary,
+  not sufficient*, condition for value; the survey does **not** measure actual use (only the open text does).
 
-- **Flag the recency confound on the engagement gradient explicitly.** Engagement falls from guidance
-  (since 2020) to RespiCast (2023) to RespiCompass (2024); because those are also their launch dates,
-  lower engagement with newer products is largely *time in market*, not lesser value. Every place the
-  gradient appears carries this caveat. *Alternative:* present it as a value ranking — rejected as
-  misleading.
+- **CORRECTION — the instrument is a general modelling survey, not a RespiCompass evaluation.** The
+  official intro shows it was run by the ECDC Respiratory Viruses & Legionella group + Modelling team to
+  learn whether/how countries use modelling and **which ECDC outputs they would prefer** (results to a
+  network meeting, October 2024). So Q8 (forecasts vs scenarios preference) is an **in-scope** question,
+  not a by-product — the earlier "drawn from a RespiCompass-designed instrument, not relied on" caveat was
+  wrong and has been reversed.
 
-- **Do not claim capacity-poor NFPs engage more.** The Q5×Q6 cross-tab shows short-term-forecasting
-  engagement roughly flat across staff bands (2.4 / 2.3 / 3.0, the last n=1). The honest value story is
-  the *need* gap plus stated preference, not differential engagement — so the framing is "near-universal
-  need, flat uptake → demand-side bottleneck". This correction came directly from the verification/audit
-  pass. *Alternative (an earlier draft):* "engagement rises where capacity is thin" — **retracted** as
-  unsupported.
+- **Read the Q5 awareness gradient as recency.** Awareness falls from guidance (since 2020) to RespiCast
+  (2023) to RespiCompass (2024) because those are launch dates; lower awareness of newer products is
+  mostly *time in circulation*, not lesser value or use. *Alternative:* present it as a value ranking —
+  rejected as misleading.
+
+- **The awareness gap is concentrated where capacity is absent; do not extend it to "use".** The Q5×Q6
+  cross-tab shows awareness roughly flat across staff bands (2.4 / 2.3 / 3.0, the last n=1), and all three
+  institutes entirely unaware of RespiCast have no team — an awareness/distribution gap, cheap to close.
+  It says nothing about whether awareness converts into use. *Alternative (an earlier draft):* reading the
+  scores as "engagement/use" and inferring demand conversion — **retracted** as a misread of Q5.
 
 ## Hub coverage
 

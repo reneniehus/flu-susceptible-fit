@@ -11,7 +11,10 @@
 
 # ---- |-the codebook: raw column index -> analysis variable ----
 # `col` is the 1-based column position in the sheet; `type` drives the later casting.
-#   engage  0-5 self-rated awareness/engagement with an ECDC modelling output
+#   engage  Q5 self-rated AWARENESS of an ECDC modelling output, 0-5 slider.
+#           Verbatim: "How aware are you of respiratory virus burden modelling work done at ECDC?"
+#           (0 = not aware, 5 = fully aware). NB the internal key name "engage"/"engagement" is
+#           historical -- the measure is AWARENESS, not use or engagement. All display text says so.
 #   likert  Q7 decision-informing likelihood (Very unlikely ... Very likely)
 #   agree   Q10 agreement (Strongly disagree ... Strongly agree)
 #   staff   Q6 in-house modelling staff band

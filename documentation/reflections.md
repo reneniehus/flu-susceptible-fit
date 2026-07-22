@@ -9,8 +9,9 @@ The two datasets interlock. *Demand:* 68% of responding NFPs (13/19) have zero i
 staff, corroborated by the free text ("No resources for modelling in Luxembourg"; Ireland "limited
 capacity"; Italy outsources to Fondazione Bruno Kessler). *Supply:* the RespiCast hubs deliver exactly
 what those NFPs lack — a multi-model, ensemble-backed forecast almost every week across two seasons,
-covering 15–30 countries. Yet realised engagement stays modest (RespiCast ≈2.1/5) and flat across
-capacity bands. **The binding constraint has moved to the demand side** — awareness, interpretation
+covering 15–30 countries. Yet **awareness** of RespiCast stays modest (≈2.1/5, a recency effect) and flat
+across capacity bands (and the survey measures awareness, not use). **The binding constraint is on the
+demand side** — awareness, interpretation
 support, and a route into the decision — not the availability of a forecast.
 
 ## The COVID-19 hospitalisation continuity claim
@@ -52,18 +53,19 @@ demand-side bottleneck". See `output/audit.json` for the full audit.
 
 - **n = 19** of ~30 EU/EEA NFPs. Every share moves ~5 points per respondent; the `>10 staff` band is a
   **single** institute. No confidence intervals or significance are reported, by design.
-- **Q5 is ordinal engagement, not usefulness.** Do not translate scores into "% who find X useful".
-- **The engagement gradient is confounded by time in market** (guidance 2020, RespiCast 2023,
-  RespiCompass 2024). Newer ≠ worse.
+- **Q5 measures AWARENESS, not use** (*"How aware are you…"*, 0–5). Do not translate scores into use,
+  uptake, or "% who find X useful". (Internal `eng_*` key names are historical — see `decisions.md`.)
+- **The Q5 awareness gradient tracks time in circulation** (guidance 2020, RespiCast 2023, RespiCompass
+  2024): newer = less known, not less valuable.
 - **Q8 is prospective** ("will be useful") — stated expectation, not demonstrated use.
 - **Coverage counts presence, not skill.** Nothing here shows the ensemble beat the baseline or was
   well-calibrated.
 - **NFP awareness ≠ national involvement.** Several countries have in-house or partner teams already
   submitting to the hubs (Institut Pasteur, UHasselt/UNamur, Bruno Kessler), so "NFP not aware" can
-  understate country-level engagement.
+  understate country-level involvement.
 - **Country coverage ≠ national uptake.** A country appearing in a panel means someone forecast it, not
   that its NFP uses the output.
-- **Non-response is unaddressed** — the 19 respondents may skew more engaged than the ~11
+- **Non-response is unaddressed** — the 19 respondents may skew more aware and engaged than the ~11
   non-respondents.
 
 ## Highest-value next analyses (ranked)
@@ -76,7 +78,7 @@ demand-side bottleneck". See `output/audit.json` for the full audit.
    hub participation — turning two parallel datasets into one joined story.
 3. **Build an awareness → value funnel** (aware → engaged → intends to use → has an integration
    mechanism) to locate the demand-side bottleneck quantitatively.
-4. **Recency-adjust engagement:** compare RespiCast against the COVID Forecast Hub at equal maturity
+4. **Recency-adjust awareness:** compare RespiCast against the COVID Forecast Hub at equal maturity
    (months since launch) to separate time-in-market from intrinsic value.
 5. **Per-country coverage depth:** how many countries have ≥3 models every week vs sporadic coverage?
    Flag thin-coverage countries (COVID reaches only 15) as capacity-building targets.

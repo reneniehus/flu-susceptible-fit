@@ -75,9 +75,9 @@ p3 <- ggplot(eng, aes(mean_score, nice, fill = hl)) +
   geom_text(aes(label = sprintf("%.1f", mean_score)), hjust = -0.35, size = 3.6, colour = INK) +
   scale_fill_manual(values = c("TRUE" = BLUE, "FALSE" = GREY), guide = "none") +
   scale_x_continuous(limits = c(0, 4.6), expand = c(0, 0)) +
-  labs(title = "The newer forecasting products are less used so far",
-       subtitle = "Average self-rated engagement (0 = not aware, 5 = actively used); launch year in brackets; RespiCast in blue",
-       x = "average engagement (0-5)", y = NULL) +
+  labs(title = "The newer products are the least known so far",
+       subtitle = "Q5 average awareness ('How aware are you...', 0 = not aware, 5 = fully aware); launch year in brackets; RespiCast in blue",
+       x = "average awareness (0-5)", y = NULL) +
   theme_supp()
 save_fig(p3, "fig3_engagement.png", h = 3.7)
 
