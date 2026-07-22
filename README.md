@@ -79,6 +79,21 @@ Rscript code/05_figures/fig_coverage.R      # -> output/figures/coverage.png
 The committed `output/*.csv` + `output/artefact_data.json` already hold the derived results, so the
 dashboard renders without re-cloning the hubs; step 1 is only needed to regenerate them from scratch.
 
+### Reproducing the interactive dashboard
+
+The published dashboard (`artefact/dashboard.html`) is fully reproducible from committed source:
+
+```sh
+./reproduce.sh          # full: data -> artefact JSON -> dashboard + figures (needs the 5 hub clones)
+./reproduce.sh page     # just rebuild artefact/dashboard.html from the committed JSON (no hubs needed)
+```
+
+`code/05_artefact/build_pages.R` injects `output/artefact_data.json` into
+`code/05_artefact/dashboard_template.html` to produce `artefact/dashboard.html` — a single,
+self-contained file (all data embedded, all charts hand-built inline, no external requests). `./reproduce.sh page`
+regenerates it **byte-identically** from the committed JSON, so the artefact can always be rebuilt and
+re-published without the hub data. Publish it as-is (e.g. open in a browser, or re-publish as an Artifact).
+
 ## Layout
 
 ```
