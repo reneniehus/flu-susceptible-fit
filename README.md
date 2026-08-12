@@ -1,5 +1,24 @@
 # flu-susceptible-fit
 
+> **Status: archived — kept for the record, no longer developed.**
+>
+> Two successor repositories carry parts of this work forward:
+>
+> - **[respi_starter](https://github.com/reneniehus/respi_starter)** — the reusable ECDC
+>   surveillance ingest template this project grew out of: real ERVISS / RespiCompass data in,
+>   canonical model-ready tables plus a data-quality report out, with modelling deliberately
+>   left as a scaffold.
+> - **[pandemic_toolbook](https://github.com/reneniehus/pandemic_toolbook)** — a pandemic
+>   simulation playground with known ground truth, paired with an outbreak-analysis toolbox
+>   (growth/Rt, CFR, nowcasting, catchment, clusters, importation, forecasting, scenarios).
+>   It was developed inside this repo; that history is on the
+>   `claude/pandemic-simulation-playground-jlg1rs` branch here, since the standalone repo was
+>   started from a clean slate.
+>
+> The analysis below — per-season susceptibility reconstruction across 166 EU/EEA
+> country-seasons of real surveillance data — is unique to this repository and is **not**
+> carried forward by either successor.
+
 Reading a per-season sense of population **susceptibility** off **flu ILI+** waves with a
 susceptible-reconstruction **SIR model**, through a small **swappable-method framework** plus a
 reference Bayesian model:
