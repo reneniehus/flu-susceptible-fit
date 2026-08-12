@@ -79,6 +79,26 @@ Rscript code/05_figures/fig_coverage.R      # -> output/figures/coverage.png
 The committed `output/*.csv` + `output/artefact_data.json` already hold the derived results, so the
 dashboard renders without re-cloning the hubs; step 1 is only needed to regenerate them from scratch.
 
+### Running in a fresh container (Claude Code on the web)
+
+The base image has R 4.3, pandoc, LibreOffice and Chromium but **no R packages**, so a new
+container cannot run anything until they are installed. `.claude/hooks/session-start.sh` (a
+`SessionStart` hook) does that automatically — ~20 s on a cold container, ~1 s once warm:
+
+- Installs the 13 packages `code/01_support/setup.R` needs, plus `lintr`, from Ubuntu's
+  **`r-cran-*` apt binaries** (no compilation). Note that **direct CRAN is unreachable through the
+  agent proxy**, so `install.packages()` from CRAN fails; Posit's P3M binary repo *is* reachable
+  and is used as an automatic fallback.
+- Runs only in the cloud (`$CLAUDE_CODE_REMOTE`), so it never touches a local R setup.
+- Deliberately does **not** clone the ~4 GB of hub data — see `./fetch-hubs.sh` for that.
+
+```sh
+./fetch-hubs.sh    # optional: clone the 5 hubs, only for a full re-derivation
+./reproduce.sh     # full rebuild (needs the hubs)
+./reproduce.sh page  # dashboard only, from committed data (no hubs needed)
+./code/05_artefact/build_docs.sh   # decision note (PDF + Word) + survey supplement (PDF)
+```
+
 ### Reproducing the interactive dashboard
 
 The published dashboard (`artefact/dashboard.html`) is fully reproducible from committed source:
