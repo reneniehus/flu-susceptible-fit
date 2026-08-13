@@ -1,25 +1,23 @@
-# flu-susceptible-fit
+# flu_seasonal_variation_analysis
 
-> **Status: archived — kept for the record, no longer developed.**
->
-> Two successor repositories carry parts of this work forward:
+Characterising the **drivers of inter-seasonal variability** of seasonal influenza across the
+EU/EEA — 166 country-seasons of real surveillance data turned into per-season wave features, then
+related to candidate drivers (dominant subtype, vaccine effectiveness, 65+ coverage, prior-season
+burden). Research aim and scope: `PROJECT_SCOPE.md`.
+
+> Renamed from `flu-susceptible-fit` (2026-08) to match the project purpose. Two related
+> repositories share history with this one:
 >
 > - **[respi_starter](https://github.com/reneniehus/respi_starter)** — the reusable ECDC
 >   surveillance ingest template this project grew out of: real ERVISS / RespiCompass data in,
 >   canonical model-ready tables plus a data-quality report out, with modelling deliberately
 >   left as a scaffold.
 > - **[pandemic_toolbook](https://github.com/reneniehus/pandemic_toolbook)** — a pandemic
->   simulation playground with known ground truth, paired with an outbreak-analysis toolbox
->   (growth/Rt, CFR, nowcasting, catchment, clusters, importation, forecasting, scenarios).
->   It was developed inside this repo; that history is on the
->   `claude/pandemic-simulation-playground-jlg1rs` branch here, since the standalone repo was
->   started from a clean slate.
->
-> The analysis below — per-season susceptibility reconstruction across 166 EU/EEA
-> country-seasons of real surveillance data — is unique to this repository and is **not**
-> carried forward by either successor.
+>   simulation playground with known ground truth, paired with an outbreak-analysis toolbox.
+>   It began on the `claude/pandemic-simulation-playground-jlg1rs` branch here before moving to
+>   its own repo.
 
-Reading a per-season sense of population **susceptibility** off **flu ILI+** waves with a
+The season-summarising engine reads a per-season sense of population **susceptibility** off **flu ILI+** waves with a
 susceptible-reconstruction **SIR model**, through a small **swappable-method framework** plus a
 reference Bayesian model:
 

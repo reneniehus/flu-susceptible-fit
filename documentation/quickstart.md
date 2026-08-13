@@ -11,7 +11,7 @@ with a quality/dynamics report. See `data_overview.md` for what data is availabl
   `apt-get install pandoc libmagick++-dev`.
 
 ## 2. Install dependencies
-Open the project (`flu-susceptible-fit.Rproj`) and restore the pinned package versions:
+Open the project (`flu_seasonal_variation_analysis.Rproj`) and restore the pinned package versions:
 ```r
 renv::restore()
 ```

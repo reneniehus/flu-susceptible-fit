@@ -1,5 +1,5 @@
 ---
-title: "flu-susceptible-fit — surveillance data eyeballing"
+title: "flu_seasonal_variation_analysis — surveillance data eyeballing"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 output:
   html_document:
