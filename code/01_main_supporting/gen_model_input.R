@@ -21,10 +21,12 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # ---- |-season label that a weekly date belongs to (Aug -> Jul window from params) ----
+# Compares against the full season-start month-day (not just the month), so it stays consistent
+# with add_season_time_columns() for any params$season_start_monthday, not only "-XX-01".
 season_of_date = function(date, params=NULL){
-  start_monthday   = if (!is.null(params$season_start_monthday)) params$season_start_monthday else "-08-01"
-  start_month = as.integer(substr(start_monthday, 2, 3))            # "-08-01" -> 8
-  season_start_year = year(date) - (month(date) < start_month)      # before Aug -> previous season
+  start_monthday  = if (!is.null(params$season_start_monthday)) params$season_start_monthday else "-08-01"
+  start_this_year = as.Date(paste0(year(date), start_monthday))
+  season_start_year = year(date) - (date < start_this_year)         # before the start date -> previous season
   paste0(season_start_year, "/", season_start_year + 1)
 }
 
@@ -152,11 +154,16 @@ extract_vax = function(data, params){
                         params=params, temporal_resolution="seasonal")
   }
   if (!is.null(data$vax$data_vax)) {
+    # the scenarios target the season of the RespiCompass round they were fetched from
+    # ("2024-2025_round_1" -> "2024/2025") -- parsed from the round the data actually came from,
+    # not stamped from a separate latest-season knob (which historically drifted out of sync
+    # and mislabelled this stream by one season)
+    round_season = sub("^(\\d{4})-(\\d{4}).*$", "\\1/\\2", params$respicompass_round)
     pieces$scenarios = data$vax$data_vax %>%
       pivot_longer(any_of(c("higher_vax_coverage", "lower_vax_coverage", "no_vaccination")),
                    names_to="scenario", values_to="vaccine_coverage") %>%
       transmute(country_short=iso2_code,
-                season=paste0(params$latest_start_year, "/", params$latest_start_year + 1),
+                season=round_season,
                 date=as.Date(NA), agegroup=target_group, scenario,
                 indicator="vaccine_coverage", value=as.numeric(vaccine_coverage)) %>%
       to_canonical_long(source="RespiCompass", stream="vaccination_scenario",
@@ -211,7 +218,7 @@ summarise_timeseries_group = function(df){
     n_observed        = sum(observed, na.rm=TRUE),
     n_weeks_observed  = n_distinct(date[observed & !is.na(date)]),
     observed_fraction = mean(observed, na.rm=TRUE),
-    sum_value         = sum(value, na.rm=TRUE),
+    sum_value         = ifelse(all(is.na(value)), NA_real_, sum(value, na.rm=TRUE)),   # NA-guarded like mean/max
     mean_value        = ifelse(all(is.na(value)), NA_real_, mean(value, na.rm=TRUE)),
     max_value         = ifelse(all(is.na(value)), NA_real_, max(value, na.rm=TRUE)),
     peak_date         = if (all(is.na(value)) || all(is.na(date))) as.Date(NA) else date[which.max(replace_na(value, -Inf))],
@@ -231,7 +238,9 @@ make_data_season_summary = function(data_timeseries_long, params=NULL){
       .season_start_year   = season_start_year_from_label(season),
       .start = ymd(paste0(.season_start_year,     params$season_start_monthday)),
       .end   = ymd(paste0(.season_start_year + 1, params$season_end_monthday)),
-      weeks_in_season = map2_int(.start, .end, ~ sum(weekdays(seq(.x, .y, by="day")) == "Wednesday"))
+      # "%u" = ISO weekday number (Wed = 3): locale-proof, unlike weekdays() == "Wednesday",
+      # which returns 0 matches (-> completeness = Inf) under any non-English LC_TIME
+      weeks_in_season = map2_int(.start, .end, ~ sum(format(seq(.x, .y, by="day"), "%u") == "3"))
     ) %>%
     select(season, weeks_in_season)
 
@@ -287,7 +296,7 @@ gen_model_input = function( params=NULL , data=NULL ){
   ## ---- |-Per-country-&-season summary / quality stats ----
   models_in$data_season_summary  = make_data_season_summary(models_in$data_timeseries_long, params=params)
   ## ---- |-Contacts ----
-  models_in$contacts = transform_contracts(data, params)   # transform the contact matrices for model requirements
+  models_in$contacts = transform_contacts(data, params)   # transform the contact matrices for model requirements
 
   #### output
   t2 <- Sys.time()

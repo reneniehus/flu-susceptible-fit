@@ -39,7 +39,7 @@ data {
   matrix[n_day_proj, n_age_groups] delta_vax_pess; // daily assumed vax uptake in projection period
   matrix[n_day_proj, n_age_groups] delta_vax_null; // daily assumed vax uptake in projection period
   array[n_day_proj] int<lower=0,upper=2> season_start_proj; // indicating first week of a season with 1, the second week with 2, otherwise 0
-  array[n_day_proj*n_daily_time_steps] int<lower=1,upper=n_day_fit> daily_counter_proj;
+  array[n_day_proj*n_daily_time_steps] int<lower=1,upper=n_day_proj> daily_counter_proj;
   array[n_day_proj*n_daily_time_steps] int<lower=1,upper=n_daily_time_steps> daily_daystart_proj;
   array[n_day_proj] int<lower=1,upper=n_season> season_id_day_proj; // indicating which seasn each projected day belongs to
   // epi parameters
@@ -235,15 +235,19 @@ transformed parameters {
         curr_R_u[a] = prev_R_u[a] + delta_R_u;
         curr_R_v[a] = prev_R_v[a] + delta_R_v;
         // apply vaccination
-        curr_S_u[a] = curr_S_u[a] - (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_S_u[a];
-        curr_S_v[a] = curr_S_v[a] + (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_S_u[a];
-        curr_R_u[a] = curr_R_u[a] - (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_R_u[a];
-        curr_R_v[a] = curr_R_v[a] + (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_R_u[a];
+        {
+          real moved_S = (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_S_u[a];
+          real moved_R = (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_R_u[a];
+          curr_S_u[a] -= moved_S;
+          curr_S_v[a] += moved_S;
+          curr_R_u[a] -= moved_R;
+          curr_R_v[a] += moved_R;
+        }
         // collect the delta values over the steps within 1 day
         curr_delta_ili_u[a]     = curr_delta_ili_u[a]     + delta_infective_exposures_u * 1 * prop_ili[ season_id_day[daily_counter_fit[t]], a ];
         curr_delta_ili_v[a]     = curr_delta_ili_v[a]     + delta_infective_exposures_v * (1-ve_ili_cond_inf) * prop_ili[ season_id_day[daily_counter_fit[t]], a ];
-        curr_delta_ili_u_abs[a] = curr_delta_ili_u_abs[a] + curr_delta_ili_u[a] * pop_age_group[a,1];
-        curr_delta_ili_v_abs[a] = curr_delta_ili_v_abs[a] + curr_delta_ili_v[a] * pop_age_group[a,1];
+        curr_delta_ili_u_abs[a] = curr_delta_ili_u_abs[a] + delta_infective_exposures_u * 1 * prop_ili[ season_id_day[daily_counter_fit[t]], a ] * pop_age_group[a,1];
+        curr_delta_ili_v_abs[a] = curr_delta_ili_v_abs[a] + delta_infective_exposures_v * (1-ve_ili_cond_inf) * prop_ili[ season_id_day[daily_counter_fit[t]], a ] * pop_age_group[a,1];
         // save the current states (once per day)
         if ( daily_daystart_fit[t]==1 ) { 
           S_u[curr_day,a] = curr_S_u[a];
@@ -306,7 +310,7 @@ transformed parameters {
   // convert to log scale
   for (s in 1:n_season_cum_fit ) {
     for (a in 1:n_age_groups) {
-      cum_ili_log[s,a] = log(cum_ili_log[s,a]) ;
+      cum_ili_log[s,a] = log(fmax(cum_ili_log[s,a], 1e-12)) ;
     }
   }
   
@@ -329,6 +333,9 @@ model {
   }
   
   // --------------------------------prior part
+  // minimal proper priors re-enabled (ridge-breaking + scale); remaining lines kept for reference — re-derive with Jacobians before enabling logit/log-scale statements
+  prop_ili_mu ~ lognormal(-1.5, prior_sigma_prop_ili);
+  prop_ili_age ~ normal(0, sigma_prop_ili_age);
   // mock_para ~ normal(0,1);
   // target += normal_lpdf( i_season        | 0 , 0.0001 ) ;
   // target += normal_lpdf( r_season        | 0 , 0.0001 ) ;
@@ -343,8 +350,6 @@ model {
   // I_ini determined the season timing and certainly be a very low value
   // logit(SIR_ini_mu[2]) ~ normal( logit(0.000003) , prior_sigma_i ); // check in R: rnorm(2000,logit(0.000002),0.4) %>% inv_logit() %>% dens()
   // logit(SIR_ini_mu[1]) ~ normal( logit(0.77) , prior_sigma_s ); // check in R: rnorm(2000,logit(0.85),0.2) %>% inv_logit() %>% dens()
-  
-  // logit(SIR_ini_mu[1,3]) ~ normal( logit(0.15) , 0.2 ); // check in R: rnorm(2000,logit(0.0015),0.4) %>% inv_logit() %>% dens()
   
   // logit(reciprocal_phi) ~ normal( logit(0.05) , 0.1 ); // check in R: rnorm(2000,logit(0.99),0.1) %>% inv_logit() %>% dens()
   
@@ -393,9 +398,9 @@ generated quantities {
   beta_noise = normal_rng( 1, 0.25 ); // to be applied as factor to log2( beta ), sd=1 interpreted as halfing / doubling of beta
   
   // --------------------------------simulate some quantities of interest
-  // computation of Rnull_eff that is not quite correct due to age-structure
+  // computation of Rnull_eff from the population-weighted initial susceptible fraction (age contact structure still not accounted for)
   for (season_i in 1:n_season) {
-    Rnull_eff[season_i] = Rnull*(1-sum(SIR_ini[ season_i,,3 ]));
+    Rnull_eff[season_i] = Rnull * dot_product(to_vector(SIR_ini[season_i, ,1]), to_vector(pop_age_group[ ,1]) / pop);
   }
   
   // --------------------------------simulate fitted observations
@@ -444,10 +449,10 @@ generated quantities {
     real delta_R_v;
     real delta_infective_exposures_u; 
     real delta_infective_exposures_v;
-    array[n_day_fit,n_age_groups] real delta_ili_u; // unvaccinated ili/detectable incidence relative to population size
-    array[n_day_fit,n_age_groups] real delta_ili_v; // vaccinated ili/detectable incidence relative to population size
-    array[n_day_fit,n_age_groups] real delta_ili_u_abs; // unvaccinated ili/detectable incidence in absolute numbers
-    array[n_day_fit,n_age_groups] real delta_ili_v_abs; // vaccinated ili/detectable incidence in absolute numbers
+    array[n_day_proj,n_age_groups] real delta_ili_u; // unvaccinated ili/detectable incidence relative to population size
+    array[n_day_proj,n_age_groups] real delta_ili_v; // vaccinated ili/detectable incidence relative to population size
+    array[n_day_proj,n_age_groups] real delta_ili_u_abs; // unvaccinated ili/detectable incidence in absolute numbers
+    array[n_day_proj,n_age_groups] real delta_ili_v_abs; // vaccinated ili/detectable incidence in absolute numbers
     // previous states
     real prev_S_u[n_age_groups];
     real prev_I_u[n_age_groups];
@@ -532,17 +537,21 @@ generated quantities {
         curr_R_u[a] = prev_R_u[a] + delta_R_u;
         curr_R_v[a] = prev_R_v[a] + delta_R_v;
         // apply vaccination
-        curr_S_u[a] = curr_S_u[a] - (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_S_u[a];
-        curr_S_v[a] = curr_S_v[a] + (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_S_u[a];
-        curr_R_u[a] = curr_R_u[a] - (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_R_u[a];
-        curr_R_v[a] = curr_R_v[a] + (delta_vax_j[daily_counter_fit[t-1],a]/n_daily_time_steps) * curr_R_u[a];
+        {
+          real moved_S = (delta_vax_j[daily_counter[t-1],a]/n_daily_time_steps) * curr_S_u[a];
+          real moved_R = (delta_vax_j[daily_counter[t-1],a]/n_daily_time_steps) * curr_R_u[a];
+          curr_S_u[a] -= moved_S;
+          curr_S_v[a] += moved_S;
+          curr_R_u[a] -= moved_R;
+          curr_R_v[a] += moved_R;
+        }
         // collect the delta values over the steps within 1 day
-        curr_delta_ili_u[a]     = curr_delta_ili_u[a]     + delta_infective_exposures_u * 1 * prop_ili[ season_id_day[daily_counter_fit[t]], a ];
-        curr_delta_ili_v[a]     = curr_delta_ili_v[a]     + delta_infective_exposures_v * (1-ve_ili_cond_inf) * prop_ili[ season_id_day[daily_counter_fit[t]], a ];
-        curr_delta_ili_u_abs[a] = curr_delta_ili_u_abs[a] + curr_delta_ili_u[a] * pop_age_group[a,1];
-        curr_delta_ili_v_abs[a] = curr_delta_ili_v_abs[a] + curr_delta_ili_v[a] * pop_age_group[a,1];
+        curr_delta_ili_u[a]     = curr_delta_ili_u[a]     + delta_infective_exposures_u * 1 * prop_ili[ season_id_day[daily_counter[t]], a ];
+        curr_delta_ili_v[a]     = curr_delta_ili_v[a]     + delta_infective_exposures_v * (1-ve_ili_cond_inf) * prop_ili[ season_id_day[daily_counter[t]], a ];
+        curr_delta_ili_u_abs[a] = curr_delta_ili_u_abs[a] + delta_infective_exposures_u * 1 * prop_ili[ season_id_day[daily_counter[t]], a ] * pop_age_group[a,1];
+        curr_delta_ili_v_abs[a] = curr_delta_ili_v_abs[a] + delta_infective_exposures_v * (1-ve_ili_cond_inf) * prop_ili[ season_id_day[daily_counter[t]], a ] * pop_age_group[a,1];
         // save the current states (once per day)
-        if ( daily_daystart_fit[t]==1 ) { 
+        if ( daily_daystart[t]==1 ) { 
           S_u[curr_day,a] = curr_S_u[a];
           S_v[curr_day,a] = curr_S_v[a];
           I_u[curr_day,a] = curr_I_u[a];
@@ -610,7 +619,7 @@ generated quantities {
           gen_ili_t_obs_proj[j,t,a] = gen_ili_u_obs_proj[j,t,a] + gen_ili_v_obs_proj[j,t,a];
           // rate per 100,000 (as indicated with "percap")
           gen_ili_u_percap_obs_proj[j,t,a] = gen_ili_u_obs_proj[j,t,a]/    pop_a_u[j,t,a]*100000;
-          gen_ili_v_percap_obs_proj[j,t,a] = gen_ili_v_obs_proj[j,t,a]/    pop_a_u[j,t,a]*100000;
+          gen_ili_v_percap_obs_proj[j,t,a] = gen_ili_v_obs_proj[j,t,a]/    pop_a_v[j,t,a]*100000;
           gen_ili_t_percap_obs_proj[j,t,a] = gen_ili_t_obs_proj[j,t,a]/pop_age_group[a,1]*100000;
         }
         // sums across age-groups

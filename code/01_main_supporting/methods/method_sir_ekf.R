@@ -67,27 +67,17 @@ fit_sir_ekf = function(ylist, R0 = 1.5, infectious_period_days = 3, seed_i0 = 1e
                        n_sub = 7, n_starts = 4, seed = 1, ...){   # ... ignores cross-method args
   gamma = 7 / infectious_period_days                     # per-week recovery rate
   K = length(ylist)
-  pos    = lapply(ylist, function(y) y[is.finite(y) & y > 0])
-  ymax   = max(vapply(pos, function(y) if (length(y)) max(y)                  else NA_real_, numeric(1)), na.rm = TRUE)
-  bguess = max(vapply(pos, function(y) if (length(y)) as.numeric(quantile(y, 0.1)) else NA_real_, numeric(1)), na.rm = TRUE)
+  sg = .start_guesses(ylist)                             # observed peak + off-season floor (sir_core.R)
 
   # start in the GROWING regime (S0 high) with a small process noise
   peak_inc_guess = 0.02                                  # assumed peak weekly new-infection proportion, to seed the reporting fraction c from the observed peak
-  base = c(rep(qlogis(0.8), K), rep(log(ymax / peak_inc_guess), K), log(max(bguess, 1e-3)), log(15), log(1e-4))
+  base = c(rep(qlogis(0.8), K), rep(log(sg$ymax / peak_inc_guess), K), log(max(sg$bguess, 1e-3)), log(15), log(1e-4))
   names(base) = c(paste0("logit_S0_", seq_len(K)), paste0("log_c_", seq_len(K)),
                   "log_b", "log_phi", "log_qI")
   jit_sd = c(rep(0.8, K), rep(0.5, K), 0.5, 0.5, 0.8)    # wider spread on S0; some spread on q_I
-  set.seed(seed)
-  best = NULL
-  for (s in seq_len(n_starts)){
-    start = base + if (s == 1) 0 else rnorm(length(base), 0, jit_sd)
-    fit = tryCatch(
-      optim(start, .ekf_negll, ylist = ylist, R0 = R0, gamma = gamma, I0 = seed_i0,
-            n_sub = n_sub, method = "BFGS", control = list(maxit = 200, reltol = 1e-8)),
-      error = function(e) NULL)
-    if (!is.null(fit) && is.finite(fit$value) && (is.null(best) || fit$value < best$value)) best = fit
-  }
-  if (is.null(best)) stop("fit_sir_ekf: all optim starts failed")
+  best = .fit_multistart(base, jit_sd, .ekf_negll,
+                         list(ylist = ylist, R0 = R0, gamma = gamma, I0 = seed_i0, n_sub = n_sub),
+                         n_starts, seed, "fit_sir_ekf")
 
   fitted = .ekf_negll(best$par, ylist = ylist, R0 = R0, gamma = gamma, I0 = seed_i0,
                       n_sub = n_sub, return_fit = TRUE)

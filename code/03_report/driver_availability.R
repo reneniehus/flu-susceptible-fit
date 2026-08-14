@@ -8,6 +8,8 @@
 # Key point made visually: subtype & VE are CONTINENTAL / season-level (one "EU/EEA" row, identical
 # across countries), whereas 65+ coverage is COUNTRY-specific (a full country x season grid with gaps).
 # Fill encodes availability + provenance (already in repo / newly pulled / interim-only / missing / COVID).
+# PREREQUISITE: output/descriptors_vax.csv (gitignored cache) -- run code/00_main.R, then
+# code/04_modelling/build_slim_panel.R + code/05_analysis/prepare_descriptors.R first.
 # Run from the repo root:  Rscript code/03_report/driver_availability.R
 suppressMessages({library(ggplot2)})
 

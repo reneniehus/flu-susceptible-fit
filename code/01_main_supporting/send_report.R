@@ -1,3 +1,6 @@
+# send_report.R -- manual utility, NOT sourced by the pipeline (00_main.R only points at it in a
+# comment). Source it yourself when you actually want the email:
+#   source("code/01_main_supporting/send_report.R"); send_report(params)
 send_report <- function(params) {
   # Optionally email a rendered report as an attachment. Disabled by default
   # (params$send_report = FALSE); all delivery details come from params so this is

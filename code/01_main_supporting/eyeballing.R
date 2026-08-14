@@ -151,7 +151,10 @@ fig_syndromic_dynamics = function(timeseries_long){
 # and a large flu wave both reach the top of the panel).
 roll_mean_centred = function(x, k=3){
   # centred rolling mean over a window of k points; averages whatever is non-missing in the
-  # window (so short gaps and the series edges are handled without dropping points)
+  # window (so short gaps and the series edges are handled without dropping points).
+  # DELIBERATE near-duplicate of .smooth_curve (method_descriptive.R): for odd k the two agree,
+  # but the report layer must stay sourceable without the modelling engine (the eyeballing report's
+  # self-contained knit stops at eyeballing.R), so this tiny copy is kept rather than a dependency.
   n = length(x); half = (k - 1) %/% 2; out = rep(NA_real_, n)
   for (i in seq_len(n)){
     w = x[max(1, i - half):min(n, i + half)]

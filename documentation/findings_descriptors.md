@@ -7,6 +7,12 @@ method. Produced by a multi-agent analysis with adversarial verification of ever
 partial pooling in `hierarchical_models.R`, subtype in `bayes_subtype.R`, prior burden in
 `bayes_prior_burden.R`).*
 
+*Multiplicity, stated once for the whole document: this is an EXPLORATORY, hypothesis-generating
+analysis (PROJECT_SCOPE.md). Dozens of descriptor x driver combinations are examined and no
+multiple-testing correction is applied, so isolated starred intervals are screening signals, not
+confirmed effects — the findings we advance are the ones that recur across methods, eras and model
+specifications, and even those await confirmation on data not used to find them.*
+
 ## Within-country hierarchical models (partial pooling) — the precise answers
 
 *Cross-country correlations are dropped as confounded (latitude, health system, age structure). This
@@ -38,31 +44,36 @@ null with CIs spanning zero (pre-COVID block, n=97, 22 countries): peak-height 0
 
 ## Dominant subtype and the subtype → descriptor analysis
 
-**Method (WHO/ECDC).** Dominant (sub)type per country-season = the (sub)type with the largest share of
-**characterised** influenza detections over the season, among A(H1N1)pdm09, A(H3N2) and B (sentinel +
-non-sentinel combined), requiring ≥ 20 typed detections for a call. 84% of country-seasons have a clear
-plurality (top share ≥ 50%; median 64%).
+**Method (REVISED 2026-08 — hierarchical, type-first).** Dominance is now decided in two steps
+(`code/05_analysis/dominant_subtype.R`, rationale in `decisions.md`): first the TYPE by plurality of
+ALL characterised A vs ALL characterised B detections — *including* the type-known-but-unsubtyped
+'A (unknown)' / 'B (unknown)' rows, which are the majority of what labs report — then, if A wins, the
+subtype by plurality among subtyped A. (The earlier rule counted unsubtyped B toward B but DISCARDED
+unsubtyped A; in 2024/25 unsubtyped A was ~206k of ~260k A detections EU/EEA-wide, so that asymmetry
+called "B" in 22/30 countries while type-level A actually exceeded B in 28/30 — the "B-dominant
+2024/25" of earlier drafts was an artifact of the counting rule.) Sentinel + non-sentinel combined,
+≥ 20 characterised detections required; 100% of calls are clear at type level (median type share 0.92).
 
 **Coverage.** ERVISS typing starts 2021, so only the post-COVID analysis seasons get a subtype: **59 of
 166 descriptor country-seasons (36%)** — all of 2023/24, 2024/25, 2025/26; none of the pre-COVID seasons
-(2014/15–2018/19), which would need external WHO/ECDC season reports.
+(2014/15–2018/19), which use the continental literature labels instead (`subtype_8season.R`).
 
-**Critical confound.** The dominant subtype is essentially **season-determined**: 2023/24 = H1N1 (23/29
-countries), 2024/25 = B (23/31), 2025/26 = H3N2 (24/30). With only three post-COVID seasons, subtype is
-nearly collinear with season, so a "subtype effect" cannot be separated from anything else specific to
-those three seasons (vaccine match, prior-season immunity, weather). Read the results as among-**season**
-differences labelled by subtype, NOT causal subtype effects.
+**Critical confound (still).** The dominant subtype remains largely **season-determined**: 2023/24 =
+H1N1 (25/29 countries), 2024/25 = H1N1 (21/30, with 5 H3N2 + 2 B departures), 2025/26 = H3N2 (24/30).
+With only three post-COVID seasons, subtype is nearly collinear with season, so a "subtype effect"
+cannot be separated from anything else specific to those seasons (vaccine match, prior-season immunity,
+weather). Read the results as among-**season** differences labelled by subtype, NOT causal effects.
 
 **Bayesian model** (Gibbs sampler: descriptor ~ subtype + country random intercept, weak priors;
 posterior means match lme4; R-hat ≤ 1.01). Within-country contrasts (SD units; * = 95% CrI excludes 0;
-figure `output/bayes_subtype.png`):
-- **Burden:** B-dominant seasons have higher AUC than both H1N1 (+0.31*) and H3N2 (+0.22*), and higher
-  peak height than H1N1 (+0.24*).
-- **Timing:** H3N2 seasons peak ~1.1 SD **earlier** than H1N1 (−1.11*); B peaks and onsets later than
-  H3N2 (peak +1.36*, onset +0.78*). Ordering H3N2 → H1N1 → B from earliest to latest.
-- **Steepness:** no subtype difference (all CrIs span 0).
-These directions align with known epidemiology (H3N2 seasons earlier/sharper; B later) but, given the
-confound, remain among-season differences pending more single-source seasons.
+figure `output/bayes_subtype.png`; n = 59: 35 H1N1 / 21 H3N2 / 3 B — B is now a tiny minority class):
+- **Timing — the surviving signal:** H3N2 seasons peak ~1 SD **earlier** than H1N1 (−0.96*).
+- **Burden:** under the corrected labels the burden contrasts collapse to n.s. (B−H1N1 AUC +0.19
+  [−0.18, 0.56]; H3N2−H1N1 +0.07). The earlier "B-dominant seasons carry the largest burden" claim was
+  driven by 2024/25's high-burden seasons being mislabelled B; those are H1N1 seasons.
+- **Steepness / onset:** no subtype differences (all CrIs span 0).
+The timing direction (H3N2 earlier) aligns with known epidemiology and recurs in every specification;
+with 3 B country-seasons, B contrasts here are essentially uninformative.
 
 ## Prior-season burden (immunity carryover)
 
@@ -94,8 +105,11 @@ ILI+ curves: AUC and peak height (burden), onset/peak week (timing), and steepne
 of the rising limb). Two distinctions govern everything below. First, **scale**: AUC and peak height
 vary ~1000x across countries by reporting scale and are interpretable only *within* country (log +
 country-demeaning); timing and steepness are scale-free and comparable across countries. Second, the
-**source/era confound**: pre-COVID == RespiCompass, post-COVID == ERVISS, so any era difference is
-inseparable from a measurement change except where a single bridging season breaks it.
+**source/era confound**: the measurement stream shifts (RespiCompass → ERVISS) one season AFTER the
+covid-era boundary — 2023/24 is a post-COVID season still RespiCompass-sourced for 20/22 countries —
+so era (by season) and source are kept as SEPARATE variables (`covid_era`, `source` in
+`descriptors.csv`); 2023/24 is the bridging season that partially separates them, and any pre/post
+contrast beyond it remains entangled with the measurement change.
 
 ## 1. Patterns among descriptors (best-supported first)
 
@@ -185,18 +199,21 @@ log(peak height). **Model 1** (as specified): dominant subtype (categorical) + V
 the dominant subtype). **Model 2** (mechanistic refinement): subtype + **protection = VE x 65+ coverage**,
 which varies by country x season. Effects in SD units, 95% CrI; `*` = excludes 0.
 
-**Robust signal — subtype contrasts (consistent with the 8-season analysis):** **B seasons carry the
-largest burden** (AUC B-H1N1 **+0.50***, B-H3N2 **+0.63***) and highest peak; **A(H3N2) onsets earliest**
-(H3N2-H1N1 **-1.54*** on onset week), B latest (B-H3N2 **+1.86***). *Caveat:* pre-COVID **B rests on a
-single season** (2017/18), so its contrasts are essentially "2017/18 vs the rest" — season-confounded.
+**Robust signal — subtype contrasts (pre-COVID block; predictors group-mean-centred within country
+per the standing rule):** **B seasons carry the largest burden** (AUC B-H1N1 **+0.50***, B-H3N2
+**+0.62***) and higher peak (B-H1N1 +0.34*); **A(H3N2) onsets earliest** (H3N2-H1N1 **-1.48*** on onset
+week), B latest (B-H3N2 **+1.79***). *Caveats:* pre-COVID **B rests on a single season** (2017/18), so
+its contrasts are essentially "2017/18 vs the rest" — season-confounded; and in the 8-season model with
+a SEASON random intercept (`subtype_8season.R`, the honest-replication specification) the burden
+contrasts attenuate to n.s. — only the timing contrast (H3N2 peaks earlier) survives there.
 
 **VE / protection — the predicted vaccine mechanism is NOT evident, and a confounded one appears.** The
 mechanistic prediction (see `reflections.md`) was: protection should push **burden (AUC/peak) down** and
 leave **timing (onset) unmoved**. Instead:
-- burden: protection slope on AUC **-0.08 (ns, -0.25 to 0.09)**, on peak **-0.03 (ns)** — the expected
+- burden: protection slope on AUC **-0.07 (ns, -0.19 to 0.04)**, on peak **-0.05 (ns)** — the expected
   reduction is weak and not distinguishable from zero;
-- timing: the **only** significant VE/protection association is with **earlier onset** (VE **-0.65***;
-  protection **-0.38***) — but vaccines cannot plausibly shift onset timing, so this is **season-level
+- timing: the **only** significant VE/protection association is with **earlier onset** (VE **-0.61***;
+  protection **-0.33***) — but vaccines cannot plausibly shift onset timing, so this is **season-level
   confounding**: VE co-varies with subtype and with season-specific onset. Even the country x season
   protection term is dominated by its season-level VE component (65+ coverage is nearly constant within a
   country), so it **inherits the confounded timing signal instead of isolating the burden mechanism**.
@@ -212,43 +229,52 @@ which a later, era-controlled model that adds the post-COVID seasons should be r
 `code/05_analysis/precovid_predict_postcovid.R`. Extends the model with **prior-season AUC** (last season's
 log burden — a country x season predictor, unlike season-level subtype/VE) and asks two things: what does the
 within-country model say, and **does a pre-COVID-fitted model predict post-COVID burden out of sample?**
-(Cross-val requires the 2022/23 season the panel excludes; it is reconstructed by the identical build minus
-the COVID filter — verified to reproduce the committed 2023/24 AUC exactly.)
+(Cross-val requires the 2022/23 season the panel excludes; it is reconstructed by the shared stitch minus
+the COVID filter — an in-script assertion checks that the rebuild reproduces the committed panel's AUCs
+exactly, for all 166 country-seasons.)
 
 **Whisker (pre-COVID, within-country random intercepts; subtype + protection + prior-AUC; SD units).**
-Subtype timing is the clear signal — **A(H3N2) onsets earliest** (H3N2-H1N1 −1.21\* on onset), **B latest**
-(B-H3N2 +0.97\*); burden contrasts are weaker (B-H1N1 AUC +0.25, borderline). **Protection ≈ 0** on every
+Subtype timing is the clear signal — **A(H3N2) onsets earliest** (H3N2-H1N1 −1.22\* on onset), **B latest**
+(B-H3N2 +0.99\*); burden contrasts are weaker (B-H1N1 AUC +0.25, borderline). **Protection ≈ 0** on every
 descriptor. **Prior-AUC's WITHIN-country slope is small and slightly negative** (AUC −0.08; peak −0.10\*) —
 after removing the country level, last season's *deviation* barely persists (a faint depletion hint,
-consistent with the weak/null prior-burden result above).
+consistent with the weak/null prior-burden result above). (Season-level terms here are identified from
+only 4 training seasons with no season random effect — the CrIs on subtype/VE-like terms are optimistic;
+see `subtype_8season.R` for the season-RE treatment.)
 
-**Cross-validation (predict 2023/24 from 2022/23, 2024/25 from 2023/24; log AUC).** A pooled AR model
-(subtype + prior-AUC; prior-AUC carries each country's reporting scale) predicts post-COVID burden well:
-**cor(observed, predicted) = 0.95, RMSE = 0.46 (log AUC), 9/10 inside the 95% predictive interval** (IE
-2023/24 the miss — an unusually low season after a large 2022/23). But the **within-country deviation
-correlation is only 0.34**: the model nails the country *level* (reporting scale, the easy part) and gets
-the season-to-season *move* only modestly.
+**Cross-validation (predict 2023/24 from 2022/23, 2024/25 from 2023/24; log AUC; n = 35 test
+country-seasons).** REVISED after the 2026-08 review — two corrections changed the headline, in the
+honest direction. (a) The test set is now every train country with a valid prior (35 country-seasons),
+no longer additionally conditioned on post-COVID coverage availability (protection was never an
+out-of-sample predictor, and that filter had quietly shrunk the test to a 10-row, big-reporter subset).
+(b) The 2024/25 dominant subtype was corrected from "B" to **A(H1N1)** (the old counting rule discarded
+unsubtyped A while counting unsubtyped B; see `decisions.md`), which removes a spurious +0.87 log-unit
+"B-season" shift the model had been granted on every 2024/25 prediction.
 
-**Against a country-only baseline** (an intercept-only model that predicts each country's mean log-AUC —
-it knows *only* the country), the full model cuts RMSE from **0.71 → 0.46** (cor 0.93 → 0.95). So the
-country scale alone already carries most of the predictability (baseline cor 0.93), and subtype +
-last-season AUC add a **~35% RMSE improvement** on top — a real but modest season-specific refinement.
-`output/precovid_crossval_compare.png` visualises this with the country scale *removed*: each season as a
-**fold-change vs that country's pre-COVID normal** (so the baseline collapses to the 1x line and the
-deviations are what the eye reads). It shows all four two-season countries rising from 2023/24 to 2024/25,
-IE 2023/24 as an extreme low (below even the baseline's interval), and the full model's tighter intervals
-sitting closer to the observed diamonds than the flat baseline. Both models use a **hierarchical
-location-scale form** so the residual (season-to-season) variance is **country-specific** (partial-pooled,
-sigma_c 0.35-1.05 on the log scale) -- volatile countries (e.g. PL) get visibly wider baseline bands than
-steady ones (e.g. FR), rather than a single pooled interval.
+On the corrected test: the full model still ranks countries well (**cor = 0.95**) but its error is
+**RMSE = 0.75**, with **74% inside the 95% predictive interval** (under-coverage: the pre-COVID
+within-country variances understate the post-COVID regime), against the country-only baseline's
+**RMSE = 0.90**. The decisive comparator is **persistence** — predict this season = last season's
+log AUC — at **RMSE = 0.62, beating both models**. And the full model's *within-country* season-to-season
+move is now **anti-correlated with observation (r = −0.76 over the 17 paired countries)**: observed
+2024/25 rose above 2023/24 almost everywhere, while the shrunken prior-AUC slope (0.95 pooled, i.e.
+slight regression to the mean) predicted declines. `output/precovid_crossval_compare.png` shows this
+plainly with the country scale removed (fold-change vs each country's pre-COVID normal): diamonds
+climbing from '23/24 to '24/25, orange model predictions stepping down. Both models use a **hierarchical
+location-scale form** so the residual variance is **country-specific** (partial-pooled, sigma_c 0.35-1.05
+on the log scale) — volatile countries get visibly wider baseline bands than steady ones.
 
-**Two findings worth keeping:**
-1. **The prior-AUC duality.** Between countries, burden is strongly persistent (pooled prior-AUC slope 0.94 —
-   this is reporting scale) and hence very predictable; *within* a country the season-to-season deviation
-   barely persists (or slightly depletes). "We can predict next season's burden" is mostly "we know this
-   country's scale," not epidemiological skill — the reporting-persistence caveat, quantified.
-2. **Protection does not transfer across the COVID divide.** It had to be **dropped from the out-of-sample
-   predictor set**: VE against the dominant subtype jumped from 14–45% (pre-COVID) to 52–58% (2023/24–24/25),
-   so post-COVID protection sits outside the training range and extrapolates to nonsense (and its
-   within-country effect is ~0 anyway). This is a concrete instance of the **pre/post-COVID confounding**
-   flagged in `reflections.md` — a driver whose regime shifts across the divide cannot be carried over it.
+**Two findings worth keeping (both sharpened by the correction):**
+1. **The prior-AUC duality, now decisive.** Between countries, burden is strongly persistent (pooled
+   prior-AUC slope ~0.95 — reporting scale) and hence very "predictable"; *within* a country the
+   season-to-season deviation carries no exploitable pre-COVID-learned signal — in the post-COVID test
+   the model's within-country moves point the wrong way, and plain persistence beats it outright.
+   "We can predict next season's burden" is mostly "we know this country's scale" **plus "last season
+   repeats"**; the pre-COVID-fitted season-specific terms (subtype, shrunken AR) added *negative* value
+   out of sample. The earlier headline (RMSE 0.71 → 0.46, "~35% improvement") was an artifact of the
+   small conditioned test set and the mislabelled 2024/25 subtype.
+2. **Protection does not transfer across the COVID divide.** It stays **out of the out-of-sample
+   predictor set**: post-COVID 65+ coverage exists for only ~15 country-seasons (it would gut the test
+   set), the VE regime differs (traceable values: pre-COVID 14–45%, 2023/24 = 52%, 2024/25 = 30%), and
+   its within-country effect is ~0 anyway. This remains a concrete instance of the **pre/post-COVID
+   confounding** flagged in `reflections.md`.

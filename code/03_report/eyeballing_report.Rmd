@@ -21,6 +21,7 @@ if (!exists("eb")) {
   source(here("code/01_main_supporting/setup.R"))
   source(here("code/02_settings/settings_version0.R")); params = settings()
   source(here("code/01_main_supporting/flu_functions.R"))
+  source(here("code/01_main_supporting/validate.R"))   # load_data_epi + extract_typing call its check_* helpers
   source(here("code/01_main_supporting/load_data.R"))
   source(here("code/01_main_supporting/gen_model_input.R"))
   source(here("code/01_main_supporting/eyeballing.R"))

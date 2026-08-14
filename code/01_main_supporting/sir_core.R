@@ -16,6 +16,10 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # ---- |-one sub-step (Euler) of the SIR in proportions, tracking cumulative incidence C ----
+# Step size: callers use n_sub = 7 (daily steps, gamma*dt = 1/3 at the default 3-day infectious
+# period) -- coarse enough to carry a small S0-dependent discretisation bias, but the SAME bias for
+# every season/country, so the within-country S0 ranking (the only thing interpreted) is unaffected.
+# Raise n_sub if absolute trajectories ever matter.
 .sir_substep = function(x, beta, gamma, dt){
   S = x[1]; I = x[2]
   newinf = beta * S * I            # infection rate (per capita)
@@ -73,6 +77,11 @@
   # state x = (S, I, C); start with C = 0
   x = c(S0, I0, 0)
   P = diag(c((p0_S*S0)^2, (p0_I*I0)^2, 0))            # initial state covariance
+  # Process noise is ADDITIVE on I (a fixed absolute weekly sd), while I spans ~4 orders of
+  # magnitude within a season -- so in RELATIVE terms the filter is loosest during seeding/early
+  # rise (qI ~ 1e-4 is ~10x the 1e-5 seed), exactly the window whose rise rate identifies S0.
+  # This is a known, deliberate simplification; 'additive vs proportional (log-I) q_I' is a
+  # structural axis of the planned EKF sensitivity analysis (documentation/decisions.md).
   Q = diag(c(0, qI^2, 0))                             # process noise (on I)
 
   ll = 0
@@ -109,6 +118,36 @@
     S_filt[t] = x[1]; I_filt[t] = x[2]
   }
   list(loglik = ll, mu_pred = mu_pred, S = S_filt, I = I_filt)
+}
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+### Multi-start optimiser (shared by the mechanistic methods) ##########
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# The deterministic and EKF methods once each carried a verbatim copy of this harness; the method
+# files now only build their base start + jitter sds + negll and call these. RNG behaviour is
+# identical to the old copies (set.seed(seed), one rnorm(length(base)) draw per non-first start).
+
+# ---- |-data-driven start guesses from a country's seasons (observed peak + off-season floor) ----
+.start_guesses = function(ylist){
+  pos = lapply(ylist, function(y) y[is.finite(y) & y > 0])
+  list(ymax   = max(vapply(pos, function(y) if (length(y)) max(y)                       else NA_real_, numeric(1)), na.rm = TRUE),
+       bguess = max(vapply(pos, function(y) if (length(y)) as.numeric(quantile(y, 0.1)) else NA_real_, numeric(1)), na.rm = TRUE))
+}
+
+# ---- |-multi-start BFGS: jittered restarts, keep the best finite optimum ----
+.fit_multistart = function(base, jit_sd, negll, negll_args, n_starts, seed, method_name){
+  set.seed(seed)
+  best = NULL
+  for (s in seq_len(n_starts)){
+    start = base + if (s == 1) 0 else rnorm(length(base), 0, jit_sd)
+    fit = tryCatch(
+      do.call(optim, c(list(par = start, fn = negll), negll_args,
+                       list(method = "BFGS", control = list(maxit = 200, reltol = 1e-8)))),
+      error = function(e) NULL)
+    if (!is.null(fit) && is.finite(fit$value) && (is.null(best) || fit$value < best$value)) best = fit
+  }
+  if (is.null(best)) stop(sprintf("%s: all optim starts failed", method_name))
+  best
 }
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

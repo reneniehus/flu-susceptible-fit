@@ -16,16 +16,20 @@ source("code/01_main_supporting/methods_registry.R")
 
 # ---- |-settings ----
 countries = params$susc_countries                      # the slim panel's countries (settings)
-n_panels  = 5                                          # max season panels per country row
+panels    = lapply(countries, load_flu_iliplus_slim); names(panels) = countries
+# one column per season so EVERY season is drawn (the demo's whole point). A fixed column count
+# smaller than the season count would overflow the mfrow grid and base graphics would silently
+# keep only the LAST page of the png.
+n_panels  = max(vapply(panels, function(p) length(p$seasons), integer(1)))
 
 # ---- |-one figure + summary table per registered method ----
 dir.create("output", showWarnings = FALSE)
 for (method in names(sir_methods())){
-  png(sprintf("output/fit_%s.png", method), width = 1300, height = 560)
+  png(sprintf("output/fit_%s.png", method), width = 260 * n_panels, height = 140 * length(countries))
   par(mfrow = c(length(countries), n_panels), mar = c(4, 4, 3, 1))
 
   for (cc in countries){
-    country_panel = load_flu_iliplus_slim(cc)
+    country_panel = panels[[cc]]
     elapsed = system.time(fit <- run_method(method, country_panel, params, n_starts = 4))[["elapsed"]]
     pars = fit$params
     qI = if (is.na(pars$qI[1])) "-" else sprintf("%.1e", pars$qI[1])
@@ -34,15 +38,15 @@ for (method in names(sir_methods())){
     print(summarise_method_fit(fit)[, c("season", "S0", "R_eff", "c", "peak_week", "onset_week", "cor")],
           row.names = FALSE, digits = 3)
 
-    for (s in seq_along(country_panel$seasons)){
-      y = country_panel$ylist[[s]]; wk = country_panel$season_week[[s]]; mu = fit$mu[[s]]
-      plot(wk, y, pch = 19, col = "grey30", xlab = "season week", ylab = "flu ILI+",
-           main = sprintf("%s %s  S0=%.2f", cc, country_panel$seasons[s], pars$S0[s]))
-      lines(wk, mu, col = "red", lwd = 2)                # fitted curve (red), as plotted per method
-      abline(h = pars$b, col = "grey60", lty = 3)           # shared off-season baseline
+    for (s in seq_len(n_panels)){                      # fill the whole row: season panel or blank
+      if (s <= length(country_panel$seasons)){
+        y = country_panel$ylist[[s]]; wk = country_panel$season_week[[s]]; mu = fit$mu[[s]]
+        plot(wk, y, pch = 19, col = "grey30", xlab = "season week", ylab = "flu ILI+",
+             main = sprintf("%s %s  S0=%.2f", cc, country_panel$seasons[s], pars$S0[s]))
+        lines(wk, mu, col = "red", lwd = 2)             # fitted curve (red), as plotted per method
+        abline(h = pars$b, col = "grey60", lty = 3)     # shared off-season baseline
+      } else plot.new()
     }
-    if (length(country_panel$seasons) < n_panels)                   # keep the grid aligned across rows
-      for (k in seq_len(n_panels - length(country_panel$seasons))) plot.new()
   }
   dev.off()
   cat(sprintf("figure written to output/fit_%s.png\n", method))

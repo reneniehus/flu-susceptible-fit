@@ -30,10 +30,12 @@ Two flags drive data loading:
   works because the snapshots are committed.
 
 ## 4. Change what it does — settings
-Edit `code/02_settings/settings_version0.R` (the `params` list). Common knobs:
-- `run_countries` — countries to focus on.
-- `season_start_monthday` / `season_end_monthday`, `latest_start_year` — season window.
-- `respicompass_round` — RespiCompass hub round folder (bump for a new season).
+Edit `code/02_settings/settings_version0.R` (the `params` list — live knobs only; every entry has a
+consumer in `code/`). Common knobs:
+- `susc_*` — the fixed SIR assumptions (R0, infectious period, seed) + method-demo countries.
+- `season_start_monthday` / `season_end_monthday` — the Aug→Jul season window.
+- `respicompass_round` — RespiCompass hub round folder (bump for a new season; also stamps the
+  vaccination-scenario season).
 
 Demography comes from the committed snapshot (`data/population_pyramid.fst`); keep
 `use_ecdc_db = FALSE`.

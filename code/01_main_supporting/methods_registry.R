@@ -8,8 +8,10 @@
 # and shares the signature fit_*(ylist, R0, infectious_period_days, seed_i0, n_sub, n_starts, seed).
 #
 # To ADD A METHOD: write methods/method_<name>.R, source it, and add ONE line to sir_methods().
-# Everything downstream (run + summarise into the common per-season table) is method-agnostic; the
-# demo plotting and the code/05_analysis driver models then consume that one table.
+# Everything downstream (run + summarise into the common per-season table) is method-agnostic. The
+# demo/overview plotting consumes that table for every method; the code/05_analysis driver models
+# consume the DESCRIPTIVE method's features (via prepare_descriptors.R) -- the mechanistic methods'
+# S0 feeds the cross-method comparison, not (yet) the driver models.
 #
 # Requires: sir_core.R and the method files to be sourced first.
 
@@ -96,6 +98,9 @@ run_all_methods = function(countries, params, methods = names(sir_methods()),
       elapsed = system.time(fit <- run_method(m, panel, params, n_starts = n_starts))[["elapsed"]]
       if (verbose) cat(sprintf("  %-4s %-14s %2d seasons  conv=%d  %4.0fs\n",
                                cc, m, length(panel$seasons), fit$convergence, elapsed))
+      if (!is.na(fit$convergence) && fit$convergence != 0)   # surface, don't just record, optim non-convergence
+        warning(sprintf("run_all_methods: %s/%s optim convergence code %d -- treat this fit with care",
+                        cc, m, fit$convergence), call. = FALSE)
       out[[paste(cc, m, sep = "_")]] = summarise_method_fit(fit)
     }
   }

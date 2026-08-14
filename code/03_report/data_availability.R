@@ -15,33 +15,22 @@
 # Run from the repo root:  Rscript code/03_report/data_availability.R
 
 source("code/01_main_supporting/setup.R")
+source("code/01_main_supporting/stitch_iliplus.R")
 models_in <- readRDS("output/models_in.rds")
 
-covid       <- c("2019/2020", "2020/2021", "2021/2022", "2022/2023")
-min_wk      <- 15
-nonsent     <- c("MT", "IS", "HR", "RO", "LV", "FI")
-resp_only   <- c("NO", "ES")    # single source = RespiCompass
-erviss_only <- c("SK", "LV")    # single source = ERVISS
+covid           <- stitch_covid_seasons  # shared with the panel build
+min_wk          <- 15
 handover_season <- "2023/2024"  # last RespiCompass season / overlap -> RespiCompass->ERVISS divider
 
-ili_plus <- models_in$data_timeseries_long %>%
-  filter(indicator=="ili_plus", pathogen=="Influenza", agegroup=="age_total")
-erviss <- ili_plus %>% filter(stream %in% c("ili_plus_sentinel","ili_plus_nonsentinel")) %>%
-  mutate(chosen_stream = ifelse(country_short %in% nonsent, "ili_plus_nonsentinel", "ili_plus_sentinel")) %>%
-  filter(stream==chosen_stream) %>%
-  group_by(country_short, season) %>% summarise(erv_wk=sum(is.finite(value) & value>0), .groups="drop")
-respicompass <- ili_plus %>% filter(stream=="ili_plus_respicompass") %>%
-  group_by(country_short, season) %>% summarise(rsp_wk=sum(is.finite(value) & value>0), .groups="drop")
-
-av <- full_join(erviss, respicompass, by=c("country_short","season")) %>%
-  mutate(erv_wk=coalesce(erv_wk,0L), rsp_wk=coalesce(rsp_wk,0L),
-         source = case_when(country_short %in% resp_only   ~ ifelse(rsp_wk>0,"RespiCompass",NA_character_),
-                            country_short %in% erviss_only ~ ifelse(erv_wk>0,"ERVISS",NA_character_),
-                            rsp_wk>0 ~ "RespiCompass", erv_wk>0 ~ "ERVISS", TRUE ~ NA_character_),
-         weeks  = case_when(country_short %in% resp_only   ~ rsp_wk,
-                            country_short %in% erviss_only ~ erv_wk,
-                            rsp_wk>0 ~ rsp_wk, TRUE ~ erv_wk)) %>%
-  filter(!is.na(source), weeks>0) %>%
+# Week counts come from the SAME stitched series the analysis panel uses (min_wk = 0 so excluded
+# cells still appear; COVID seasons kept so they can be greyed out). An earlier version counted a
+# single stream per cell, so 11 overlap-season cells displayed fewer weeks than the final dataset
+# actually contains (RespiCompass gaps that aligned ERVISS fills) -- the union is what is analysed.
+stitched <- stitch_iliplus_panel(models_in, exclude_covid=FALSE, min_wk=0)
+av <- stitched %>%
+  group_by(country_short, season) %>%
+  summarise(weeks = sum(is.finite(value) & value>0), source = source[1], .groups="drop") %>%
+  filter(weeks > 0) %>%
   mutate(status = case_when(season %in% covid ~ "excluded: COVID",
                             weeks < min_wk      ~ "excluded: <15 wks",
                             TRUE                ~ "included"))

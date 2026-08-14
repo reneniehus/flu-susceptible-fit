@@ -65,8 +65,9 @@ fit <- run_method("deterministic", sl, params)      # any registered method, sam
 summarise_method_fit(fit)                           # tidy: S0, R_eff, c, peak/onset week, cor, ...
 ```
 
-`fit$params$S0` is the per-season susceptibility — **interpret the ranking/relative spacing across
-seasons**, not the absolute level (which is conditional on the fixed R0/seed).
+`fit$params$S0` is the per-season susceptibility — **interpret the within-country RANKING across
+seasons**, not the absolute level (conditional on the fixed R0/seed) and not the fine spacing of the
+gaps (method-dependent, esp. for the EKF — see `documentation/decisions.md`).
 
 Run every registered method and save a figure per method:
 
@@ -91,30 +92,41 @@ single-strain SIR does not capture secondary-strain or strongly NPI-shaped seaso
 Rscript run_tests.R                   # offline, from the committed data/ snapshots
 ```
 
-Checks the data contracts and canonical tables, that each method converges with plausible
-parameters and reproduces the observed waves (`tests/testthat/test-sir-deterministic.R`), and that
-every registered method honours the common summary schema (`tests/testthat/test-methods-registry.R`).
+Checks the data contracts and canonical tables; that each method converges with plausible
+parameters and reproduces the observed waves (`tests/testthat/test-sir-deterministic.R`); that
+every registered method honours the common summary schema (`tests/testthat/test-methods-registry.R`);
+that the committed slim panel obeys its construction rules and is reproduced exactly by the build
+(`tests/testthat/test-slim-panel.R`); and that both mechanistic methods RECOVER known S0 values (rank
+order + calibrated tolerance) from data simulated by the generative model itself
+(`tests/testthat/test-sir-recovery.R` — the S0-identifiability claim, exercised on known truth).
 
 ## Layout
 
 ```
-code/00_main.R                 build data + model inputs, source the methods
+code/00_main.R                 build data + model inputs (run-order map for everything in its header)
 code/01_main_supporting/       setup, validate, load_data, gen_model_input, eyeballing,
-                               sir_core (shared SIR engine + loaders),
+                               stitch_iliplus (THE panel-assembly rules, one implementation),
+                               sir_core (shared SIR engine + multi-start optimiser + loaders),
                                methods/ (one file per fitting method),
-                               methods_registry (registry + per-season summary schema)
-code/02_settings/              settings_version0.R (params, incl. susc_* fixed values)
+                               methods_registry (registry + per-season summary schema),
+                               send_report (manual email utility)
+code/02_settings/              settings_version0.R (live params only, incl. susc_* fixed values)
 code/03_report/                eyeballing_report.Rmd (data-quality / dynamics report),
-                               data_availability.R (coverage + exclusions heatmap)
-code/04_modelling/             build_slim_panel.R (assemble the slim panel), fit_methods_demo.R
-                               (run every method, plot + summarise), descriptive_overview.R, ekf_overview.R
-code/05_analysis/              the driver analysis: prepare_descriptors.R, analyse_patterns.R,
-                               hierarchical_models.R, dominant_subtype.R, bayes_subtype.R,
-                               bayes_prior_burden.R, plot_patterns.R, plot_vax_scatter.R
+                               data_availability.R + driver_availability.R (coverage heatmaps)
+code/04_modelling/             build_slim_panel.R (write the committed panel via the shared stitch),
+                               fit_methods_demo.R (every method, all seasons), descriptive_overview.R,
+                               ekf_overview.R
+code/05_analysis/              the driver analysis: analysis_helpers.R (shared Gibbs samplers, rhat,
+                               VE-vs-dominant rule), prepare_descriptors.R, dominant_subtype.R,
+                               analyse_patterns.R, plot_patterns.R, plot_vax_scatter.R,
+                               hierarchical_models.R, bayes_subtype.R, subtype_8season.R,
+                               bayes_prior_burden.R, bayes_precovid_ve_subtype.R,
+                               precovid_predict_postcovid.R
 stan/                          SIR_multiseason_age_vax_2.stan (Bayesian SIR)
 data/                          committed ERVISS / RespiCompass snapshots + slim_flu_iliplus.csv
+                               (+ data/external/ driver tables with provenance)
 output/                        cached data lists + figures (gitignored, regenerated)
-tests/testthat/                contract + method tests
+tests/testthat/                contract + method + panel + parameter-recovery tests
 documentation/                 quickstart, data_overview, decisions, analysis_strategy,
                                findings_descriptors, documentation.Rmd (see table below)
 ```
@@ -152,6 +164,9 @@ reproduces the committed panel `data/slim_flu_iliplus.csv` (verified byte-identi
 
 ## Note on the Stan model
 
-The Stan model's priors are currently commented out and a few generated-quantities lines need a
-fix (see the review notes in commit history); re-enable/repair them before production HMC use. The
-R method framework includes the equivalent priors as `optim` penalties and is the ready-to-run path.
+The model's verified indexing, accumulator and population-conservation bugs are now fixed, and a
+minimal proper prior set is re-enabled. Still pending before production HMC use: (a) the per-season
+effect parameters (`i_season`, `r_season`, `prop_ili_season`) remain disabled, so the model fits a
+season-invariant initial state and reporting ratio; (b) the remaining commented-out priors need
+Jacobian-aware re-derivation; (c) it is not compile-tested in this environment (no Stan toolchain).
+The R method framework remains the ready-to-run path.

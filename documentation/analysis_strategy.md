@@ -30,10 +30,18 @@ candidate drivers one at a time.
 - **The descriptors are ~three orthogonal axes:** **size** (peak ≈ AUC, within-country r ≈ 0.98),
   **timing** (onset → peak week, r ≈ 0.6, and decoupled from size), and **speed** (steepness, which
   shares almost nothing with size). Onset predicts *when* the peak comes, not *how big*.
-- **Confounds we always check:** (a) the **source/era confound** — pre-COVID = RespiCompass, post-COVID
-  = ERVISS, so any pre/post difference is inseparable from a measurement change; (b) **reporting
-  persistence** — burden magnitude is autocorrelated within country for non-epidemiological reasons, so
-  a positive prior→current burden slope can be reporting, a negative one is the cleaner signal.
+- **Confounds we always check:** (a) the **source/era confound** — the measurement stream shifts
+  (RespiCompass → ERVISS) one season AFTER the covid boundary (2023/24 is post-COVID but
+  RespiCompass-sourced for 20/22 countries), so `covid_era` (by season) and `source` are SEPARATE
+  variables in the descriptor table and any pre/post contrast beyond the 2023/24 bridge remains
+  entangled with the measurement change; (b) **reporting persistence** — burden magnitude is
+  autocorrelated within country for non-epidemiological reasons, so a positive prior→current burden
+  slope can be reporting, a negative one is the cleaner signal.
+- **Season-level predictors need season-level replication.** Subtype, VE and era vary by SEASON, so a
+  country random intercept alone treats ~20+ countries sharing one value as independent replicates and
+  the CrIs are anti-conservative. Where a season-level driver is the estimand, add a **season random
+  intercept** (as `subtype_8season.R` does); where the design cannot support one (e.g. 4-5 pre-COVID
+  seasons), say so next to the intervals.
 - **"No detectable effect" ≠ "proven zero."** With ~20–25 countries and few seasons, wide intervals are
   often power limits, stated as such.
 - **Adversarial honesty.** Claims are stress-tested (the descriptor analysis went through explicit

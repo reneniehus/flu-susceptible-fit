@@ -3,7 +3,7 @@
 # steepness/onset_week/peak_week are scale-free -> also compared ACROSS countries. Run from repo root.
 suppressMessages({library(dplyr)})
 descriptors <- read.csv("output/descriptors_vax.csv", stringsAsFactors=FALSE) %>%
-  mutate(log_auc=log(auc), log_peak=log(peak_height), era=ifelse(source=="RespiCompass","pre","post"))
+  mutate(log_auc=log(auc), log_peak=log(peak_height))   # covid_era (by season) + source come from prepare_descriptors.R
 feature_vars <- c("log_auc","log_peak","onset_week","peak_week","steepness")
 
 cat("=== n =", nrow(descriptors), "country-seasons,", n_distinct(descriptors$country),"countries ===\n")
@@ -24,9 +24,15 @@ cat(sprintf("\nQ steep incline ~ high burden? within-country cor(steepness, log 
 cat(sprintf("Q early season meaning? within-country cor(onset_week, log AUC)=%.2f  cor(onset_week, steepness)=%.2f  cor(onset_week, peak_week)=%.2f  cor(onset_week, log peak)=%.2f\n",
             within_cor("onset_week","log_auc"), within_cor("onset_week","steepness"), within_cor("onset_week","peak_week"), within_cor("onset_week","log_peak")))
 
-# era / source confound: do scale-free descriptors shift pre vs post?
-cat("\n--- ERA check (source confound): scale-free descriptor means pre(RespiCompass) vs post(ERVISS) ---\n")
-print(descriptors %>% group_by(era) %>% summarise(n=n(), onset=round(mean(onset_week),1), peak_wk=round(mean(peak_week),1),
+# era vs source: the two groupings diverge exactly on 2023/24 (post-COVID but RespiCompass-sourced
+# for 20/22 countries), so print BOTH -- the season-era contrast is the substantive question, the
+# source contrast is the measurement-shift check (they used to be conflated in one 'era' variable,
+# which filed most of 2023/24 under 'pre' and understated the post-COVID onset shift).
+cat("\n--- COVID-ERA check (by season; post = 2023/24 onward): scale-free descriptor means ---\n")
+print(descriptors %>% group_by(covid_era) %>% summarise(n=n(), onset=round(mean(onset_week),1), peak_wk=round(mean(peak_week),1),
+                                        steep=round(mean(steepness),2), .groups="drop") %>% as.data.frame())
+cat("\n--- SOURCE check (measurement stream): the same means by RespiCompass vs ERVISS ---\n")
+print(descriptors %>% group_by(source) %>% summarise(n=n(), onset=round(mean(onset_week),1), peak_wk=round(mean(peak_week),1),
                                         steep=round(mean(steepness),2), .groups="drop") %>% as.data.frame())
 
 # vaccination (pre-COVID block only; live count printed below): cross-country (country means) and within-country

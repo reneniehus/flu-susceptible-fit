@@ -12,8 +12,7 @@
 
 source("code/02_settings/settings_version0.R"); params = settings()
 source("code/01_main_supporting/sir_core.R")
-source("code/01_main_supporting/methods/method_sir_deterministic.R")
-source("code/01_main_supporting/methods/method_sir_ekf.R")
+source("code/01_main_supporting/methods/method_sir_ekf.R")       # only the method actually run here
 source("code/01_main_supporting/methods_registry.R")
 
 countries = params$susc_countries
@@ -55,6 +54,9 @@ for (i in seq_along(countries)){
 par(mar = c(8, 4, 2.4, 1))
 plot(NA, xlim = c(1, length(seasons)), ylim = c(0.5, 1), xaxt = "n",
      xlab = "", ylab = "EKF S0 (susceptibility)", main = "Fitted S0 across countries & seasons")
+# the docs' interpretation rule, stated on the figure itself: within-country ranking only
+mtext("read the WITHIN-COUNTRY ranking; absolute S0 and cross-country levels are conditional on the fixed R0/I0 and reporting",
+      side = 3, line = 0.25, cex = 0.72, col = "grey35")
 axis(1, at = seq_along(seasons), labels = seasons, las = 2, cex.axis = 0.9)
 for (i in seq_along(countries)){
   country_rows = fit_summary[fit_summary$country == countries[i], ]

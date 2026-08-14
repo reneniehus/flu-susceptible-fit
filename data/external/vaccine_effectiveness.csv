@@ -13,6 +13,7 @@ season,subtype,age_group,setting,ve_point,ci_low,ci_high,value_type,timing,netwo
 2016/2017,A(H3N2),0-14,primary_care,44.1,NA,NA,point,interim,I-MOVE,Eurosurveillance ES.2017.22.7.30464,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.7.30464
 2016/2017,A(H3N2),15-64,primary_care,46.9,NA,NA,point,interim,I-MOVE,Eurosurveillance ES.2017.22.7.30464,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.7.30464
 2016/2017,A(H3N2),65+,primary_care,23.4,NA,NA,point,interim,I-MOVE,Eurosurveillance ES.2017.22.7.30464,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.7.30464
+2016/2017,A(H3N2),target_group,primary_care,25.7,NA,NA,point,interim,I-MOVE,Eurosurveillance ES.2017.22.7.30464,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.7.30464
 2016/2017,A(H3N2),65+,hospital,17,1,31,point,end_of_season,I-MOVE+,Eurosurveillance ES.2017.22.41.17-00645,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.41.17-00645
 2016/2017,A(H3N2),65-79,hospital,25,2,43,point,end_of_season,I-MOVE+,Eurosurveillance ES.2017.22.41.17-00645,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.41.17-00645
 2016/2017,A(H3N2),80+,hospital,13,-15,30,point,end_of_season,I-MOVE+,Eurosurveillance ES.2017.22.41.17-00645,https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.41.17-00645

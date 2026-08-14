@@ -199,19 +199,29 @@ load_data_contact = function(data=list(), params=NULL, regenerate=FALSE){
     }
     xlocations = data$helpers_respicompass$iso2_code
 
+    # RespiCompass and the Prem workbooks disagree on some country names; map before the sheet lookup
+    # (without this, the mismatch fails silently and the country is dropped from models_in$contacts)
+    sheet_overrides = c("Czechia" = "Czech Republic")
+
     xdata = list()
-    for (country_i in xlocations$location_name){ # country_i = xlocations$location_name[1]
+    for (country_i in xlocations$location_name){
+      sheet_i = if (country_i %in% names(sheet_overrides)) sheet_overrides[[country_i]] else country_i
       contacts = 0
       # the matrices are split across two workbooks (each holds ~half the countries); a country is a
       # sheet in exactly one of them, so we try both and keep whichever read succeeds
       try({
-        contacts = read_excel(here("data/MUestimates_all_locations_1.xlsx"), sheet = country_i, col_names = F, .name_repair = "unique_quiet", skip = 1)
+        contacts = read_excel(here("data/MUestimates_all_locations_1.xlsx"), sheet = sheet_i, col_names = F, .name_repair = "unique_quiet", skip = 1)
       }, silent = T)
       try({
-        contacts = read_excel(here("data/MUestimates_all_locations_2.xlsx"), sheet = country_i, col_names = F, .name_repair = "unique_quiet")
+        contacts = read_excel(here("data/MUestimates_all_locations_2.xlsx"), sheet = sheet_i, col_names = F, .name_repair = "unique_quiet")
       }, silent = T)
       xdata[[country_i]] = contacts
     }
+    # declare, rather than silently swallow, the countries with no matrix in either workbook
+    # (left at the scalar-0 sentinel; transform_contacts() skips them)
+    missing_i = names(xdata)[vapply(xdata, function(x) length(x) == 1, logical(1))]
+    if (length(missing_i)) cat(yellow(paste0("load_data_contact: no Prem contact matrix for: ",
+                                             paste(missing_i, collapse=", "), "\n")))
     return(xdata)
   }
 

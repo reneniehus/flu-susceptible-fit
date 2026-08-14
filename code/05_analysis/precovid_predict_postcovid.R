@@ -1,45 +1,39 @@
 # precovid_predict_postcovid.R
 #
-# Fit a PRE-COVID within-country Bayesian model of burden and use it to PREDICT the two post-COVID
-# seasons that have 65+ coverage (2023/24, 2024/25), out of sample. Extends bayes_precovid_ve_subtype.R:
+# Fit a PRE-COVID within-country Bayesian model of burden and use it to PREDICT the post-COVID
+# seasons 2023/24 and 2024/25, out of sample. Extends bayes_precovid_ve_subtype.R:
 #   predictors = dominant SUBTYPE + PROTECTION (VE x 65+ coverage) + PRIOR-SEASON AUC (last season's
 #   burden, a country x season predictor). Outcome for the cross-validation: log(AUC).
 #
 # Prior-season AUC needs the COVID seasons that the committed panel excludes (2023/24's prior is the
-# 2022/23 season). We therefore rebuild the ILI+ panel here WITHOUT the COVID exclusion (identical
-# reconstruction to build_slim_panel.R otherwise; verified to reproduce the committed 2023/24 AUC
-# exactly) and compute descriptive-method AUC for every season.
+# 2022/23 season). We therefore rebuild the ILI+ panel WITHOUT the COVID exclusion via the shared
+# stitch (code/01_main_supporting/stitch_iliplus.R -- identical rules to build_slim_panel.R) and
+# compute descriptive-method AUC for every season; an assertion below CHECKS (not just asserts in
+# prose) that the rebuild reproduces the committed panel's AUCs exactly. Deliberate tension, on the
+# record: 2022/23 is excluded as an OUTCOME everywhere (COVID-disrupted wave shape) yet used here as
+# a PREDICTOR (its realised burden is what the autoregressive term needs; predictor availability !=
+# outcome validity -- see decisions.md).
 #
-# Cross-validation design (as requested): fit on pre-COVID only; predict 2023/24 using 2022/23 AUC as the
-# prior, and 2024/25 using 2023/24 AUC as the prior; the country random intercept (estimated pre-COVID)
-# carries each country's reporting scale. VE against the dominant subtype per season (see
-# data/external/vaccine_effectiveness.csv): pre-COVID 14.4/32.9/25.7/45/38; test 2023/24 (H1N1)=52,
-# 2024/25 (B)=58 (interim). Run from repo root:  Rscript code/05_analysis/precovid_predict_postcovid.R
+# Cross-validation design: fit on pre-COVID only; predict 2023/24 using 2022/23 AUC as the prior,
+# and 2024/25 using 2023/24 AUC as the prior; the country random intercept (estimated pre-COVID)
+# carries each country's reporting scale. The TEST set is every train country with a valid prior --
+# NOT additionally conditioned on post-COVID coverage availability (protection is no predictor out
+# of sample, so requiring coverage would only shrink the test set arbitrarily). VE against the
+# dominant subtype is derived from the provenance CSV via analysis_helpers.R::ve_vs_dominant()
+# (pre-COVID 14.4/32.9/25.7/45/37.5; test 2023/24 (H1N1) = 52, 2024/25 (H1N1) = 30 end-of-season).
+# Run from repo root:  Rscript code/05_analysis/precovid_predict_postcovid.R
 suppressMessages({library(dplyr); library(lme4); library(ggplot2)}); set.seed(1)
 source("code/02_settings/settings_version0.R"); params <- settings()
 source("code/01_main_supporting/sir_core.R")
-for (f in c("method_sir_deterministic","method_sir_ekf","method_descriptive")) source(paste0("code/01_main_supporting/methods/",f,".R"))
+source("code/01_main_supporting/methods/method_descriptive.R")
 source("code/01_main_supporting/methods_registry.R")
+source("code/05_analysis/analysis_helpers.R")
 
-# ---- |-rebuild the ILI+ panel for ALL seasons (mirrors build_slim_panel.R minus the COVID exclusion) ----
+# ---- |-rebuild the ILI+ panel for ALL seasons (shared stitch, minus the COVID exclusion) ----
+suppressMessages(source("code/01_main_supporting/setup.R"))
+source("code/01_main_supporting/stitch_iliplus.R")
 models_in <- readRDS("output/models_in.rds")
-nonsentinel<-c("MT","IS","HR","RO","LV","FI"); per_1000<-c("CY","LU","MT"); resp_only<-c("NO","ES"); erviss_only<-c("SK","LV")
-ili_plus <- models_in$data_timeseries_long %>% filter(indicator=="ili_plus", pathogen=="Influenza", agegroup=="age_total") %>%
-  select(stream, country_short, season, date, season_week, value)
-erviss <- ili_plus %>% filter(stream %in% c("ili_plus_sentinel","ili_plus_nonsentinel")) %>%
-  mutate(pick=ifelse(country_short %in% nonsentinel,"ili_plus_nonsentinel","ili_plus_sentinel")) %>% filter(stream==pick) %>%
-  mutate(value=value*ifelse(country_short %in% per_1000,1000,1)) %>% transmute(country_short,season,date,season_week,erviss=value)
-respicompass <- ili_plus %>% filter(stream=="ili_plus_respicompass") %>% transmute(country_short,season,date,season_week,respicompass=value)
-combined <- full_join(erviss,respicompass,by=c("country_short","season","date","season_week"))
-align_factors <- combined %>% filter(season=="2023/2024",is.finite(erviss),erviss>0,is.finite(respicompass),respicompass>0) %>% group_by(country_short) %>% summarise(align_factor=median(respicompass/erviss),.groups="drop")
-combined <- combined %>% left_join(align_factors,by="country_short") %>% mutate(align_factor=ifelse(is.na(align_factor),1,align_factor),
-  value=case_when(country_short %in% resp_only~respicompass, country_short %in% erviss_only~erviss, !is.na(respicompass)~respicompass, TRUE~erviss*align_factor),
-  source=case_when(country_short %in% resp_only~"RespiCompass", country_short %in% erviss_only~"ERVISS", !is.na(respicompass)~"RespiCompass", TRUE~"ERVISS")) %>%
-  filter(is.finite(value))
-full <- combined %>% group_by(country_short,season) %>% filter(sum(is.finite(value)&value>0)>=15) %>%
-  group_modify(function(df,key){ w_hi<-max(df$season_week[is.finite(df$value)])
-    tibble(season_week=1:w_hi) %>% left_join(df %>% select(season_week,date,value),by="season_week") %>%
-      transmute(week=season_week,season_week,date,value,source=df$source[which(!is.na(df$source))][1]) }) %>% ungroup()
+full <- stitch_iliplus_panel(models_in, exclude_covid=FALSE, min_wk=15)
 dir.create("output", showWarnings=FALSE); write.csv(full, "output/slim_flu_iliplus_full.csv", row.names=FALSE)
 
 # ---- |-descriptive AUC etc. for every country-season, then prior (t-1) AUC ----
@@ -48,27 +42,34 @@ auc_by_season <- do.call(rbind, lapply(sort(unique(full$country_short)), functio
   s  <- summarise_method_fit(run_method("descriptive", sl, params))
   s[, c("country","season","auc","peak_height","onset_week")] })) %>%
   mutate(syr=as.integer(substr(season,1,4)))
+# the rebuild must agree with the committed panel wherever both cover a season (same stitch rules)
+if (file.exists("output/descriptors.csv")){
+  chk <- read.csv("output/descriptors.csv", stringsAsFactors=FALSE) %>%
+    inner_join(auc_by_season, by=c("country","season"), suffix=c("_slim","_full"))
+  stopifnot(nrow(chk) > 100, max(abs(log(chk$auc_slim) - log(chk$auc_full))) < 1e-8)
+  cat(sprintf("rebuild check: %d country-seasons match the committed panel's AUC exactly\n", nrow(chk)))
+}
 prior <- auc_by_season %>% transmute(country, syr_next=syr+1, prior_lauc=log(auc))
 auc_by_season <- auc_by_season %>% left_join(prior, by=c("country"="country","syr"="syr_next"))
 
 # ---- |-attach subtype, VE-against-dominant, 65+ coverage -> protection ----
 sub <- read.csv("data/external/dominant_subtype_by_season.csv", stringsAsFactors=FALSE) %>% transmute(season, dominant)
-ve_by_season <- c("2014/2015"=14.4,"2015/2016"=32.9,"2016/2017"=25.7,"2017/2018"=45,"2018/2019"=38,
-                  "2023/2024"=52,"2024/2025"=58)                     # VE vs dominant subtype (see header)
+ve_by_season <- ve_vs_dominant(sub)                                  # traceable to the provenance CSV rows
 covpre <- read.csv("output/descriptors_vax.csv", stringsAsFactors=FALSE) %>% transmute(country, season, coverage=vax_cov_65)
 covpost<- read.csv("data/external/vaccination_coverage_65plus_postcovid.csv", stringsAsFactors=FALSE) %>%
   filter(panel_country %in% c(TRUE,"TRUE"), !grepl("of invited", age_band)) %>%   # drop NL (60+ of-invited: not comparable)
-  transmute(country=country_short, season, coverage=coverage_pct)
+  transmute(country=country_short, season, coverage=coverage_pct/100)             # percent -> FRACTION (pre-COVID scale)
 coverage <- bind_rows(covpre, covpost) %>% filter(is.finite(coverage)) %>% distinct(country, season, .keep_all=TRUE)
+stopifnot(max(coverage$coverage) <= 1)   # one scale: fractions (a pct/fraction mix once put test protection ~100x train)
 
 d <- auc_by_season %>% inner_join(sub, by="season") %>% left_join(coverage, by=c("country","season")) %>%
-  mutate(ve=ve_by_season[season], protection=ve*coverage/100,
+  mutate(ve=ve_by_season[season], protection=ve*coverage/100,        # effectively-protected fraction (VE% x coverage-fraction)
          dominant=factor(dominant, levels=c("A(H1N1)","A(H3N2)","B")), lauc=log(auc))
 
 pre_seasons  <- c("2015/2016","2016/2017","2017/2018","2018/2019")            # 2014/15 has no prior -> excluded
 test_seasons <- c("2023/2024","2024/2025")
 train <- d %>% filter(season %in% pre_seasons, is.finite(protection), is.finite(prior_lauc))
-test   <- d %>% filter(season %in% test_seasons, is.finite(protection), is.finite(prior_lauc), country %in% unique(train$country))
+test  <- d %>% filter(season %in% test_seasons, is.finite(prior_lauc), country %in% unique(train$country))
 cat(sprintf("TRAIN pre-COVID: %d country-seasons, %d countries, %d seasons\n", nrow(train), n_distinct(train$country), n_distinct(train$season)))
 cat(sprintf("TEST post-COVID: %d country-seasons (%s)\n", nrow(test), paste(table(test$season), names(table(test$season)), collapse=" ")))
 
@@ -81,7 +82,7 @@ dev <- function(df){ df<-left_join(df, train_means, by="country"); df$prior_d<-d
 train<-dev(train); test<-dev(test)
 sd_prot<-sd(train$prot_d); sd_prior<-sd(train$prior_d)
 train$protection_z<-train$prot_d/sd_prot; train$prior_z<-train$prior_d/sd_prior
-test$protection_z  <-test$prot_d/sd_prot;   test$prior_z  <-test$prior_d/sd_prior
+test$prior_z <- test$prior_d/sd_prior                                # protection is not used out of sample (see header)
 
 # ---- |-Gibbs varying-intercept model: y = X beta + alpha_country + eps, alpha ~ N(mu_a, t2) ----
 # X has NO intercept column -- the country intercept carries each country's full (reporting-scale) level,
@@ -105,7 +106,6 @@ country_levels <- levels(factor(train$country)); g <- as.integer(factor(train$co
 X_train  <- cbind(model.matrix(~ dominant, train)[,-1,drop=FALSE], prot=train$protection_z, prior=train$prior_z)  # [H3N2,B,prot,prior] (no intercept; country RE carries level)
 
 # ---- |-whisker plot: subtype + protection + prior-AUC across the three descriptors (SD units) ----
-q95<-function(x) quantile(x,c(.5,.025,.975))
 outcome_labels <- c(lauc="AUC (log)", onset="onset week", peak="peak height (log)")
 outcome_data <- list(lauc=log(train$auc), onset=train$onset_week, peak=log(train$peak_height))
 whisker <- do.call(rbind, lapply(names(outcome_labels), function(k){
@@ -133,8 +133,8 @@ ggsave("output/precovid3_whisker.png",
 #   BASELINE = country intercept alpha_c + sigma_c (knows only the country);
 #   FULL     = pooled mean (dominant subtype + prior-season AUC, which carries the reporting scale) + sigma_c.
 # Each test season is predicted with ITS country's sigma_c. a0=2 sets moderate variance pooling.
-# (PROTECTION is excluded out of sample: VE jumped 14-45% pre-COVID to 52-58% test, so it does not transfer;
-#  prior-AUC is on the same log scale train/test, so no extrapolation.)
+# (PROTECTION is excluded out of sample: post-COVID coverage exists for only ~15 country-seasons, and the
+#  VE regime differs; prior-AUC is on the same log scale train/test, so no extrapolation.)
 gibbs_ls <- function(y, g, X=NULL, n_iter=9000, n_burn=4000, chains=3, a0=2){
   n<-length(y); G<-max(g); ints<-is.null(X); p<-if (ints) 1L else ncol(X); A<-Sg<-B<-NULL
   for (ch in 1:chains){
@@ -156,7 +156,6 @@ gibbs_ls <- function(y, g, X=NULL, n_iter=9000, n_burn=4000, chains=3, a0=2){
     A<-rbind(A,Ac); Sg<-rbind(Sg,Sc); B<-rbind(B,Bc) }
   list(alpha=A, sigma=Sg, beta=B)
 }
-country_levels <- levels(factor(train$country)); g <- as.integer(factor(train$country, levels=country_levels))
 X_full <- cbind(1, model.matrix(~ dominant, train)[,-1,drop=FALSE], train$prior_lauc)   # [1, H3N2, B, prior_lauc]
 fit_full <- gibbs_ls(train$lauc, g, X=X_full)          # FULL: pooled mean + country-specific sigma
 fit_base <- gibbs_ls(train$lauc, g)                # BASELINE: country intercept + country-specific sigma
@@ -172,21 +171,25 @@ pred_base <- sapply(seq_len(nrow(test)), function(i) predict_ls(fit_base$alpha[,
 test$base_pred<-pred_base[1,]; test$base_lo<-pred_base[2,]; test$base_hi<-pred_base[3,]
 test$base_sd <- colMeans(fit_base$sigma)[g_test]
 test$in_pi <- test$lauc>=test$pi_lo & test$lauc<=test$pi_hi
-rmse <- sqrt(mean((test$lauc-test$pred_lauc)^2)); r_all <- cor(test$lauc, test$pred_lauc)
+rmse  <- sqrt(mean((test$lauc-test$pred_lauc)^2)); r_all <- cor(test$lauc, test$pred_lauc)
 rmse0 <- sqrt(mean((test$lauc-test$base_pred)^2)); r0 <- cor(test$lauc, test$base_pred)
-test <- test %>% group_by(country) %>% mutate(obs_dev=lauc-mean(lauc), pred_dev=pred_lauc-mean(pred_lauc)) %>% ungroup()
-r_within <- if (sum(test$obs_dev!=0)>2) cor(test$obs_dev, test$pred_dev) else NA_real_
-cat(sprintf("\nCROSS-VAL (log AUC): FULL RMSE=%.2f cor=%.2f (within-dev %.2f, %.0f%% in PI)  |  BASELINE RMSE=%.2f cor=%.2f\n",
-            rmse, r_all, r_within, 100*mean(test$in_pi), rmse0, r0))
+rmse_pers <- sqrt(mean((test$lauc-test$prior_lauc)^2))   # PERSISTENCE comparator: predict this season = last season's log AUC
+# within-country signal: correlate the two-season deviations for countries with BOTH test seasons only
+# (single-season countries would enter as exact (0,0) points and mechanically inflate the correlation)
+paired <- test %>% add_count(country, name="n_test") %>% filter(n_test==2) %>% group_by(country) %>%
+  mutate(obs_dev=lauc-mean(lauc), pred_dev=pred_lauc-mean(pred_lauc)) %>% ungroup()
+r_within <- if (nrow(paired) >= 4) cor(paired$obs_dev, paired$pred_dev) else NA_real_
+cat(sprintf("\nCROSS-VAL (log AUC): FULL RMSE=%.2f cor=%.2f (within-dev %.2f over %d paired countries, %.0f%% in PI)\n                     BASELINE RMSE=%.2f cor=%.2f | PERSISTENCE (carry last season forward) RMSE=%.2f\n",
+            rmse, r_all, r_within, n_distinct(paired$country), 100*mean(test$in_pi), rmse0, r0, rmse_pers))
 print(test %>% transmute(country, season, real=round(lauc,2), full=round(pred_lauc,2),
                         full_pi=sprintf("[%.2f,%.2f]",pi_lo,pi_hi), base_sd=round(base_sd,2), in_pi) %>% as.data.frame(), row.names=FALSE)
-write.csv(test %>% select(country,season,lauc,base_pred,base_lo,base_hi,base_sd,pred_lauc,pi_lo,pi_hi,in_pi), "output/precovid_crossval.csv", row.names=FALSE)
+write.csv(test %>% select(country,season,lauc,prior_lauc,base_pred,base_lo,base_hi,base_sd,pred_lauc,pi_lo,pi_hi,in_pi), "output/precovid_crossval.csv", row.names=FALSE)
 
 lims <- range(c(test$lauc, test$pred_lauc))
 ggsave("output/precovid_crossval.png",
   ggplot(test, aes(pred_lauc, lauc, color=season))+
     geom_abline(slope=1,intercept=0,color="grey60",linetype="dashed")+
-    geom_errorbarh(aes(xmin=pi_lo,xmax=pi_hi),height=0,alpha=0.4)+ geom_point(size=2.4)+
+    geom_errorbar(aes(xmin=pi_lo,xmax=pi_hi),width=0,alpha=0.4,orientation="y")+ geom_point(size=2.4)+
     geom_text(aes(label=country),size=2.6,vjust=-0.7,show.legend=FALSE)+
     scale_color_manual(values=c("2023/2024"="#1b9e77","2024/2025"="#d95f02"))+
     coord_equal(xlim=lims,ylim=lims)+
@@ -228,7 +231,7 @@ p <- ggplot(rel)+
   scale_y_continuous(breaks=y_breaks, labels=c("0.12x","0.25x","0.5x","1x","1.5x"))+
   coord_cartesian(ylim=ylim)+
   labs(title="Post-COVID burden relative to each country's pre-COVID average (country scale removed)",
-       subtitle=sprintf("diamond = observed | orange = full model (95%% PI) | blue band = baseline 95%% PI, COUNTRY-SPECIFIC width (its prediction = the 1x line)\ngrey line joins a country's two seasons; single-season countries after the gap. Within-country RMSE %.2f -> %.2f (baseline -> full).", rmse0, rmse),
+       subtitle=sprintf("diamond = observed | orange = full model (95%% PI) | blue band = baseline 95%% PI, COUNTRY-SPECIFIC width (its prediction = the 1x line)\ngrey line joins a country's two seasons; single-season countries after the gap. RMSE %.2f baseline / %.2f persistence / %.2f full (n=%d test country-seasons).", rmse0, rmse_pers, rmse, nrow(test)),
        x=NULL, y="AUC relative to the country's pre-COVID mean (fold-change)")+
   theme_minimal(base_size=11)+
   theme(axis.text.x=element_text(angle=45,hjust=1), panel.grid.minor=element_blank(), panel.grid.major.x=element_blank(),

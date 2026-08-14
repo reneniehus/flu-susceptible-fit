@@ -260,3 +260,75 @@ subtype, vaccine coverage, antigenic match / effectiveness, prior immunity) are 
   2000;49(2):187–205.
 - Transmissibility and severity of influenza virus by subtype. *Infection, Genetics and Evolution.*
   2018. https://www.sciencedirect.com/science/article/abs/pii/S1567134818306051
+
+## 2026-08 full-code-review decisions (behaviour-affecting corrections + their rationale)
+
+A structured multi-agent review (module reviewers + adversarial verification of every substantive
+finding) drove the following decisions. Behaviour-preserving refactors (shared stitch helper, shared
+Gibbs helpers, setup.R pruning) are not decisions and are only noted in commit messages.
+
+- **Dominant subtype: hierarchical, type-first rule.** The old rule counted 'B (unknown)' toward B but
+  discarded 'A (unknown)' — asymmetric, and consequential: unsubtyped A dominates reported A (2024/25
+  EU/EEA: ~206k of ~260k A detections), so 2024/25 was called "B" in 22/30 countries while type-level A
+  exceeded B in 28/30. New rule: (1) type by plurality of ALL characterised A vs ALL characterised B;
+  (2) subtype by plurality among subtyped A (dominant = NA when type A wins with zero subtyped A).
+  2024/25 flips to A(H1N1) (type share 0.74, H1 share 0.60 — genuine co-circulation, confidence
+  'medium'); 2023/24 and 2025/26 unchanged. The ERVISS 'EU/EEA' aggregate is no longer treated as a
+  country; it feeds a separate continental cross-check table. Downstream: the "B seasons carry the
+  largest burden" post-COVID claim dissolved (those were H1N1 seasons), and the 8-season "every subtype
+  recurs in both eras" motivation weakened to H1N1+H3N2 only (B stays essentially 2017/18).
+
+- **covid_era is defined by SEASON, not by data source.** post = 2023/24 onward. The old
+  era-from-source coding filed 20/22 countries' 2023/24 (a post-COVID season, RespiCompass-sourced)
+  under "pre", mislabelling figures and diluting the post-COVID earlier-onset contrast (3.3 vs the true
+  3.9 weeks). `covid_era` and `source` now travel as separate columns in descriptors.csv; models that
+  need the measurement shift absorbed use season intercepts (subtype_8season) or print both groupings
+  (analyse_patterns).
+
+- **Season-level predictors get a SEASON random intercept** (subtype_8season.R, gibbs_ri2 + lme4
+  crossed REs). With country intercepts only, ~20+ countries sharing one season-level value are treated
+  as independent replicates and CrIs are anti-conservative. Under the honest specification most
+  subtype burden contrasts no longer exclude 0; H3N2-peaks-earlier survives. The pre-COVID whisker
+  model (4 seasons) keeps country-only REs but now carries the caveat in the docs.
+
+- **VE values are derived from the provenance CSV, not hard-coded.** analysis_helpers.R::
+  ve_vs_dominant() implements the explicit preference rule (primary-care all/target-group; eos point >
+  interim point > range midpoint; influenza_A/any fallback). The missing 2016/17 all-target-group row
+  (25.7, I-MOVE interim, ES.2017.22.7.30464) was added to the CSV; 2018/19 becomes 37.5 (the honest
+  midpoint of 32-43, replacing a hand-rounded 38); 2024/25 becomes 30 (A(H1N1) end-of-season,
+  replacing an untraceable "B interim" 58 that also rested on the miscounted dominance).
+
+- **Out-of-sample test set is no longer conditioned on coverage availability.** Protection was never an
+  out-of-sample predictor, yet the test filter required post-COVID 65+ coverage — shrinking the test to
+  a 10-row big-reporter subset. Unconditioned test = 35 country-seasons, and with a PERSISTENCE
+  comparator (predict = last season's log AUC) added, the headline reverses: persistence RMSE 0.62
+  beats the full model (0.75) and the country-only baseline (0.90); the full model's within-country
+  moves anti-correlate with observation (r = -0.76, 17 paired countries) and its 95% PI covers only
+  74%. Recorded as the honest finding; the earlier "RMSE 0.71 -> 0.46" headline was an artifact of the
+  conditioned test set plus the 2024/25 "B" label.
+
+- **2022/23 as predictor, never as outcome.** The COVID-season exclusion is about disrupted WAVE SHAPE
+  (invalid as an outcome/fit target); the autoregressive prior-burden predictor needs the realised
+  prior burden regardless. The full-panel rebuild for that purpose runs through the SAME shared stitch
+  (stitch_iliplus.R) with the COVID filter off, and an in-script assertion verifies it reproduces the
+  committed panel's AUCs exactly.
+
+- **Panel stitch: the per-week gap-fill within 2023/24 is now the documented rule.** The stitch was
+  documented as per-season but implemented per-week; 14 country-seasons in the 2023/24 overlap mix
+  RespiCompass with aligned-ERVISS gap-fill weeks (values scale-consistent via the alignment factor).
+  Decision: keep the per-week behaviour (more data, consistent scale), document it (stitch_iliplus.R
+  header), and label the season by its dominant early-season source. Changing to a strict per-season
+  rule would alter the committed panel for those 14 seasons for no analytical gain.
+
+- **Contact matrices: full-block sums + Czechia recovered.** The 17->4 age-band aggregation summed only
+  the lower triangle of diagonal blocks, dropping half the cross-band contact-ends (15-64 within-group
+  rate understated ~1.5x, e.g. BE 7.59 -> 11.51 contacts/person); merged matrices now satisfy directed-
+  ends reciprocity to machine precision. 'Czechia' is mapped to the Prem workbooks' 'Czech Republic'
+  sheet (it was silently dropped), and countries genuinely absent (LI, NO) are now declared at load.
+  No published result consumed models_in$contacts (the Stan model is parked), so nothing shifts.
+
+- **EKF process noise: additive-on-I is a documented axis of the planned sensitivity analysis.** The
+  fixed absolute q_I (~1e-4) is ~10x the seed I0, so in relative terms the filter is loosest exactly in
+  the rise window that identifies S0 (profile-likelihood check: at the regularised q_I the data barely
+  constrain S0 beyond its prior). Not hot-swapped (the priors/P0 are tuned to the additive scale);
+  'additive vs proportional (log-I) q_I' joins the p0/q_I sensitivity plan above.

@@ -26,9 +26,13 @@ post-COVID pull + the gaps).
 
 ## 1. Dominant subtype — pre-COVID seasons (now complete for all 8 panel seasons)
 
-File: `data/external/dominant_subtype_by_season.csv`. "Dominant" = plurality of characterised detections
-among A(H1N1)pdm09 / A(H3N2) / B (the WHO/ECDC method, matching `code/05_analysis/dominant_subtype.R`).
-Per the user, the continental dominant subtype is assumed ~identical across EU/EEA countries within a season.
+File: `data/external/dominant_subtype_by_season.csv`. "Dominant" is decided HIERARCHICALLY, type first
+(`code/05_analysis/dominant_subtype.R`; rule change 2026-08, rationale in `decisions.md`): (1) type by
+plurality of ALL characterised A vs ALL characterised B detections — including the 'A (unknown)' /
+'B (unknown)' rows, which are most of what labs report; (2) if A wins, subtype by plurality among
+subtyped A. Continental rows for the post-COVID seasons are cross-checked against the ERVISS 'EU/EEA'
+aggregate (`output/dominant_subtype_continental.csv`); the pre-COVID rows are literature-based, and the
+continental label is assumed ~identical across EU/EEA countries within a pre-COVID season.
 
 | Season | Dominant | B lineage | Basis | Key source |
 |---|---|---|---|---|
@@ -38,37 +42,43 @@ Per the user, the continental dominant subtype is assumed ~identical across EU/E
 | 2017/18 | **B** (97% Yamagata) | B/Yamagata | literature | Eurosurveillance/PMC5883452; ECDC AER 2017-18 |
 | 2018/19 | **A(H1N1)pdm09** (biphasic) | — | literature | ECDC AER 2018-19; Eurosurveillance ES.2019.24.9.1900125 |
 | 2023/24 | A(H1N1)pdm09 | — | ERVISS (in-repo) | dominant_subtype.R; VEBIS 2023/24 |
-| 2024/25 | B | B/Victoria | ERVISS (in-repo) | dominant_subtype.R; interim VE 2024/25 |
+| 2024/25 | **A(H1N1)pdm09** (type A 74%; H1 60% of subtyped A; H3N2 + late B/Victoria co-circulating) | — | ERVISS (in-repo) | dominant_subtype.R (corrected 2026-08: the earlier "B" call was a counting-rule artifact; A-only VE reporting in ES.2025.30.7.2500102 is consistent with A predominance) |
 | 2025/26 | A(H3N2) (subclade K) | — | ERVISS (in-repo) | dominant_subtype.R; Eurosurveillance ES.2026.31.7.2600109 |
 
-**Why this matters:** the original subtype analysis (`bayes_subtype.R`) used only the 3 post-COVID seasons,
-each a single subtype — subtype was perfectly confounded with season. Across 8 seasons each subtype now
-**recurs in both eras** (A(H1N1): 2015/16, 2018/19, 2023/24 · A(H3N2): 2014/15, 2016/17, 2025/26 · B:
-2017/18, 2024/25), so subtype is no longer collinear with the calendar or with the RespiCompass→ERVISS
-source change. `code/05_analysis/subtype_8season.R` re-runs the within-country contrast across all 8 seasons.
+**Why this matters — honest version (revised with the corrected 2024/25 call):** the original subtype
+analysis (`bayes_subtype.R`) used only the 3 post-COVID seasons — subtype nearly perfectly confounded
+with season. Across 8 seasons, **A(H1N1) and A(H3N2) genuinely recur in both covid eras** (H1N1:
+2015/16, 2018/19 + 2023/24, 2024/25 · H3N2: 2014/15, 2016/17 + 2025/26), so their contrast is
+de-confounded from the era; **B does NOT recur** — it dominates only 2017/18 plus a handful of
+post-COVID country-level calls, so B contrasts remain essentially a single-season reading. (An earlier
+version of this section claimed all three subtypes recur in both eras; that rested on the miscounted
+2024/25 "B".) `code/05_analysis/subtype_8season.R` runs the 8-season contrast with HYBRID labels
+(country-level where typed, continental otherwise) and — since subtype is season-level — a SEASON
+random intercept alongside the country one.
 
-### 8-season result (within country, partial pooling, net of `era`; SD units, 95% CrI)
+### 8-season result (country + season random intercepts, net of covid era; SD units, 95% CrI)
 
 | Outcome | H3N2 − H1N1 | B − H1N1 | B − H3N2 |
 |---|---|---|---|
-| AUC (log) | **+0.18*** | **+0.36*** | **+0.17*** |
-| peak height (log) | **+0.21*** | **+0.30*** | +0.09 |
-| peak week | **−0.69*** | +0.10 | **+0.79*** |
-| onset week | −0.22 | **+0.36*** | **+0.59*** |
-| steepness | +0.13 | −0.05 | −0.18 |
+| AUC (log) | +0.02 | +0.16 | +0.15 |
+| peak height (log) | +0.04 | +0.16 | +0.11 |
+| peak week | **−0.56*** | −0.29 | +0.27 |
+| onset week | −0.08 | +0.06 | +0.15 |
+| steepness | +0.06 | −0.02 | −0.07 |
 
-(\* = 95% CrI excludes 0; Gibbs matched lme4 to two decimals, R-hat ≤ 1.011.)
+(\* = 95% CrI excludes 0; Gibbs matches lme4 crossed-REs; R-hat ≤ 1.002.)
 
-**Reading:** **B seasons carry the largest burden** (AUC) and **peak/onset latest**; **A(H3N2) peaks and
-onsets earliest**; **A(H1N1) smallest burden**; steepness shows no subtype signal. These are much sharper
-and more confident than the 3-season estimates.
+**Reading:** with honest season-level replication (8 seasons), the only contrast that survives is
+**A(H3N2) peaking earlier than A(H1N1)**. The previously reported starred burden contrasts (all three
+in the old country-RE-only table) were anti-conservative — the country-only model treated ~20 countries
+sharing one season label as independent replicates — and the "B largest burden" component additionally
+rode on 2024/25's mislabelling. Point directions still lean B-larger/later, but the data cannot
+support them as effects.
 
 **Caveats (important):**
-- Subtype is a **season-level** label (continental), so a "subtype effect" still pools only 2–3 seasons per
-  subtype — residual season-level confounding remains, just far less than the 1-season-per-subtype version.
-- Because the stitch assigns **2023/24 to RespiCompass**, the A(H1N1) seasons are almost all "pre"-sourced
-  (subtype×era table: A(H1N1) 63 pre / 2 post), so H1N1-involving contrasts are partly entangled with era;
-  **B − H3N2 is the cleanest contrast** (both span both eras). Read H1N1 contrasts with that in mind.
+- Subtype still pools only 2–4 seasons per subtype; residual season-level confounding remains.
+- B is a 1-season (+3 country-level rows) class; its contrasts are wide by construction.
+- The remaining source shift (RespiCompass→ERVISS at 2024/25) is absorbed by the season intercepts.
 
 ---
 
@@ -122,10 +132,16 @@ motivated by Tamerius et al. 2013 and Lowen & Steel — the highest-value remain
 
 ## 4. Vaccine effectiveness (VE) — I-MOVE / VEBIS, point estimates + 95% CIs
 
-File: `data/external/vaccine_effectiveness.csv` (41 rows; point estimates and 95% CIs kept verbatim, each
+File: `data/external/vaccine_effectiveness.csv` (42 rows; point estimates and 95% CIs kept verbatim, each
 row carrying its source URL). Primary source: the **I-MOVE / I-MOVE+ / VEBIS** multicentre case-control
 studies published in **Eurosurveillance**, reporting pooled European VE by (sub)type, age group, and setting
 (primary care / hospital). Two seasons independently verified (2014/15 I-MOVE; 2023/24 VEBIS).
+
+**How analyses consume this:** the season-level "VE against the dominant subtype" used by the models is
+NOT hard-coded — `code/05_analysis/analysis_helpers.R::ve_vs_dominant()` derives it from this CSV by an
+explicit preference rule (primary-care rows, age `all` (or `target_group`); end-of-season point >
+interim point > study-range midpoint; `influenza_A`/`any` fallback when the dominant subtype has no
+row). Current values: 14.4 / 32.9 / 25.7 / 45 / 37.5 (pre-COVID), 52 (2023/24), 30 (2024/25).
 
 Highlights (end-of-season, all ages, primary care, point % [95% CI]):
 - **2014/15** — A(H1N1)pdm09 54.2 [31.2, 69.6]; A(H3N2) **14.4 [−6.3, 31.0]** (drifted); B 48.0 [28.9, 61.9]

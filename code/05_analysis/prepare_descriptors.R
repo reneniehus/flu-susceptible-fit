@@ -13,9 +13,7 @@
 source("code/01_main_supporting/setup.R")
 source("code/02_settings/settings_version0.R"); params <- settings()
 source("code/01_main_supporting/sir_core.R")
-source("code/01_main_supporting/methods/method_sir_deterministic.R")
-source("code/01_main_supporting/methods/method_sir_ekf.R")
-source("code/01_main_supporting/methods/method_descriptive.R")
+source("code/01_main_supporting/methods/method_descriptive.R")   # only the method actually run here
 source("code/01_main_supporting/methods_registry.R")
 models_in <- readRDS("output/models_in.rds")
 
@@ -29,8 +27,13 @@ for (cc in sort(unique(slim$country_short))){
   s$n_weeks <- sapply(sl$ylist, function(y) sum(is.finite(y)))
   rows[[cc]] <- s[, c("country","season","auc","peak_height","peak_week","onset_week","steepness","cor","n_weeks")]
 }
+# covid_era is defined by SEASON (post = 2023/24 onward), NOT by data source: 2023/24 is a
+# post-COVID season that is RespiCompass-SOURCED for 20/22 countries, so the two variables
+# genuinely diverge there. Keep both -- era answers 'has flu changed since the pandemic?',
+# source answers 'did the measurement stream shift?' (the standing source-confound check).
 d <- do.call(rbind, rows) %>%
-  left_join(src, by=c("country"="country_short","season"))
+  left_join(src, by=c("country"="country_short","season")) %>%
+  mutate(covid_era = ifelse(as.integer(substr(season,1,4)) >= 2023, "post", "pre"))
 write.csv(d, "output/descriptors.csv", row.names=FALSE)
 
 # ---- merge observed 65+ vaccination coverage ----

@@ -15,9 +15,7 @@
 
 source("code/02_settings/settings_version0.R"); params = settings()
 source("code/01_main_supporting/sir_core.R")
-source("code/01_main_supporting/methods/method_sir_deterministic.R")
-source("code/01_main_supporting/methods/method_sir_ekf.R")
-source("code/01_main_supporting/methods/method_descriptive.R")
+source("code/01_main_supporting/methods/method_descriptive.R")   # only the method actually run here
 source("code/01_main_supporting/methods_registry.R")
 
 countries = params$susc_countries
@@ -39,8 +37,12 @@ n_countries = length(countries)
 n_panels = 5                                       # season columns drawn per country (LEFT grid); later seasons are not shown
 png("output/descriptive_overview.png", width = 1800, height = 1000)
 grid_ids  <- matrix(1:(n_countries*n_panels), n_countries, n_panels, byrow = TRUE)
-right_ids <- n_countries*n_panels + seq_len(n_countries)          # descriptive_overview: one panel per country
+right_ids <- n_countries*n_panels + seq_len(n_countries)          # right column: one cell per country ROW
 layout(cbind(grid_ids, right_ids), widths = c(rep(1, n_panels), 1.7))
+# the right column holds the FOUR FEATURE panels stacked into those country-row cells, so it fits
+# only while there are at least as many country rows as features -- fail loudly rather than
+# silently dropping a feature panel if susc_countries is ever shrunk below 4
+stopifnot(length(features) <= n_countries)
 par(mar = c(3, 3, 2.2, 1), mgp = c(1.8, 0.6, 0))
 
 # LEFT: row per country, column per season -- smoothed curve with AUC shaded, peak dot, onset line

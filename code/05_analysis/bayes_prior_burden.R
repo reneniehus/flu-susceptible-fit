@@ -16,6 +16,7 @@
 # season tends to again) -> a POSITIVE prior->current AUC/peak slope can be reporting, a NEGATIVE one
 # is the immunity signal; timing/steepness outcomes are cleaner. Run from the repo root.
 suppressMessages({library(dplyr); library(lme4); library(ggplot2)}); set.seed(1)
+source("code/05_analysis/analysis_helpers.R")   # rhat_derived (gibbs_rs below is this script's own random-slope sampler)
 
 d <- read.csv("output/descriptors.csv", stringsAsFactors=FALSE) %>% mutate(season_year=as.integer(substr(season,1,4)))
 prior <- d %>% transmute(country, next_season_year=season_year+1, prior_lauc=log(auc))
@@ -44,9 +45,6 @@ gibbs_rs <- function(y, x, g, n_iter=8000, n_burn=3000, chains=3){
   }
   draws
 }
-rhat1 <- function(chs,col=1){ L<-nrow(chs[[1]]); cm<-sapply(chs,function(M)mean(M[,col]))
-  B<-L*var(cm); W<-mean(sapply(chs,function(M)var(M[,col]))); sqrt(((L-1)/L*W+B/L)/W) }
-
 g <- as.integer(factor(d$country)); prior_z <- as.numeric(scale(d$prior_lauc))
 d$prior_within <- prior_z - ave(prior_z, d$country)                                   # within-country prior burden (SD units)
 outcome_labels <- c(auc="current AUC (log)", peak_height="current peak height (log)", peak_week="current peak week",
@@ -57,7 +55,7 @@ for (outcome_key in names(outcome_labels)){
   ch <- gibbs_rs(y, d$prior_within, g); draws <- do.call(rbind, ch)
   q <- quantile(draws[,1], c(.5,.025,.975))
   res[[length(res)+1]] <- data.frame(outcome=outcome_labels[outcome_key], beta=round(q[1],2), lo=round(q[2],2), hi=round(q[3],2),
-    excl0=ifelse(q[2]>0|q[3]<0,"*",""), het_sd=round(median(draws[,2]),2), rhat=round(rhat1(ch),3))
+    excl0=ifelse(q[2]>0|q[3]<0,"*",""), het_sd=round(median(draws[,2]),2), rhat=round(rhat_derived(ch, function(M) M[,1]),3))
   m <- suppressWarnings(lmer(y ~ prior_within + (prior_within|country), d, REML=TRUE))
   cat(sprintf("  [%-12s] lme4 slope %.2f | gibbs mu_b %.2f\n", outcome_key, fixef(m)["prior_within"], mean(draws[,1])))
 }
