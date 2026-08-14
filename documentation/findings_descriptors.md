@@ -102,7 +102,11 @@ spatial overlays. Figure `output/bayes_prior_burden.png`.
 
 We characterise 166 country-seasons by descriptors read off centred-moving-average smooths of weekly
 ILI+ curves: AUC and peak height (burden), onset/peak week (timing), and steepness (exponential growth
-of the rising limb). Two distinctions govern everything below. First, **scale**: AUC and peak height
+of the rising limb). The descriptors are SINGLE-WAVE summaries: a biphasic season (e.g. an H1N1 wave
+followed by a late B wave, as in 2018/19 or 2024/25 in some countries) is collapsed to its largest
+wave's peak/onset and the multi-wave structure is invisible to every driver model downstream — a
+standing caveat wherever a "dominant subtype" is attached to a season that in truth had two.
+Two distinctions govern everything below. First, **scale**: AUC and peak height
 vary ~1000x across countries by reporting scale and are interpretable only *within* country (log +
 country-demeaning); timing and steepness are scale-free and comparable across countries. Second, the
 **source/era confound**: the measurement stream shifts (RespiCompass → ERVISS) one season AFTER the
